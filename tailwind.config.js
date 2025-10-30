@@ -5,17 +5,17 @@ module.exports = {
     extend: {
       colors: {
         brand: {
-          primary: "#F4B400",
-          secondary: "#8C4A2F",
-          accent: "#FCE6C2",
-          dark: "#2F1B16",
-          light: "#FFF1EB",
-          pink: "#F5C0C0",
+          primary: "#F5CEC7",
+          secondary: "#9D0012",
+          accent: "#9D0012",
+          dark: "#370006ff",
+          light: "#ffffff",
+          pink: "#F5CEC7",
         },
       },
       fontFamily: {
-        heading: ["'Playfair Display'", "serif"],
-        body: ["'Inter'", "sans-serif"],
+        heading: ["var(--font-days-one)", "sans-serif"],
+        body: ["var(--font-geologica)", "sans-serif"],
       },
       spacing: {
         section: "6rem",

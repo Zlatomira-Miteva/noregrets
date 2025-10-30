@@ -1,0 +1,25 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 600 360"
+  role="img"
+  aria-labelledby="logo-title"
+>
+  <title id="logo-title">No Regrets logotype</title>
+  <style>
+    @import url("https://fonts.googleapis.com/css2?family=Berkshire+Swash&display=swap");
+    text {
+      fill: #c60f24;
+      font-family: "Berkshire Swash", "Brush Script MT", cursive;
+      font-weight: 400;
+      letter-spacing: 0.02em;
+    }
+  </style>
+  <g>
+    <text x="50%" y="46%" text-anchor="middle" font-size="140">
+      No
+    </text>
+    <text x="50%" y="80%" text-anchor="middle" font-size="200">
+      Regrets
+    </text>
+  </g>
+</svg>

@@ -1,23 +1,90 @@
 @import "tailwindcss";
 
 :root {
-  --background: #fcd9d9;
+  --background: #f5cec7;
   --foreground: #2f1b16;
-  --accent: #f5c0c0;
+  --accent: #df001a;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-geologica);
+  --font-heading: var(--font-days-one);
   --spacing-page: clamp(1.5rem, 4vw, 4rem);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-geist-sans), system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-    sans-serif;
+  font-family: var(--font-geologica), system-ui, -apple-system,
+    BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+p {
+  font-weight: 300;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-days-one), "Days One", sans-serif;
+}
+
+h1 {
+  font-size: clamp(2.5rem, 2.75vw, 3rem);
+}
+h2 {
+  font-size: clamp(2rem, 2.25vw, 2.5rem);
+}
+h3 {
+  font-size: clamp(1.75rem, 1.875vw, 2rem);
+}
+h4 {
+  font-size: clamp(1.5rem, 1.625vw, 1.75rem);
+}
+h5 {
+  font-size: clamp(1.25rem, 1.375vw, 1.5rem);
+}
+h6 {
+  font-size: clamp(1rem, 1.125vw, 1.25rem);
+}
+
+.marquee {
+  position: relative;
+  overflow: hidden;
+  background: #df001a;
+  color: #f8dad5;
+}
+
+.marquee__track {
+  display: flex;
+  width: max-content;
+  animation: marquee-scroll 66s linear infinite;
+  will-change: transform;
+}
+
+.marquee__group {
+  display: flex;
+  gap: 2.5rem;
+  padding: 0.45rem 2rem;
+}
+
+.marquee__item {
+  font-size: clamp(1rem, 1.15vw, 1.25rem);
+  white-space: nowrap;
+}
+
+@keyframes marquee-scroll {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
 }
 
 a {
@@ -28,4 +95,13 @@ a {
 img {
   display: block;
   max-width: 100%;
+}
+
+.cta {
+  background: #df001a;
+  color: white;
+}
+
+.cta:hover {
+  background: #bf0117;
 }
