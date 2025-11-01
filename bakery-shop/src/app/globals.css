@@ -78,6 +78,24 @@ h6 {
   white-space: nowrap;
 }
 
+.marquee--visit {
+  background: #f6eae3;
+  color: #2f1b16;
+  border-block: 1px solid #ead4cc;
+}
+
+.marquee--visit .marquee__group {
+  gap: 3rem;
+  padding: 0.75rem 3rem;
+}
+
+.marquee--visit .marquee__item {
+  font-family: var(--font-days-one), "Days One", sans-serif;
+  font-size: clamp(1.05rem, 1.5vw, 1.4rem);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
 @keyframes marquee-scroll {
   0% {
     transform: translateX(0%);
