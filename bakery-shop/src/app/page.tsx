@@ -1,14 +1,14 @@
 import Image, { type StaticImageData } from "next/image";
 import Link from "next/link";
 
-import Logo from "./logo.svg";
-import ShoppingCartIcon from "./shopping_cart.png";
 import ProductImage from "./small-box-cookies.webp";
 import CookieBoxImage from "./cookie-box.jpg";
 import StorefrontImage from "./cookie-box-hero.jpg";
-import Marquee from "../components/Marquee";
+import Marquee from "@/components/Marquee";
 import HeroCarousel from "@/components/HeroCarousel";
 import FeaturedTabs from "@/components/FeaturedTabs";
+import SiteFooter from "@/components/SiteFooter";
+import SiteHeader from "@/components/SiteHeader";
 
 type Product = {
   id: number;
@@ -18,13 +18,8 @@ type Product = {
   weight: string;
   image: string | StaticImageData;
   category: "cookies" | "mochi" | "cakes";
+  href?: string;
 };
-
-const NAVIGATION = [
-  { href: "#cookies", label: "Кукита" },
-  { href: "#cakes", label: "Торти" },
-  { href: "#other", label: "Други" },
-];
 
 const PRODUCTS: Product[] = [
   {
@@ -44,6 +39,7 @@ const PRODUCTS: Product[] = [
     weight: "900 гр.",
     image: ProductImage,
     category: "cookies",
+    href: "/products/custom-box/6",
   },
   {
     id: 3,
@@ -62,6 +58,7 @@ const PRODUCTS: Product[] = [
     weight: "1800 гр.",
     image: ProductImage,
     category: "cookies",
+    href: "/products/custom-box/12",
   },
   {
     id: 5,
@@ -211,46 +208,13 @@ export default function Home() {
     <div className="min-h-screen bg-[#fcd9d9] text-[#2f1b16]">
       <Marquee />
 
-      <header className="sticky top-0 z-20 bg-[#f4b9b9]/80 backdrop-blur">
-        <div className="mx-auto flex w-full items-center justify-between px-[clamp(1rem,3vw,3rem)] py-3">
-          <Link href="/" className="block flex-shrink-0">
-            <span className="relative block h-12 w-[9.5rem] md:w-[12rem]">
-              <Image
-                src={Logo}
-                alt="No Regrets"
-                fill
-                priority
-                sizes="(max-width: 768px) 152px, 192px"
-                className="object-contain"
-              />
-            </span>
-          </Link>
-          <nav className="hidden gap-8 text-sm font-medium md:flex">
-            {NAVIGATION.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="transition hover:text-[#d64862]"
-              >
-                {item.label}
-              </Link>
-            ))}
-          </nav>
-          <button
-            type="button"
-            aria-label="Преглед на количката"
-            className="rounded-full bg-white/90 p-2 shadow-card transition hover:bg-white"
-          >
-            <Image src={ShoppingCartIcon} alt="" className="h-5 w-5" />
-          </button>
-        </div>
-      </header>
+      <SiteHeader />
 
       <main>
         <HeroCarousel />
         <FeaturedTabs products={PRODUCTS} />
 
-        <section className="mt-16 border-y border-[#dcb1b1]">
+        <section id="cakes" className="mt-16 border-y border-[#dcb1b1]">
           <div className="mx-auto grid w-full gap-12 px-[clamp(1rem,3vw,3rem)] py-12 lg:grid-cols-[minmax(0,0.5fr)_minmax(0,1.1fr)] lg:items-center">
             <div className="space-y-4 text-[#2f1b16]">
               <p className="text-sm font-semibold uppercase text-[#8c4a2f]/80">
@@ -309,7 +273,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section className=" py-16">
+        <section id="other" className=" py-16">
           <div className="mx-auto flex w-full  flex-col items-center gap-12 px-[clamp(1rem,3vw,3rem)]">
             <div className="flex flex-wrap justify-center gap-4">
               {SERVICE_HIGHLIGHTS.map((item) => (
@@ -323,6 +287,72 @@ export default function Home() {
                   <span>{item.label}</span>
                 </div>
               ))}
+            </div>
+          </div>
+        </section>
+
+        <Marquee
+          message="ПОСЕТЕТЕ НИ НА ЖИВО · NO REGRETS · СЛАДКА СРЕЩА В МАГАЗИНА"
+          repeat={10}
+          className="marquee--visit"
+        />
+
+        <section id="visit" className="bg-[#f6eae3] py-20">
+          <div className="mx-auto flex w-full flex-col gap-12 px-[clamp(1rem,3vw,3rem)] lg:max-w-[clamp(0px,80vw,70rem)] lg:flex-row lg:items-center">
+            <div className="w-full overflow-hidden rounded-[2rem] bg-[#fce9df] shadow-card lg:max-w-[36rem]">
+              <div className="relative aspect-[4/5] sm:aspect-[3/4] lg:aspect-[4/5]">
+                <Image
+                  src={StorefrontImage}
+                  alt="Нашият магазин No Regrets отвън"
+                  fill
+                  sizes="(min-width: 1024px) 36rem, (min-width: 640px) 60vw, 90vw"
+                  className="object-cover"
+                />
+              </div>
+            </div>
+
+            <div className="w-full max-w-xl space-y-6 text-[#2f1b16]">
+              <p className="text-sm font-semibold uppercase tracking-[0.22em] text-[#8c4a2f]/80">
+                {STORE_INFO.label}
+              </p>
+              <h2 className="text-3xl font-bold leading-tight sm:text-4xl">
+                {STORE_INFO.heading}
+              </h2>
+              <p className="text-base leading-relaxed text-[#8c4a2f]/90">
+                {STORE_INFO.description}
+              </p>
+
+              <div className="space-y-5 rounded-3xl bg-white p-6 shadow-card">
+                <div>
+                  <h3 className="text-lg font-semibold text-[#2f1b16]">
+                    No Regrets Bakery
+                  </h3>
+                  <p className="mt-2 text-sm text-[#8c4a2f]/90">
+                    {STORE_INFO.address}
+                  </p>
+                </div>
+
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[#8c4a2f]/70">
+                    Работно време
+                  </p>
+                  <ul className="mt-2 space-y-1 text-sm text-[#2f1b16]">
+                    {STORE_INFO.hours.map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+
+                <p className="text-sm text-[#8c4a2f]/90">
+                  Телефон:{" "}
+                  <a
+                    href={`tel:${STORE_INFO.phone.replace(/\s+/g, "")}`}
+                    className="font-semibold text-[#9d0012] transition hover:underline"
+                  >
+                    {STORE_INFO.phone}
+                  </a>
+                </p>
+              </div>
             </div>
           </div>
         </section>
@@ -496,73 +526,10 @@ export default function Home() {
                 </article>
               ))}
             </div>
-            <Marquee
-              message="ПОСЕТЕТЕ НИ НА ЖИВО · NO REGRETS · СЛАДКА СРЕЩА В МАГАЗИНА"
-              repeat={10}
-              className="marquee--visit"
-            />
-
-            <section id="visit" className="bg-[#f6eae3] py-20">
-              <div className="mx-auto flex w-full flex-col gap-12 px-[clamp(1rem,3vw,3rem)] lg:max-w-[clamp(0px,80vw,70rem)] lg:flex-row lg:items-center">
-                <div className="w-full overflow-hidden rounded-[2rem] bg-[#fce9df] shadow-card lg:max-w-[36rem]">
-                  <div className="relative aspect-[4/5] sm:aspect-[3/4] lg:aspect-[4/5]">
-                    <Image
-                      src={StorefrontImage}
-                      alt="Нашият магазин No Regrets отвън"
-                      fill
-                      sizes="(min-width: 1024px) 36rem, (min-width: 640px) 60vw, 90vw"
-                      className="object-cover"
-                    />
-                  </div>
-                </div>
-
-                <div className="w-full max-w-xl space-y-6 text-[#2f1b16]">
-                  <p className="text-sm font-semibold uppercase tracking-[0.22em] text-[#8c4a2f]/80">
-                    {STORE_INFO.label}
-                  </p>
-                  <h2 className="text-3xl font-bold leading-tight sm:text-4xl">
-                    {STORE_INFO.heading}
-                  </h2>
-                  <p className="text-base leading-relaxed text-[#8c4a2f]/90">
-                    {STORE_INFO.description}
-                  </p>
-
-                  <div className="space-y-5 rounded-3xl bg-white p-6 shadow-card">
-                    <div>
-                      <h3 className="text-lg font-semibold text-[#2f1b16]">
-                        No Regrets Bakery
-                      </h3>
-                      <p className="mt-2 text-sm text-[#8c4a2f]/90">
-                        {STORE_INFO.address}
-                      </p>
-                    </div>
-
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[#8c4a2f]/70">
-                        Работно време
-                      </p>
-                      <ul className="mt-2 space-y-1 text-sm text-[#2f1b16]">
-                        {STORE_INFO.hours.map((item) => (
-                          <li key={item}>{item}</li>
-                        ))}
-                      </ul>
-                    </div>
-
-                    <p className="text-sm text-[#8c4a2f]/90">
-                      Телефон:{" "}
-                      <a
-                        href={`tel:${STORE_INFO.phone.replace(/\s+/g, "")}`}
-                        className="font-semibold text-[#9d0012] transition hover:underline"
-                      >
-                        {STORE_INFO.phone}
-                      </a>
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </section>
           </div>
         </section>
+
+        <SiteFooter />
       </main>
     </div>
   );
