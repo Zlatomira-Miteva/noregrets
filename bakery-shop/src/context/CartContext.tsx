@@ -23,6 +23,7 @@ type CartContextValue = {
   items: CartItem[];
   addItem: (payload: AddItemPayload) => void;
   removeItem: (key: string) => void;
+  updateQuantity: (key: string, quantity: number) => void;
   clearCart: () => void;
   totalQuantity: number;
   totalPrice: number;
@@ -98,6 +99,19 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     setItems((prev) => prev.filter((item) => item.key !== key));
   };
 
+  const updateQuantity = (key: string, quantity: number) => {
+    setItems((prev) =>
+      prev.map((item) =>
+        item.key === key
+          ? {
+              ...item,
+              quantity: Math.max(1, quantity),
+            }
+          : item
+      )
+    );
+  };
+
   const clearCart = () => setItems([]);
 
   const { totalQuantity, totalPrice } = useMemo(() => {
@@ -115,6 +129,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     items,
     addItem,
     removeItem,
+    updateQuantity,
     clearCart,
     totalQuantity,
     totalPrice,
@@ -130,4 +145,3 @@ export const useCart = () => {
   }
   return context;
 };
-
