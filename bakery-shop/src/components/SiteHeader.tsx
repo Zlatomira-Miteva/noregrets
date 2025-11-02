@@ -6,8 +6,11 @@ import Link from "next/link";
 import Logo from "@/app/logo.svg";
 import ShoppingCartIcon from "@/app/shopping_cart.png";
 import { NAVIGATION } from "@/data/navigation";
+import { useCart } from "@/context/CartContext";
 
 const SiteHeader = () => {
+  const { totalQuantity } = useCart();
+
   return (
     <header className="sticky top-0 z-20 bg-[#f4b9b9]/80 backdrop-blur">
       <div className="mx-auto flex w-full items-center justify-between px-[clamp(1rem,3vw,3rem)] py-3">
@@ -36,13 +39,18 @@ const SiteHeader = () => {
           ))}
         </nav>
 
-        <button
-          type="button"
+        <Link
+          href="/cart"
           aria-label="Преглед на количката"
-          className="rounded-full bg-white/90 p-2 shadow-card transition hover:bg-white"
+          className="relative flex h-11 w-11 items-center justify-center rounded-full bg-white/90 shadow-card transition hover:bg-white"
         >
           <Image src={ShoppingCartIcon} alt="" className="h-5 w-5" />
-        </button>
+          {totalQuantity > 0 ? (
+            <span className="absolute -right-1 -top-1 flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-[#9d0012] px-1 text-xs font-semibold text-white">
+              {totalQuantity}
+            </span>
+          ) : null}
+        </Link>
       </div>
     </header>
   );

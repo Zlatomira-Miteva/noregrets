@@ -10,10 +10,10 @@ const SiteFooter = () => {
       <div className="mx-auto flex w-full flex-col gap-12 px-[clamp(1rem,3vw,3rem)] py-16">
         <div className="grid gap-12 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]">
           <div className="space-y-6">
-            <h2 className="text-3xl font-bold leading-tight sm:text-4xl">
-              Абонирайте се за сладки новини
-            </h2>
-            <p className="text-sm text-[#f3d6ca]">
+            <h4 className="text-3xl leading-tight sm:text-4xl">
+              Абонирайте се за новини и отстъпки
+            </h4>
+            <p className="text-m text-[#f3d6ca]">
               Първи научавайте за нови вкусове, специални оферти и дегустации в магазина.
             </p>
             <form className="space-y-3">
@@ -27,7 +27,7 @@ const SiteFooter = () => {
                 />
                 <button
                   type="submit"
-                  className="flex items-center gap-2 bg-white/20 px-6 text-sm font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-white/40"
+                  className="flex items-center gap-2 bg-white/20 px-6 text-sm font-semibold uppercase text-white transition hover:bg-white/40"
                 >
                   Изпрати
                   <svg
@@ -59,8 +59,8 @@ const SiteFooter = () => {
           <div className="grid gap-8 sm:grid-cols-2">
             {FOOTER_LINK_GROUPS.map((group) => (
               <div key={group.title} className="space-y-4">
-                <h3 className="text-lg font-semibold text-white">{group.title}</h3>
-                <ul className="space-y-2 text-sm text-[#f3d6ca]">
+                <h4 className="text-lg text-white">{group.title}</h4>
+                <ul className="space-y-2 text-m text-[#f3d6ca]">
                   {group.links.map((link) => (
                     <li key={link.label}>
                       <a
@@ -88,8 +88,8 @@ const SiteFooter = () => {
             България (BGN)
           </button>
 
-          <div className="flex flex-wrap items-center gap-4 text-xs uppercase tracking-[0.2em] text-[#f3d6ca]/80">
-            <span>© {currentYear} No Regrets Bakery</span>
+          <div className="flex flex-wrap items-center gap-4 text-xs uppercase text-[#f3d6ca]/80">
+            <span>© {currentYear} No Regrets</span>
             <span className="hidden h-4 w-px bg-white/20 md:block" />
             <a href="#" className="hover:text-white">
               Политика за поверителност

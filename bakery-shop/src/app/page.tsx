@@ -30,6 +30,7 @@ const PRODUCTS: Product[] = [
     weight: "900 гр.",
     image: ProductImage,
     category: "cookies",
+    href: "/products/best-sellers",
   },
   {
     id: 2,
@@ -68,6 +69,7 @@ const PRODUCTS: Product[] = [
     weight: "240 гр.",
     image: CookieBoxImage,
     category: "cookies",
+    href: "/products/mini-cookies",
   },
   // {
   //   id: 6,
@@ -86,6 +88,7 @@ const PRODUCTS: Product[] = [
     weight: "240 гр.",
     image: ProductImage,
     category: "cakes",
+    href: "/products/cake-jar",
   },
   {
     id: 8,
@@ -104,6 +107,7 @@ const PRODUCTS: Product[] = [
     weight: "240 гр.",
     image: ProductImage,
     category: "mochi",
+    href: "/products/custom-box/mochi",
   },
 ];
 

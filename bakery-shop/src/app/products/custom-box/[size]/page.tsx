@@ -1,13 +1,16 @@
-'use client';
+"use client";
 
 import Image, { type StaticImageData } from "next/image";
 import { notFound } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import Marquee from "@/components/Marquee";
 import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
+import { useCart } from "@/context/CartContext";
+import { parsePrice } from "@/utils/price";
 
+import CookieBoxImage from "@/app/cookie-box.jpg";
 import CookieBoxHero from "@/app/cookie-box-hero.jpg";
 import SmallBoxCookies from "@/app/small-box-cookies.webp";
 import NutellaCookie from "@/app/nutella-bueno-cookie.png";
@@ -57,12 +60,26 @@ const BOX_CONFIG: Record<string, BoxConfig> = {
     allergenNote:
       "Всички кукита съдържат глутен, яйца и млечни продукти. Възможни са следи от ядки и фъстъци.",
   },
+  mochi: {
+    size: 4,
+    name: "Кутия с 4 бр. мочи",
+    price: "20.00 лв",
+    description:
+      "Създайте собствена селекция от японски мочи десерти – четири аромата по ваш избор в елегантна кутия.",
+    highlights: [
+      "Безплатна доставка до 3 дни",
+      "Свежо приготвени и шоково замразени за доставка",
+      "Включен лист с инструкции за сервиране",
+    ],
+    weight: "Нетно тегло: 240 гр.",
+    allergenNote:
+      "Съдържа глутен, млечни продукти и следи от ядки.",
+  },
 };
 
 type CookieOption = {
   id: string;
   name: string;
-  description: string;
   image: StaticImageData;
 };
 
@@ -70,37 +87,64 @@ const COOKIE_OPTIONS: CookieOption[] = [
   {
     id: "nutella-bueno",
     name: "Нутела Буено",
-    description: "Тъмно шоколадово тесто с нутела крем и лешници.",
     image: NutellaCookie,
   },
   {
     id: "red-velvet",
     name: "Ред Велвет",
-    description: "Кадифено тесто с бял шоколад и крема сирене.",
     image: SmallBoxCookies,
   },
   {
     id: "salted-caramel",
     name: "Солен карамел",
-    description: "Карамелизиран център и морска сол за финален акцент.",
     image: CookieBoxHero,
   },
   {
     id: "pistachio-rose",
     name: "Шамфъстък и роза",
-    description: "Богат шамфъстъчено тесто, овкусено с розова вода.",
     image: SmallBoxCookies,
   },
   {
     id: "double-choc",
     name: "Двоен шоколад",
-    description: "Шоколадово кукито със солени какаови нибс.",
     image: NutellaCookie,
   },
   {
     id: "white-choc-matcha",
     name: "Матча и бял шоколад",
-    description: "Леко горчив матча вкус с балансиращ бял шоколад.",
+    image: CookieBoxHero,
+  },
+];
+
+const MOCHI_OPTIONS: CookieOption[] = [
+  {
+    id: "strawberry-mochi",
+    name: "Ягодово мочи",
+    image: SmallBoxCookies,
+  },
+  {
+    id: "matcha-mochi",
+    name: "Матча мочи",
+    image: CookieBoxHero,
+  },
+  {
+    id: "mango-mochi",
+    name: "Манго мочи",
+    image: NutellaCookie,
+  },
+  {
+    id: "black-sesame-mochi",
+    name: "Черен сусам",
+    image: CookieBoxImage,
+  },
+  {
+    id: "taro-mochi",
+    name: "Таро крем",
+    image: SmallBoxCookies,
+  },
+  {
+    id: "ube-mochi",
+    name: "Убе",
     image: CookieBoxHero,
   },
 ];
@@ -118,11 +162,23 @@ export default function CustomBoxPage({ params }: PageProps) {
     notFound();
   }
 
+  const options = params.size === "mochi" ? MOCHI_OPTIONS : COOKIE_OPTIONS;
+
   const totalImages = GALLERY_IMAGES.length;
   const [activeIndex, setActiveIndex] = useState(0);
   const [selection, setSelection] = useState<Record<string, number>>(() =>
-    Object.fromEntries(COOKIE_OPTIONS.map((cookie) => [cookie.id, 0])),
+    Object.fromEntries(options.map((cookie) => [cookie.id, 0]))
   );
+  const { addItem } = useCart();
+  const [feedback, setFeedback] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!feedback) return;
+    const timer = window.setTimeout(() => setFeedback(null), 2500);
+    return () => window.clearTimeout(timer);
+  }, [feedback]);
+
+  const priceValue = useMemo(() => parsePrice(config.price), [config.price]);
 
   const wrapIndex = (index: number) => {
     if (totalImages === 0) return 0;
@@ -148,7 +204,7 @@ export default function CustomBoxPage({ params }: PageProps) {
 
   const totalSelected = useMemo(
     () => Object.values(selection).reduce((sum, count) => sum + count, 0),
-    [selection],
+    [selection]
   );
 
   const requiredCount = config.size;
@@ -162,7 +218,10 @@ export default function CustomBoxPage({ params }: PageProps) {
         return prev;
       }
 
-      const currentTotal = Object.values(prev).reduce((sum, value) => sum + value, 0);
+      const currentTotal = Object.values(prev).reduce(
+        (sum, value) => sum + value,
+        0
+      );
       const nextTotal = currentTotal + delta;
       if (delta > 0 && nextTotal > requiredCount) {
         return prev;
@@ -175,17 +234,38 @@ export default function CustomBoxPage({ params }: PageProps) {
     });
   };
 
+  const handleAddToCart = () => {
+    if (!canAddToCart) return;
+
+    const summary = options
+      .map((cookie) => {
+        const count = selection[cookie.id] ?? 0;
+        return count > 0 ? `${cookie.name} × ${count}` : null;
+      })
+      .filter(Boolean) as string[];
+
+    addItem({
+      productId: `custom-box-${params.size}`,
+      name: config.name,
+      price: priceValue,
+      quantity: 1,
+      options: summary,
+    });
+
+    setFeedback("Добавено в количката!");
+  };
+
   return (
     <div className="flex min-h-screen flex-col bg-[#fcd9d9] text-[#2f1b16]">
       <Marquee />
       <SiteHeader />
 
       <main className="flex-1 bg-[#f7c8cf]">
-        <div className="mx-auto w-full max-w-6xl px-[clamp(1rem,3vw,3rem)] py-16">
-          <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-            <div className="space-y-2">
-              <div className="overflow-hidden rounded-[0.5rem] bg-[#fbe2e5] p-4 shadow-card">
-                <div className="group relative aspect-square overflow-hidden rounded-[0.25rem] bg-[#fcd9d9]">
+        <div className="mx-auto w-full px-[clamp(1rem,4vw,4rem)] py-16">
+          <div className="grid gap-12 xl:grid-cols-[40%_minmax(0,1fr)]">
+            <div className="space-y-6">
+              <div className="overflow-hidden rounded-[1rem] bg-white p-1 shadow-card">
+                <div className="group relative aspect-square overflow-hidden rounded-[0.75rem] bg-[#fcd9d9]">
                   <Image
                     src={GALLERY_IMAGES[activeIndex]}
                     alt="Кутия с кукита, вързана с панделка"
@@ -209,7 +289,11 @@ export default function CustomBoxPage({ params }: PageProps) {
                           stroke="currentColor"
                           strokeWidth="2"
                         >
-                          <path d="M10 4l-4 4 4 4" strokeLinecap="round" strokeLinejoin="round" />
+                          <path
+                            d="M10 4l-4 4 4 4"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
                         </svg>
                       </button>
 
@@ -226,7 +310,11 @@ export default function CustomBoxPage({ params }: PageProps) {
                           stroke="currentColor"
                           strokeWidth="2"
                         >
-                          <path d="M6 4l4 4-4 4" strokeLinecap="round" strokeLinejoin="round" />
+                          <path
+                            d="M6 4l4 4-4 4"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
                         </svg>
                       </button>
                     </>
@@ -250,7 +338,13 @@ export default function CustomBoxPage({ params }: PageProps) {
                       }`}
                       aria-label={`Преглед на изображение ${position + 1}`}
                     >
-                      <Image src={image} alt="" fill className="object-cover" sizes="200px" />
+                      <Image
+                        src={image}
+                        alt=""
+                        fill
+                        className="object-cover"
+                        sizes="200px"
+                      />
                     </button>
                   );
                 })}
@@ -259,30 +353,32 @@ export default function CustomBoxPage({ params }: PageProps) {
 
             <div className="space-y-10">
               <header className="space-y-4">
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                  <h3 className="text-3xl font-bold leading-tight sm:text-4xl">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <h3 className="text-3xl leading-tight sm:text-4xl text-[#2f1b16]">
                     {config.name}
                   </h3>
-                  <span className="text-2xl font-semibold text-[#9d0012]">
+                  <span className="text-2xl font-semibold text-[#9d0012] sm:pt-1">
                     {config.price}
                   </span>
                 </div>
-                <p className="text-base text-[#8c4a2f]/90">{config.description}</p>
-                <ul className="space-y-2 text-sm text-[#8c4a2f]">
+                <p className="text-base text-[#8c4a2f]/90">
+                  {config.description}
+                </p>
+                <ul className="space-y-2 text-[#9d0012]">
                   {config.highlights.map((item) => (
                     <li key={item}>• {item}</li>
                   ))}
                   <li>{config.weight}</li>
                 </ul>
-                <p className="text-xs uppercase tracking-[0.2em] text-[#9d0012]">
+                <p className="text-xs uppercase tracking-[0.24em] text-[#9d0012]">
                   {config.allergenNote}
                 </p>
               </header>
 
-              <section className="space-y-6 rounded-3xl bg-[#fce3e7] p-6 shadow-card">
+              <section className="space-y-6 rounded-3xl bg-[#fce3e7] p-8 shadow-card">
                 <div className="flex flex-col gap-1">
-                  <h2 className="text-lg font-semibold">Изберете бисквитки</h2>
-                  <p className="text-sm text-[#8c4a2f]/90">
+                  <h4 className="text-lg font-semibold">Изберете бисквитки</h4>
+                  <p className="text-sm text-[#9d0012]/90">
                     Изберете точно {requiredCount} кукита. Остават{" "}
                     <span className="font-semibold text-[#9d0012]">
                       {Math.max(remainingSlots, 0)}
@@ -292,15 +388,20 @@ export default function CustomBoxPage({ params }: PageProps) {
                 </div>
 
                 <div className="grid gap-4 sm:grid-cols-2">
-                  {COOKIE_OPTIONS.map((cookie) => {
+                  {options.map((cookie) => {
                     const count = selection[cookie.id] ?? 0;
                     return (
                       <article
                         key={cookie.id}
-                        className="flex flex-col gap-4 rounded-2xl bg-white/90 p-4 shadow-card"
+                        className="flex flex-col gap-5 overflow-hidden rounded-[2rem] border border-[#f4b9c2] bg-white p-6 shadow-card transition hover:-translate-y-0.5 hover:shadow-lg"
                       >
-                        <div className="flex items-center gap-3">
-                          <div className="relative h-16 w-16 overflow-hidden rounded-full bg-[#fbe2e5]">
+                        <div className="flex items-center justify-between gap-6">
+                          <div className="space-y-2">
+                            <h6 className="text-xl font-semibold text-[#9d0012]">
+                              {cookie.name}
+                            </h6>
+                          </div>
+                          <div className="relative h-20 w-20 overflow-hidden rounded-full border border-[#fbd0d9] bg-[#fde9ec]">
                             <Image
                               src={cookie.image}
                               alt={cookie.name}
@@ -309,30 +410,25 @@ export default function CustomBoxPage({ params }: PageProps) {
                               sizes="120px"
                             />
                           </div>
-                          <div>
-                            <h3 className="text-base font-semibold">{cookie.name}</h3>
-                            <p className="text-xs text-[#8c4a2f]/80">
-                              {cookie.description}
-                            </p>
-                          </div>
                         </div>
 
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-center justify-center gap-3 rounded-full bg-[#fde9ec] p-3">
                           <button
                             type="button"
                             onClick={() => updateSelection(cookie.id, -1)}
-                            className="flex h-10 w-10 items-center justify-center rounded-full border border-[#f1b8c4] text-lg font-semibold text-[#9d0012] transition hover:bg-[#fce3e7]"
+                            className="flex h-12 w-12 items-center justify-center rounded-full border border-[#f1b8c4] text-lg font-semibold text-[#9d0012] transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-40"
                             aria-label={`Премахни ${cookie.name}`}
+                            disabled={count === 0}
                           >
                             –
                           </button>
-                          <span className="min-w-[3rem] text-center text-lg font-semibold">
+                          <span className="flex h-12 min-w-[3.5rem] items-center justify-center rounded-full border border-[#f1b8c4] bg-white text-lg font-semibold text-[#2f1b16]">
                             {count}
                           </span>
                           <button
                             type="button"
                             onClick={() => updateSelection(cookie.id, 1)}
-                            className="flex h-10 w-10 items-center justify-center rounded-full bg-[#9d0012] text-lg font-semibold text-white transition hover:bg-[#7a0010]"
+                            className="flex h-12 w-12 items-center justify-center rounded-full border border-[#f1b8c4] bg-white text-lg font-semibold text-[#9d0012] transition hover:bg-[#fce3e7] disabled:cursor-not-allowed disabled:opacity-40"
                             aria-label={`Добави ${cookie.name}`}
                             disabled={!remainingSlots}
                           >
@@ -344,7 +440,28 @@ export default function CustomBoxPage({ params }: PageProps) {
                   })}
                 </div>
 
-                <div className="flex flex-col gap-3 rounded-2xl bg-white/80 p-4 text-sm text-[#8c4a2f]">
+                <button
+                  type="button"
+                  className={`w-full rounded-full px-6 py-4 text-sm font-semibold uppercase tracking-[0.2em] transition ${
+                    canAddToCart
+                      ? "bg-[#2f1b16] text-white hover:bg-[#561c19]"
+                      : "bg-[#bfa3aa] text-white/70 cursor-not-allowed"
+                  }`}
+                  disabled={!canAddToCart}
+                  onClick={handleAddToCart}
+                >
+                  Добави кутията в количката
+                </button>
+                {!canAddToCart ? (
+                  <p className="text-center text-xs text-[#8c4a2f]/80">
+                    Изберете точно {requiredCount} кукита, за да продължите.
+                  </p>
+                ) : feedback ? (
+                  <p className="text-center text-xs text-[#9d0012]">{feedback}</p>
+                ) : null}
+              </section>
+              <div className="space-y-6 rounded-2xl bg-white/80 p-6 text-sm text-[#8c4a2f]">
+                <div className="space-y-3">
                   <strong className="text-base font-semibold text-[#2f1b16]">
                     Грижа за кукитата
                   </strong>
@@ -359,23 +476,28 @@ export default function CustomBoxPage({ params }: PageProps) {
                   </p>
                 </div>
 
-                <button
-                  type="button"
-                  className={`w-full rounded-full px-6 py-4 text-sm font-semibold uppercase tracking-[0.2em] transition ${
-                    canAddToCart
-                      ? "bg-[#2f1b16] text-white hover:bg-[#561c19]"
-                      : "bg-[#bfa3aa] text-white/70 cursor-not-allowed"
-                  }`}
-                  disabled={!canAddToCart}
-                >
-                  Добави кутията в количката
-                </button>
-                {!canAddToCart ? (
-                  <p className="text-center text-xs text-[#8c4a2f]/80">
-                    Изберете точно {requiredCount} кукита, за да продължите.
+                <div className="space-y-3">
+                  <strong className="text-base font-semibold text-[#2f1b16]">
+                  Информация за доставка
+                  </strong>
+                  <p>
+                    Моля, предвидете 1-2 работни дни за изпращане и 1-2 работни дни за
+                    доставка. Изпращаме от понеделник до четвъртък. Ако поръчката ви е
+                    направена след 17:00 ч. в четвъртък, тя ще бъде изпратена следващия
+                    понеделник.
                   </p>
-                ) : null}
-              </section>
+                </div>
+
+                <div className="space-y-3">
+                  <strong className="text-base font-semibold text-[#2f1b16]">
+                  Алергени и съставки
+                  </strong>
+                  <p>
+                    Всички бисквитки съдържат глутен. Някои бисквитки съдържат ядки. Ако
+                    имате алергии, моля, прочетете внимателно съставките, преди да поръчате.
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         </div>

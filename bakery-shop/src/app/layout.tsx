@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Days_One, Geologica } from "next/font/google";
 import "./globals.css";
+import { CartProvider } from "@/context/CartContext";
 
 const daysOne = Days_One({
   weight: "400",
@@ -28,10 +29,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${daysOne.variable} ${geologica.variable} antialiased`}
-      >
-        {children}
+      <body className={`${daysOne.variable} ${geologica.variable} antialiased`}>
+        <CartProvider>{children}</CartProvider>
       </body>
     </html>
   );
