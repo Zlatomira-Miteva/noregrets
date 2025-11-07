@@ -4,7 +4,7 @@ type MarqueeProps = {
   className?: string;
 };
 
-const DEFAULT_MESSAGE = "От фурната - направо до теб, с безплатна доставка.";
+const DEFAULT_MESSAGE = "От фурната - направо до теб.";
 
 const Marquee = ({ message = DEFAULT_MESSAGE, repeat = 8, className = "" }: MarqueeProps) => {
   const highlight = "с безплатна доставка.";

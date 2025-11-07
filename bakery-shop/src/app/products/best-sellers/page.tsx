@@ -4,6 +4,7 @@ import Image, { type StaticImageData } from "next/image";
 import { useEffect, useMemo, useState } from "react";
 
 import Marquee from "@/components/Marquee";
+import CookieShowcase from "@/components/CookieShowcase";
 import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
 import { useCart } from "@/context/CartContext";
@@ -33,7 +34,7 @@ const PRODUCT_DETAILS = {
   description:
     "Нашата най-популярна селекция от шест емблематични кукита - внимателно опаковани и готови за подарък или споделяне.",
   highlights: [
-    "Безплатна доставка до 3 дни",
+    "Доставка до 3 дни",
     "Включени 6 различни вкуса",
     "Подходяща за подарък",
   ],
@@ -85,7 +86,7 @@ export default function BestSellersPage() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#fcd9d9] text-[#2f1b16]">
+    <div className="flex min-h-screen flex-col bg-[#fcd9d9] text-[#5f000b]">
       <Marquee />
       <SiteHeader />
 
@@ -108,7 +109,7 @@ export default function BestSellersPage() {
                       <button
                         type="button"
                         onClick={handlePrev}
-                        className="absolute left-4 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/80 text-[#2f1b16] opacity-0 shadow-card transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2f1b16] focus-visible:ring-offset-2 focus-visible:ring-offset-[#fcd9d9] pointer-events-none group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100"
+                        className="absolute left-4 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/80 text-[#5f000b] opacity-0 shadow-card transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5f000b] focus-visible:ring-offset-2 focus-visible:ring-offset-[#fcd9d9] pointer-events-none group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100"
                         aria-label="Предишно изображение"
                       >
                         <svg
@@ -125,7 +126,7 @@ export default function BestSellersPage() {
                       <button
                         type="button"
                         onClick={handleNext}
-                        className="absolute right-4 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/80 text-[#2f1b16] opacity-0 shadow-card transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2f1b16] focus-visible:ring-offset-2 focus-visible:ring-offset-[#fcd9d9] pointer-events-none group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100"
+                        className="absolute right-4 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/80 text-[#5f000b] opacity-0 shadow-card transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5f000b] focus-visible:ring-offset-2 focus-visible:ring-offset-[#fcd9d9] pointer-events-none group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100"
                         aria-label="Следващо изображение"
                       >
                         <svg
@@ -154,7 +155,7 @@ export default function BestSellersPage() {
                       onClick={() => setActiveIndex(imageIndex)}
                       className={`relative aspect-square overflow-hidden rounded-2xl border bg-[#fbdbe0] transition ${
                         isActive
-                          ? "border-[#2f1b16] ring-2 ring-[#2f1b16]"
+                          ? "border-[#5f000b] ring-2 ring-[#5f000b]"
                           : "border-white/40 hover:border-[#f1b8c4]"
                       }`}
                       aria-label={`Преглед на изображение ${position + 1}`}
@@ -172,18 +173,18 @@ export default function BestSellersPage() {
                   <h1 className="text-3xl font-semibold leading-tight sm:text-4xl">
                     {PRODUCT_DETAILS.name}
                   </h1>
-                  <span className="text-2xl font-semibold text-[#2f1b16] sm:pt-1">
+                  <span className="text-2xl font-semibold text-[#5f000b] sm:pt-1">
                     {PRODUCT_DETAILS.price}
                   </span>
                 </div>
-                <p className="text-sl text-[#2f1b16]/90">{PRODUCT_DETAILS.description}</p>
-                <ul className="space-y-2 text-l text-[#2f1b16]">
+                <p className="text-sl text-[#5f000b]/90">{PRODUCT_DETAILS.description}</p>
+                <ul className="space-y-2 text-l text-[#5f000b]">
                   {PRODUCT_DETAILS.highlights.map((item) => (
                     <li key={item}>• {item}</li>
                   ))}
                   <li>{PRODUCT_DETAILS.weight}</li>
                 </ul>
-                <p className="text-l uppercase text-[#2f1b16]">
+                <p className="text-l uppercase text-[#5f000b]">
                   {PRODUCT_DETAILS.allergenNote}
                 </p>
               </header>
@@ -191,7 +192,7 @@ export default function BestSellersPage() {
               <section className="space-y-6 rounded-sm bg-[#fce3e7] p-8 shadow-card">
                 <div className="space-y-3">
                   {/* <h2 className="text-lg font-semibold">Изберете количество</h2> */}
-                  <p className="text-l text-[#2f1b16]/90">
+                  <p className="text-l text-[#5f000b]/90">
                     Кутията включва шест различни кукита. Минимум една кутия в поръчка.
                   </p>
                 </div>
@@ -201,19 +202,19 @@ export default function BestSellersPage() {
                     <button
                       type="button"
                       onClick={decreaseQuantity}
-                      className="flex h-8 w-8 items-center justify-center rounded-sm border border-[#f1b8c4] text-xl font-semibold text-[#2f1b16] transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-40"
+                      className="flex h-8 w-8 items-center justify-center rounded-sm border border-[#f1b8c4] text-xl font-semibold text-[#5f000b] transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-40"
                       aria-label="Намали количеството"
                       disabled={quantity === 1}
                     >
                       –
                     </button>
-                    <span className="flex h-8 min-w-[3.5rem] items-center justify-center rounded-sm border border-[#f1b8c4] bg-white text-lg font-semibold text-[#2f1b16]">
+                    <span className="flex h-8 min-w-[3.5rem] items-center justify-center rounded-sm border border-[#f1b8c4] bg-white text-lg font-semibold text-[#5f000b]">
                       {quantity}
                     </span>
                     <button
                       type="button"
                       onClick={increaseQuantity}
-                      className="flex h-8 w-8 items-center justify-center rounded-full border border-[#f1b8c4] bg-white text-xl font-semibold text-[#2f1b16] transition hover:bg-[#fce3e7]"
+                      className="flex h-8 w-8 items-center justify-center rounded-full border border-[#f1b8c4] bg-white text-xl font-semibold text-[#5f000b] transition hover:bg-[#fce3e7]"
                       aria-label="Увеличи количеството"
                     >
                       +
@@ -226,7 +227,7 @@ export default function BestSellersPage() {
                 </div>
 
                 <div className="space-y-3 rounded-2xl bg-white/85 p-4 text-sm text-[#8c4a2f]">
-                  <strong className="text-base font-semibold text-[#2f1b16]">
+                  <strong className="text-base font-semibold text-[#5f000b]">
                     Какво е включено
                   </strong>
                   <ul className="space-y-3">
@@ -235,7 +236,7 @@ export default function BestSellersPage() {
                         <span className="relative h-12 w-12 overflow-hidden rounded-full border border-[#fbd0d9] bg-[#fde9ec]">
                           <Image src={cookie.image} alt={cookie.name} fill className="object-cover" sizes="64px" />
                         </span>
-                        <span className="text-sm font-medium text-[#2f1b16]">{cookie.name}</span>
+                        <span className="text-sm font-medium text-[#5f000b]">{cookie.name}</span>
                       </li>
                     ))}
                   </ul>
@@ -244,17 +245,18 @@ export default function BestSellersPage() {
                 <button
                   type="button"
                   onClick={handleAddToCart}
-                  className="cta w-full rounded-full bg-[#2f1b16] px-6 py-4 text-sm font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#561c19]"
+                  className="cta w-full rounded-full bg-[#5f000b] px-6 py-4 text-sm font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#561c19]"
                 >
                   Добави {quantity} в количката
                 </button>
                 {feedback ? (
-                  <p className="text-center text-xs text-[#2f1b16]">{feedback}</p>
+                  <p className="text-center text-xs text-[#5f000b]">{feedback}</p>
                 ) : null}
               </section>
             </div>
           </div>
         </div>
+        <CookieShowcase />
       </main>
 
       <SiteFooter />

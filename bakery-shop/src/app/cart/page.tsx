@@ -244,13 +244,13 @@ const CartPage = () => {
   }, [shippingType, selectedCityId]);
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#fcd9d9] text-[#2f1b16]">
+    <div className="flex min-h-screen flex-col bg-[#fcd9d9] text-[#5f000b]">
       <Marquee />
       <SiteHeader />
 
       <main className="flex-1 bg-[#f7c8cf] py-16">
         <div className="mx-auto w-full max-w-5xl px-[clamp(1rem,4vw,4rem)]">
-          <div className="space-y-4 text-center text-[#2f1b16]">
+          <div className="space-y-4 text-center text-[#5f000b]">
             <h1 className="text-4xl font-semibold sm:text-5xl">
               Вашата количка
             </h1>
@@ -259,7 +259,7 @@ const CartPage = () => {
                 <p className="text-sm text-[#8c4a2f]/80">{reachMessage}</p>
                 <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/60">
                   <div
-                    className="h-full rounded-full bg-[#2f1b16] transition-all"
+                    className="h-full rounded-full bg-[#5f000b] transition-all"
                     style={{
                       width: `${Math.min(
                         100,
@@ -276,14 +276,14 @@ const CartPage = () => {
             <div className="mt-10 flex justify-center">
               <Link
                 href="/"
-                className="rounded-full bg-[#2f1b16] px-6 py-3 text-sm font-semibold uppercase text-white transition hover:bg-[#561c19]"
+                className="rounded-full bg-[#5f000b] px-6 py-3 text-sm font-semibold uppercase text-white transition hover:bg-[#561c19]"
               >
                 Към продуктите
               </Link>
             </div>
           ) : (
             <div className="mt-16 space-y-8">
-              <div className="hidden grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] gap-4 text-left text-sm font-semibold uppercase text-[#2f1b16] sm:grid">
+              <div className="hidden grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] gap-4 text-left text-sm font-semibold uppercase text-[#5f000b] sm:grid">
                 <span>Продукт</span>
                 <span>Цена</span>
                 <span>Количество</span>
@@ -294,7 +294,7 @@ const CartPage = () => {
                 {items.map((item) => (
                   <li
                     key={item.key}
-                    className="grid gap-6 rounded-3xl bg-white p-6 text-sm text-[#2f1b16] shadow-card sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] sm:items-center"
+                    className="grid gap-6 rounded-3xl bg-white p-6 text-sm text-[#5f000b] shadow-card sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] sm:items-center"
                   >
                     <div className="flex items-start gap-4">
                       <div className="relative hidden h-20 w-20 overflow-hidden rounded-2xl bg-[#fde9ec] sm:block">
@@ -317,14 +317,14 @@ const CartPage = () => {
                         <button
                           type="button"
                           onClick={() => removeItem(item.key)}
-                          className="text-xs font-semibold uppercase text-[#2f1b16] underline"
+                          className="text-xs font-semibold uppercase text-[#5f000b] underline"
                         >
                           Премахни
                         </button>
                       </div>
                     </div>
 
-                    <div className="hidden text-base font-semibold text-[#2f1b16] sm:block">
+                    <div className="hidden text-base font-semibold text-[#5f000b] sm:block">
                       {formatPrice(item.price)}
                     </div>
 
@@ -335,7 +335,7 @@ const CartPage = () => {
                           onClick={() =>
                             updateQuantity(item.key, item.quantity - 1)
                           }
-                          className="flex h-10 w-10 items-center justify-center rounded-full border border-[#f1b8c4] text-lg font-semibold text-[#2f1b16] transition hover:bg-white"
+                          className="flex h-10 w-10 items-center justify-center rounded-full border border-[#f1b8c4] text-lg font-semibold text-[#5f000b] transition hover:bg-white"
                         >
                           –
                         </button>
@@ -347,28 +347,28 @@ const CartPage = () => {
                           onClick={() =>
                             updateQuantity(item.key, item.quantity + 1)
                           }
-                          className="flex h-10 w-10 items-center justify-center rounded-full border border-[#f1b8c4] bg-white text-lg font-semibold text-[#2f1b16] transition hover:bg-[#fce3e7]"
+                          className="flex h-10 w-10 items-center justify-center rounded-full border border-[#f1b8c4] bg-white text-lg font-semibold text-[#5f000b] transition hover:bg-[#fce3e7]"
                         >
                           +
                         </button>
                       </div>
                     </div>
 
-                    <div className="text-base font-semibold text-[#2f1b16]">
+                    <div className="text-base font-semibold text-[#5f000b]">
                       {formatPrice(item.price * item.quantity)}
                     </div>
                   </li>
                 ))}
               </ul>
 
-              <div className="space-y-6 rounded-3xl bg-white p-6 text-sm text-[#2f1b16] shadow-card">
+              <div className="space-y-6 rounded-3xl bg-white p-6 text-sm text-[#5f000b] shadow-card">
                 <div className="space-y-3">
                   <h3 className="text-lg">Метод на плащане</h3>
                   <div className="flex flex-col gap-3 sm:flex-row sm:gap-6">
                     <label
                       className={`flex cursor-pointer items-center gap-3 rounded-2xl border px-4 py-3 transition ${
                         paymentMethod === "cod"
-                          ? "border-[#2f1b16] ring-2 ring-[#2f1b16]"
+                          ? "border-[#5f000b] ring-2 ring-[#5f000b]"
                           : "border-[#f4b9c2]"
                       }`}
                     >
@@ -378,14 +378,14 @@ const CartPage = () => {
                         value="cod"
                         checked={paymentMethod === "cod"}
                         onChange={() => setPaymentMethod("cod")}
-                        className="h-4 w-4 border-[#f4b9c2] text-[#2f1b16] focus:ring-[#2f1b16]"
+                        className="h-4 w-4 border-[#f4b9c2] text-[#5f000b] focus:ring-[#5f000b]"
                       />
                       <span className="text-sm">Плащане при доставка</span>
                     </label>
                     <label
                       className={`flex cursor-pointer items-center gap-3 rounded-2xl border px-4 py-3 transition ${
                         paymentMethod === "online"
-                          ? "border-[#2f1b16] ring-2 ring-[#2f1b16]"
+                          ? "border-[#5f000b] ring-2 ring-[#5f000b]"
                           : "border-[#f4b9c2]"
                       }`}
                     >
@@ -395,7 +395,7 @@ const CartPage = () => {
                         value="online"
                         checked={paymentMethod === "online"}
                         onChange={() => setPaymentMethod("online")}
-                        className="h-4 w-4 border-[#f4b9c2] text-[#2f1b16] focus:ring-[#2f1b16]"
+                        className="h-4 w-4 border-[#f4b9c2] text-[#5f000b] focus:ring-[#5f000b]"
                       />
                       <span className="text-sm">Онлайн плащане (myPOS)</span>
                     </label>
@@ -414,7 +414,7 @@ const CartPage = () => {
                     <label
                       className={`flex cursor-pointer items-center gap-3 rounded-2xl border px-4 py-3 transition ${
                         shippingType === "office"
-                          ? "border-[#2f1b16] ring-2 ring-[#2f1b16]"
+                          ? "border-[#5f000b] ring-2 ring-[#5f000b]"
                           : "border-[#f4b9c2]"
                       }`}
                     >
@@ -424,14 +424,14 @@ const CartPage = () => {
                         value="office"
                         checked={shippingType === "office"}
                         onChange={() => setShippingType("office")}
-                        className="h-4 w-4 border-[#f4b9c2] text-[#2f1b16] focus:ring-[#2f1b16]"
+                        className="h-4 w-4 border-[#f4b9c2] text-[#5f000b] focus:ring-[#5f000b]"
                       />
                       <span className="text-sm">Доставка до офис на Econt</span>
                     </label>
                     <label
                       className={`flex cursor-pointer items-center gap-3 rounded-2xl border px-4 py-3 transition ${
                         shippingType === "address"
-                          ? "border-[#2f1b16] ring-2 ring-[#2f1b16]"
+                          ? "border-[#5f000b] ring-2 ring-[#5f000b]"
                           : "border-[#f4b9c2]"
                       }`}
                     >
@@ -441,7 +441,7 @@ const CartPage = () => {
                         value="address"
                         checked={shippingType === "address"}
                         onChange={() => setShippingType("address")}
-                        className="h-4 w-4 border-[#f4b9c2] text-[#2f1b16] focus:ring-[#2f1b16]"
+                        className="h-4 w-4 border-[#f4b9c2] text-[#5f000b] focus:ring-[#5f000b]"
                       />
                       <span className="text-sm">Доставка до адрес</span>
                     </label>
@@ -464,14 +464,14 @@ const CartPage = () => {
                           Зареждаме списък с градове…
                         </p>
                       ) : citiesError ? (
-                        <p className="text-xs text-[#2f1b16]">{citiesError}</p>
+                        <p className="text-xs text-[#5f000b]">{citiesError}</p>
                       ) : null}
 
                       {selectedCityId && !noOfficesMessage ? (
                         <label className="block text-l uppercase text-[#8c4a2f]/70">
                           Изберете офис на Econt
                           <select
-                            className="mt-1 w-full rounded-2xl border border-[#f4b9c2] bg-white px-4 py-3 text-sm text-[#2f1b16] focus:border-[#2f1b16] focus:outline-none"
+                            className="mt-1 w-full rounded-2xl border border-[#f4b9c2] bg-white px-4 py-3 text-sm text-[#5f000b] focus:border-[#5f000b] focus:outline-none"
                             value={selectedOffice}
                             onChange={(event) =>
                               setSelectedOffice(event.target.value)
@@ -498,7 +498,7 @@ const CartPage = () => {
                           Зареждаме офисите…
                         </p>
                       ) : officesError ? (
-                        <p className="text-xs text-[#2f1b16]">{officesError}</p>
+                        <p className="text-xs text-[#5f000b]">{officesError}</p>
                       ) : null}
                     </div>
                   ) : (
@@ -514,7 +514,7 @@ const CartPage = () => {
                               city: event.target.value,
                             }))
                           }
-                          className="w-full rounded-2xl border border-[#f4b9c2] bg-white px-4 py-3 text-sm text-[#2f1b16] focus:border-[#2f1b16] focus:outline-none"
+                          className="w-full rounded-2xl border border-[#f4b9c2] bg-white px-4 py-3 text-sm text-[#5f000b] focus:border-[#5f000b] focus:outline-none"
                           placeholder="Напр. София"
                         />
                       </label>
@@ -529,7 +529,7 @@ const CartPage = () => {
                               street: event.target.value,
                             }))
                           }
-                          className="w-full rounded-2xl border border-[#f4b9c2] bg-white px-4 py-3 text-sm text-[#2f1b16] focus:border-[#2f1b16] focus:outline-none"
+                          className="w-full rounded-2xl border border-[#f4b9c2] bg-white px-4 py-3 text-sm text-[#5f000b] focus:border-[#5f000b] focus:outline-none"
                           placeholder="Улица"
                         />
                       </label>
@@ -544,7 +544,7 @@ const CartPage = () => {
                               number: event.target.value,
                             }))
                           }
-                          className="w-full rounded-2xl border border-[#f4b9c2] bg-white px-4 py-3 text-sm text-[#2f1b16] focus:border-[#2f1b16] focus:outline-none"
+                          className="w-full rounded-2xl border border-[#f4b9c2] bg-white px-4 py-3 text-sm text-[#5f000b] focus:border-[#5f000b] focus:outline-none"
                           placeholder="№"
                         />
                       </label>
@@ -558,7 +558,7 @@ const CartPage = () => {
                               details: event.target.value,
                             }))
                           }
-                          className="w-full rounded-2xl border border-[#f4b9c2] bg-white px-4 py-3 text-sm text-[#2f1b16] focus:border-[#2f1b16] focus:outline-none"
+                          className="w-full rounded-2xl border border-[#f4b9c2] bg-white px-4 py-3 text-sm text-[#5f000b] focus:border-[#5f000b] focus:outline-none"
                           rows={3}
                           placeholder="Етаж, вход, домофон и др."
                         />
@@ -578,14 +578,14 @@ const CartPage = () => {
                       value={couponCode}
                       onChange={(event) => setCouponCode(event.target.value)}
                       placeholder="Въведете промо код"
-                      className="w-full rounded-2xl border border-[#f4b9c2] bg-white px-4 py-3 text-sm text-[#2f1b16] focus:border-[#2f1b16] focus:outline-none"
+                      className="w-full rounded-2xl border border-[#f4b9c2] bg-white px-4 py-3 text-sm text-[#5f000b] focus:border-[#5f000b] focus:outline-none"
                       disabled={couponLoading}
                       aria-label="Код за отстъпка"
                     />
                     <div className="flex items-center gap-2">
                       <button
                         type="submit"
-                        className="rounded-full bg-[#2f1b16] px-5 py-3 text-xs font-semibold uppercase text-white transition hover:bg-[#561c19] disabled:cursor-not-allowed disabled:opacity-60"
+                        className="rounded-full bg-[#5f000b] px-5 py-3 text-xs font-semibold uppercase text-white transition hover:bg-[#561c19] disabled:cursor-not-allowed disabled:opacity-60"
                         disabled={couponLoading}
                       >
                         {couponLoading ? "Проверяваме…" : "Приложи"}
@@ -594,7 +594,7 @@ const CartPage = () => {
                         <button
                           type="button"
                           onClick={handleRemoveCoupon}
-                          className="rounded-full border border-[#f4b9c2] px-5 py-3 text-xs font-semibold uppercase text-[#2f1b16] transition hover:bg-[#fde4e8] disabled:cursor-not-allowed disabled:opacity-60"
+                          className="rounded-full border border-[#f4b9c2] px-5 py-3 text-xs font-semibold uppercase text-[#5f000b] transition hover:bg-[#fde4e8] disabled:cursor-not-allowed disabled:opacity-60"
                           disabled={couponLoading}
                         >
                           Премахни
@@ -606,12 +606,12 @@ const CartPage = () => {
                     <p className="text-xs text-[#b42318]">{couponError}</p>
                   ) : null}
                   {couponStatus ? (
-                    <p className="text-xs text-[#2f1b16]">{couponStatus}</p>
+                    <p className="text-xs text-[#5f000b]">{couponStatus}</p>
                   ) : null}
                   {couponStatusMessage ? (
                     <p
                       className={`text-xs ${
-                        couponEligible ? "text-[#2f1b16]" : "text-[#b42318]"
+                        couponEligible ? "text-[#5f000b]" : "text-[#b42318]"
                       }`}
                     >
                       {couponStatusMessage}
@@ -620,7 +620,7 @@ const CartPage = () => {
                 </div>
               </div>
 
-              <div className="flex flex-col gap-6 rounded-3xl bg-white p-6 text-[#2f1b16] shadow-card">
+              <div className="flex flex-col gap-6 rounded-3xl bg-white p-6 text-[#5f000b] shadow-card">
                 <div className="space-y-2 text-sm">
                   <div className="flex items-center justify-between">
                     <span>Междинна сума</span>
@@ -638,8 +638,8 @@ const CartPage = () => {
                 </div>
                 <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-between">
                   <div className="text-center sm:text-left">
-                    <p className="text-sm uppercase  text-[#2f1b16]/70">Общо</p>
-                    <p className="text-2xl font-semibold text-[#2f1b16]">
+                    <p className="text-sm uppercase  text-[#5f000b]/70">Общо</p>
+                    <p className="text-2xl font-semibold text-[#5f000b]">
                       {formatPrice(finalTotal)}
                     </p>
                   </div>
@@ -647,13 +647,13 @@ const CartPage = () => {
                     <button
                       type="button"
                       onClick={clearCart}
-                      className="rounded-full border border-[#f4b9c2] px-5 py-3 text-xs font-semibold uppercase  text-[#2f1b16] transition hover:bg-[#fde4e8]"
+                      className="rounded-full border border-[#f4b9c2] px-5 py-3 text-xs font-semibold uppercase  text-[#5f000b] transition hover:bg-[#fde4e8]"
                     >
                       Изчисти количката
                     </button>
                     <button
                       type="button"
-                      className="rounded-full bg-[#2f1b16] px-5 py-3 text-xs font-semibold uppercase  text-white transition hover:bg-[#561c19]"
+                      className="rounded-full bg-[#5f000b] px-5 py-3 text-xs font-semibold uppercase  text-white transition hover:bg-[#561c19]"
                     >
                       Поръчай
                     </button>

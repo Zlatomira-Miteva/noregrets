@@ -48,7 +48,7 @@ const FeaturedTabs = ({ products }: FeaturedTabsProps) => {
               onClick={() => setActiveCategory(category.value)}
               className={`text-lg font-semibold transition ${
                 isActive
-                  ? "text-[#2f1b16] underline decoration-4 underline-offset-8"
+                  ? "text-[#5f000b] underline decoration-4 underline-offset-8"
                   : "text-[#8c4a2f]/60 hover:text-[#8c4a2f]"
               }`}
             >
@@ -76,13 +76,13 @@ const FeaturedTabs = ({ products }: FeaturedTabsProps) => {
                     className="object-cover transition duration-500 group-hover:scale-105"
                   />
                 </div>
-                <div className="flex flex-1 flex-col gap-3 px-5 pb-6 pt-5 text-[#2f1b16]">
+                <div className="flex flex-1 flex-col gap-3 px-5 pb-6 pt-5 text-[#5f000b]">
                   <h6 className="text-lg leading-snug">{product.name}</h6>
                   <div className="flex flex-col gap-1 text-sm text-[#8c4a2f]">
                     <span>{product.leadTime}</span>
                     <span>{product.weight}</span>
                   </div>
-                  <div className="mt-auto text-base font-semibold text-[#2f1b16]">
+                  <div className="mt-auto text-base font-semibold text-[#5f000b]">
                     {product.price}
                   </div>
                 </div>
@@ -93,7 +93,7 @@ const FeaturedTabs = ({ products }: FeaturedTabsProps) => {
               <Link
                 key={product.id}
                 href={product.href}
-                className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2f1b16] focus-visible:ring-offset-2 focus-visible:ring-offset-[#fcd9d9]"
+                className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5f000b] focus-visible:ring-offset-2 focus-visible:ring-offset-[#fcd9d9]"
               >
                 {card}
               </Link>

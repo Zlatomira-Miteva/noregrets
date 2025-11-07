@@ -26,7 +26,7 @@ const PRODUCT_DETAILS = {
   description:
     "Изберете любимия си крем и се насладете на персонализирана торта, сервирана в удобен буркан – идеална за подарък или сладко изкушение в движение.",
   highlights: [
-    "Безплатна доставка до 3 дни",
+    "Доставка до 3 дни",
     "Приготвена в деня на изпращане",
     "Изберете един от най-популярните ни кремове",
   ],
@@ -111,7 +111,7 @@ export default function CakeJarPage() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#fcd9d9] text-[#2f1b16]">
+    <div className="flex min-h-screen flex-col bg-[#fcd9d9] text-[#5f000b]">
       <Marquee />
       <SiteHeader />
 
@@ -134,7 +134,7 @@ export default function CakeJarPage() {
                       <button
                         type="button"
                         onClick={handlePrev}
-                        className="absolute left-4 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/80 text-[#2f1b16] opacity-0 shadow-card transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2f1b16] focus-visible:ring-offset-2 focus-visible:ring-offset-[#fcd9d9] pointer-events-none group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100"
+                        className="absolute left-4 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/80 text-[#5f000b] opacity-0 shadow-card transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5f000b] focus-visible:ring-offset-2 focus-visible:ring-offset-[#fcd9d9] pointer-events-none group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100"
                         aria-label="Предишно изображение"
                       >
                         <svg
@@ -151,7 +151,7 @@ export default function CakeJarPage() {
                       <button
                         type="button"
                         onClick={handleNext}
-                        className="absolute right-4 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/80 text-[#2f1b16] opacity-0 shadow-card transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2f1b16] focus-visible:ring-offset-2 focus-visible:ring-offset-[#fcd9d9] pointer-events-none group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100"
+                        className="absolute right-4 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/80 text-[#5f000b] opacity-0 shadow-card transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5f000b] focus-visible:ring-offset-2 focus-visible:ring-offset-[#fcd9d9] pointer-events-none group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100"
                         aria-label="Следващо изображение"
                       >
                         <svg
@@ -180,7 +180,7 @@ export default function CakeJarPage() {
                       onClick={() => setActiveIndex(imageIndex)}
                       className={`relative aspect-square overflow-hidden rounded-2xl border bg-[#fbdbe0] transition ${
                         isActive
-                          ? "border-[#2f1b16] ring-2 ring-[#2f1b16]"
+                          ? "border-[#5f000b] ring-2 ring-[#5f000b]"
                           : "border-white/40 hover:border-[#f1b8c4]"
                       }`}
                       aria-label={`Преглед на изображение ${position + 1}`}
@@ -198,18 +198,18 @@ export default function CakeJarPage() {
                   <h1 className="text-3xl font-semibold leading-tight sm:text-4xl">
                     {PRODUCT_DETAILS.name}
                   </h1>
-                  <span className="text-2xl font-semibold text-[#2f1b16] sm:pt-1">
+                  <span className="text-2xl font-semibold text-[#5f000b] sm:pt-1">
                     {PRODUCT_DETAILS.price}
                   </span>
                 </div>
                 <p className="text-base text-[#8c4a2f]/90">{PRODUCT_DETAILS.description}</p>
-                <ul className="space-y-2 text-sm text-[#2f1b16]">
+                <ul className="space-y-2 text-sm text-[#5f000b]">
                   {PRODUCT_DETAILS.highlights.map((item) => (
                     <li key={item}>• {item}</li>
                   ))}
                   <li>{PRODUCT_DETAILS.weight}</li>
                 </ul>
-                <p className="text-xs uppercase tracking-[0.24em] text-[#2f1b16]">
+                <p className="text-xs uppercase tracking-[0.24em] text-[#5f000b]">
                   {PRODUCT_DETAILS.allergenNote}
                 </p>
               </header>
@@ -217,7 +217,7 @@ export default function CakeJarPage() {
               <section className="space-y-6 rounded-3xl bg-[#fce3e7] p-8 shadow-card">
                 <div className="space-y-3">
                   <h2 className="text-lg font-semibold">Изберете пълнеж</h2>
-                  <p className="text-sm text-[#2f1b16]/80">
+                  <p className="text-sm text-[#5f000b]/80">
                     Кликнете върху любимото пълнежно предложение, за да персонализирате вашата торта в буркан.
                   </p>
                 </div>
@@ -229,7 +229,7 @@ export default function CakeJarPage() {
                       <label
                         key={option.id}
                         className={`flex cursor-pointer flex-col gap-4 rounded-2xl border bg-white p-5 shadow-card transition hover:-translate-y-0.5 hover:shadow-lg ${
-                          isActive ? "border-[#2f1b16] ring-2 ring-[#2f1b16]" : "border-[#f4b9c2]"
+                          isActive ? "border-[#5f000b] ring-2 ring-[#5f000b]" : "border-[#f4b9c2]"
                         }`}
                       >
                         <div className="flex items-center gap-4">
@@ -237,7 +237,7 @@ export default function CakeJarPage() {
                             <Image src={option.image} alt={option.name} fill className="object-cover" sizes="80px" />
                           </span>
                           <div className="space-y-1">
-                            <span className="text-base font-semibold text-[#2f1b16]">{option.name}</span>
+                            <span className="text-base font-semibold text-[#5f000b]">{option.name}</span>
                             <p className="text-xs text-[#8c4a2f]/80">{option.description}</p>
                           </div>
                         </div>
@@ -248,7 +248,7 @@ export default function CakeJarPage() {
                             value={option.id}
                             checked={isActive}
                             onChange={() => setSelectedFilling(option.id)}
-                            className="h-4 w-4 border-[#f4b9c2] text-[#2f1b16] focus:ring-[#2f1b16]"
+                            className="h-4 w-4 border-[#f4b9c2] text-[#5f000b] focus:ring-[#5f000b]"
                           />
                           Избор на пълнеж
                         </span>
@@ -262,7 +262,7 @@ export default function CakeJarPage() {
                   onClick={handleAddToCart}
                   className={`w-full rounded-full px-6 py-4 text-sm font-semibold uppercase tracking-[0.2em] transition ${
                     selectedFilling
-                      ? "bg-[#2f1b16] text-white hover:bg-[#561c19]"
+                      ? "bg-[#5f000b] text-white hover:bg-[#561c19]"
                       : "bg-[#bfa3aa] text-white/70 cursor-not-allowed"
                   }`}
                   disabled={!selectedFilling}
@@ -270,13 +270,13 @@ export default function CakeJarPage() {
                   {selectedFilling ? "Добави в количката" : "Изберете пълнеж, за да продължите"}
                 </button>
                 {feedback ? (
-                  <p className="text-center text-xs text-[#2f1b16]">{feedback}</p>
+                  <p className="text-center text-xs text-[#5f000b]">{feedback}</p>
                 ) : null}
               </section>
 
               <div className="space-y-6 rounded-2xl bg-white/80 p-6 text-sm text-[#8c4a2f]">
                 <div className="space-y-3">
-                  <strong className="text-base font-semibold text-[#2f1b16]">
+                  <strong className="text-base font-semibold text-[#5f000b]">
                     Съвети за съхранение
                   </strong>
                   <p>
@@ -285,7 +285,7 @@ export default function CakeJarPage() {
                 </div>
 
                 <div className="space-y-3">
-                  <strong className="text-base font-semibold text-[#2f1b16]">
+                  <strong className="text-base font-semibold text-[#5f000b]">
                     Информация за доставка
                   </strong>
                   <p>
@@ -294,7 +294,7 @@ export default function CakeJarPage() {
                 </div>
 
                 <div className="space-y-3">
-                  <strong className="text-base font-semibold text-[#2f1b16]">
+                  <strong className="text-base font-semibold text-[#5f000b]">
                     Алергени
                   </strong>
                   <p>

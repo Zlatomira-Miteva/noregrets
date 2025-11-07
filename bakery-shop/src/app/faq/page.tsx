@@ -78,7 +78,7 @@ export default function FAQPage() {
   const [openItem, setOpenItem] = useState<string | null>(FAQ_ITEMS[0].question);
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#fcd9d9] text-[#2f1b16]">
+    <div className="flex min-h-screen flex-col bg-[#fcd9d9] text-[#5f000b]">
       <Marquee />
       <SiteHeader />
 

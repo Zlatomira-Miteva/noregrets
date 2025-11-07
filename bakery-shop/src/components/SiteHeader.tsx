@@ -46,7 +46,7 @@ const SiteHeader = () => {
         >
           <Image src={ShoppingCartIcon} alt="" className="h-5 w-5" />
           {totalQuantity > 0 ? (
-            <span className="absolute -right-1 -top-1 flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-[#2f1b16] px-1 text-xs font-semibold text-white">
+            <span className="absolute -right-1 -top-1 flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-[#5f000b] px-1 text-xs font-semibold text-white">
               {totalQuantity}
             </span>
           ) : null}

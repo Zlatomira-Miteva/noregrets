@@ -184,13 +184,13 @@ const SearchableSelect = ({
           onFocus={handleInputFocus}
           onKeyDown={handleKeyDown}
           disabled={disabled}
-          className="w-full rounded-2xl border border-[#f4b9c2] bg-white px-4 py-3 text-sm text-[#2f1b16] focus:border-[#2f1b16] focus:outline-none"
+          className="w-full rounded-2xl border border-[#f4b9c2] bg-white px-4 py-3 text-sm text-[#5f000b] focus:border-[#5f000b] focus:outline-none"
         />
         {query && !disabled ? (
           <button
             type="button"
             onClick={clearSelection}
-            className="absolute right-9 top-1/2 -translate-y-1/2 rounded-full bg-[#f0d6db] p-1 text-[#8c4a2f] transition hover:bg-[#ebc3cb] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2f1b16]/40"
+            className="absolute right-9 top-1/2 -translate-y-1/2 rounded-full bg-[#f0d6db] p-1 text-[#8c4a2f] transition hover:bg-[#ebc3cb] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#5f000b]/40"
             aria-label="Изчисти избора"
           >
             <ClearIcon />
@@ -219,7 +219,7 @@ const SearchableSelect = ({
                     role="option"
                     aria-selected={isSelected}
                     className={`flex w-full flex-col items-start gap-0.5 rounded-xl px-3 py-2 text-left text-sm transition ${
-                      isHighlighted ? "bg-[#fde4e8] text-[#2f1b16]" : "text-[#2f1b16]"
+                      isHighlighted ? "bg-[#fde4e8] text-[#5f000b]" : "text-[#5f000b]"
                     }`}
                     onMouseDown={(event) => event.preventDefault()}
                     onClick={() => handleSelect(option)}

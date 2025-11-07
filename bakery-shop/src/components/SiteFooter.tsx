@@ -6,7 +6,7 @@ const SiteFooter = () => {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="bg-[#2f1b16] text-[#fcefe7]">
+    <footer className="bg-[#5f000b] text-[#fcefe7]">
       <div className="mx-auto flex w-full flex-col gap-12 px-[clamp(1rem,3vw,3rem)] py-16">
         <div className="grid gap-12 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]">
           <div className="space-y-6">

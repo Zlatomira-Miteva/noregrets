@@ -6,6 +6,7 @@ import CookieBoxImage from "./cookie-box.jpg";
 import StorefrontImage from "./cookie-box-hero.jpg";
 import Marquee from "@/components/Marquee";
 import HeroCarousel from "@/components/HeroCarousel";
+import CookieShowcase from "@/components/CookieShowcase";
 import FeaturedTabs from "@/components/FeaturedTabs";
 import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
@@ -24,9 +25,9 @@ type Product = {
 const PRODUCTS: Product[] = [
   {
     id: 1,
-    name: "Best Sellers кутия",
-    price: "52.00 лв",
-    leadTime: "Безплатна доставка до 3 дни",
+    name: "Best Sellers кутия от 3 кукита",
+    price: "21.00 лв",
+    leadTime: "Доставка до 3 дни",
     weight: "900 гр.",
     image: ProductImage,
     category: "cookies",
@@ -35,8 +36,8 @@ const PRODUCTS: Product[] = [
   {
     id: 2,
     name: "Направи сам кутия от 6 кукита",
-    price: "52.00 лв",
-    leadTime: "Безплатна доставка до 3 дни",
+    price: "42.00 лв",
+    leadTime: "Доставка до 3 дни",
     weight: "900 гр.",
     image: ProductImage,
     category: "cookies",
@@ -45,27 +46,17 @@ const PRODUCTS: Product[] = [
   {
     id: 3,
     name: "Направи сам кутия от 3 кукита",
-    price: "30.00 лв",
-    leadTime: "Безплатна доставка до 3 дни",
+    price: "21.00 лв",
+    leadTime: "Доставка до 3 дни",
     weight: "450 гр.",
     image: ProductImage,
     category: "cookies",
   },
   {
     id: 4,
-    name: "Направи сам кутия от 12 кукита",
-    price: "90.00 лв",
-    leadTime: "Безплатна доставка до 3 дни",
-    weight: "1800 гр.",
-    image: ProductImage,
-    category: "cookies",
-    href: "/products/custom-box/12",
-  },
-  {
-    id: 5,
     name: "Мини кукита с течен шоколад",
     price: "12.00 лв",
-    leadTime: "Безплатна доставка до 3 дни",
+    leadTime: "Доставка до 3 дни",
     weight: "240 гр.",
     image: CookieBoxImage,
     category: "cookies",
@@ -81,17 +72,17 @@ const PRODUCTS: Product[] = [
   //   category: "cakes",
   // },
   {
-    id: 7,
+    id: 5,
     name: "Торта в буркан",
     price: "20.00 лв",
-    leadTime: "Безплатна доставка до 3 дни",
+    leadTime: "Доставка до 3 дни",
     weight: "240 гр.",
     image: ProductImage,
     category: "cakes",
     href: "/products/cake-jar",
   },
   {
-    id: 8,
+    id: 6,
     name: "Торта по поръчка",
     price: "20.00 лв",
     leadTime: "Взимане от място",
@@ -100,10 +91,10 @@ const PRODUCTS: Product[] = [
     category: "cakes",
   },
   {
-    id: 9,
+    id: 7,
     name: "Кутия с 4 бр. мочи",
     price: "20.00 лв",
-    leadTime: "Безплатна доставка до 3 дни",
+    leadTime: "Доставка до 3 дни",
     weight: "240 гр.",
     image: ProductImage,
     category: "mochi",
@@ -168,16 +159,11 @@ const MERCH_ITEMS = [
 ];
 
 const STORE_INFO = {
-  label: "Магазин No Regrets",
-  heading: "Вашето уютно място за сладки срещи",
+  heading: "Сладкарско ателие No Regrets",
   description:
-    "Заповядайте в нашия физически магазин и опитайте любимите кукита и торти направо от фурната. Можем да ви помогнем с избор на подарък, пакетиране и персонализация на място.",
-  address: "ул. „Граф Игнатиев“ 25, София",
-  hours: [
-    "Понеделник – Петък: 08:00 – 19:30",
-    "Събота – Неделя: 09:00 – 18:00",
-  ],
-  phone: "+359 88 123 4567",
+    "Поръчайте и вземете от място в нашия физически магазин и опитайте любимите кукита и торти направо от фурната.",
+  address: "ул. „Богомил“ 48, Пловдив",
+  email: "zlati@noregrets.bg",
 };
 
 const REVIEWS = [
@@ -209,22 +195,23 @@ const REVIEWS = [
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-[#fcd9d9] text-[#2f1b16]">
+    <div className="min-h-screen bg-[#fcd9d9] text-[#5f000b]">
       <Marquee />
 
       <SiteHeader />
 
       <main>
         <HeroCarousel />
+        <CookieShowcase />
         <FeaturedTabs products={PRODUCTS} />
 
         <section id="cakes" className="mt-16 border-y border-[#dcb1b1]">
           <div className="mx-auto grid w-full gap-12 px-[clamp(1rem,3vw,3rem)] py-12 lg:grid-cols-[minmax(0,0.5fr)_minmax(0,1.1fr)] lg:items-center">
-            <div className="space-y-4 text-[#2f1b16]">
+            <div className="space-y-4 text-[#5f000b]">
               <p className="text-sm font-semibold uppercase text-[#8c4a2f]/80">
                 Какво е популярно сега
               </p>
-              <h2 className="text-3xl font-bold leading-tight text-[#2f1b16] sm:text-4xl">
+              <h2 className="text-3xl font-bold leading-tight text-[#5f000b] sm:text-4xl">
                 Любими предложения
               </h2>
               <p className="text-base text-[#8c4a2f]/90">
@@ -248,10 +235,10 @@ export default function Home() {
                       className="object-cover transition duration-500 group-hover:scale-105"
                     />
                   </div>
-                  <div className="flex flex-1 flex-col gap-3 px-5 pb-6 pt-5 text-[#2f1b16]">
+                  <div className="flex flex-1 flex-col gap-3 px-5 pb-6 pt-5 text-[#5f000b]">
                     <h6 className="text-lg leading-snug">{product.name}</h6>
-                    <div className="mt-auto flex items-center justify-between text-base font-semibold text-[#2f1b16]">
-                      <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#f4b9b9] text-[#2f1b16] transition group-hover:bg-[#2f1b16] group-hover:text-white">
+                    <div className="mt-auto flex items-center justify-between text-base font-semibold text-[#5f000b]">
+                      <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#f4b9b9] text-[#5f000b] transition group-hover:bg-[#5f000b] group-hover:text-white">
                         <svg
                           aria-hidden="true"
                           focusable="false"
@@ -283,7 +270,7 @@ export default function Home() {
               {SERVICE_HIGHLIGHTS.map((item) => (
                 <div
                   key={item.id}
-                  className="group flex items-center gap-3 rounded-full bg-[#e4b4c3] px-6 py-3 text-sm font-semibold text-[#2f1b16] transition hover:-translate-y-1 hover:bg-[#d892a8]"
+                  className="group flex items-center gap-3 rounded-full bg-[#e4b4c3] px-6 py-3 text-sm font-semibold text-[#5f000b] transition hover:-translate-y-1 hover:bg-[#d892a8]"
                 >
                   <span aria-hidden="true" className="text-lg">
                     {item.icon}
@@ -296,15 +283,15 @@ export default function Home() {
         </section>
 
         <Marquee
-          message="ПОСЕТЕТЕ НИ НА ЖИВО · NO REGRETS · СЛАДКА СРЕЩА В МАГАЗИНА"
+          message="ВЗЕМЕТЕ ОТ МЯСТО · NO REGRETS "
           repeat={10}
           className="marquee--visit"
         />
 
-        <section id="visit" className="bg-[#f6eae3] py-20">
-          <div className="mx-auto flex w-full flex-col gap-12 px-[clamp(1rem,3vw,3rem)] lg:max-w-[clamp(0px,80vw,70rem)] lg:flex-row lg:items-center">
-            <div className="w-full overflow-hidden rounded-[1rem] bg-[#fce9df] shadow-card lg:max-w-[36rem]">
-              <div className="relative aspect-[4/5] sm:aspect-[3/4] lg:aspect-[4/5]">
+        <section id="visit" className="w-full bg-[#f6eae3] py-40">
+          <div className="flex w-full flex-col gap-24 px-[clamp(1rem,3vw,3rem)] lg:flex-row lg:items-center">
+            <div className="w-full overflow-hidden rounded-[0.75rem] bg-[#fce9df] shadow-card lg:max-w-[36rem]">
+              <div className="relative aspect-[16/9]">
                 <Image
                   src={StorefrontImage}
                   alt="Нашият магазин No Regrets отвън"
@@ -315,45 +302,28 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="w-full max-w-xl space-y-6 text-[#2f1b16]">
-              <p className="text-sm font-semibold uppercase tracking-[0.22em] text-[#8c4a2f]/80">
-                {STORE_INFO.label}
-              </p>
+            <div className="w-full max-w-xl space-y-6 text-[#5f000b]">
               <h2 className="text-3xl font-bold leading-tight sm:text-4xl">
                 {STORE_INFO.heading}
               </h2>
-              <p className="text-base leading-relaxed text-[#8c4a2f]/90">
+              <p className="text-base text-l leading-relaxed text-[#8c4a2f]">
                 {STORE_INFO.description}
               </p>
 
-              <div className="space-y-5 rounded-3xl bg-white p-6 shadow-card">
+              <div>
                 <div>
-                  <h3 className="text-lg font-semibold text-[#2f1b16]">
-                    No Regrets Bakery
-                  </h3>
-                  <p className="mt-2 text-sm text-[#8c4a2f]/90">
+                  <p className="mt-2 text-l text-[#8c4a2f]/90">
                     {STORE_INFO.address}
                   </p>
                 </div>
 
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[#8c4a2f]/70">
-                    Работно време
-                  </p>
-                  <ul className="mt-2 space-y-1 text-sm text-[#2f1b16]">
-                    {STORE_INFO.hours.map((item) => (
-                      <li key={item}>{item}</li>
-                    ))}
-                  </ul>
-                </div>
-
-                <p className="text-sm text-[#8c4a2f]/90">
-                  Телефон:{" "}
+                <p className="text-l text-[#8c4a2f]/90">
+                  Имейл:{" "}
                   <a
-                    href={`tel:${STORE_INFO.phone.replace(/\s+/g, "")}`}
-                    className="font-semibold text-[#2f1b16] transition hover:underline"
+                    href={`tel:${STORE_INFO.email.replace(/\s+/g, "")}`}
+                    className="font-semibold text-[#5f000b] transition hover:underline"
                   >
-                    {STORE_INFO.phone}
+                    {STORE_INFO.email}
                   </a>
                 </p>
               </div>
@@ -363,7 +333,7 @@ export default function Home() {
 
         <section id="merch" className="bg-[#fcd9d9] pb-20 pt-8">
           <div className="mx-auto flex w-full flex-col gap-10 px-[clamp(1rem,3vw,3rem)]">
-            <div className="text-center text-[#2f1b16]">
+            <div className="text-center text-[#5f000b]">
               <p className="text-sm font-semibold uppercase text-[#8c4a2f]/80">
                 Разгледайте нашия мърч
               </p>
@@ -383,7 +353,7 @@ export default function Home() {
                   className="group relative flex h-full flex-col overflow-hidden rounded-lg bg-white shadow-card transition hover:-translate-y-1 hover:shadow-xl"
                 >
                   {item.bestSeller ? (
-                    <span className="absolute left-4 top-4 rounded-full bg-[#2f1b16] px-3 py-1 text-xs font-semibold uppercase text-white">
+                    <span className="absolute left-4 top-4 rounded-full bg-[#5f000b] px-3 py-1 text-xs font-semibold uppercase text-white">
                       Хит продукт
                     </span>
                   ) : null}
@@ -396,9 +366,9 @@ export default function Home() {
                       className="object-cover transition duration-500 group-hover:scale-105"
                     />
                   </div>
-                  <div className="flex flex-1 flex-col gap-3 px-5 pb-6 pt-5 text-[#2f1b16]">
+                  <div className="flex flex-1 flex-col gap-3 px-5 pb-6 pt-5 text-[#5f000b]">
                     <h3 className="text-lg leading-snug">{item.name}</h3>
-                    <div className="mt-auto text-base font-semibold text-[#2f1b16]">
+                    <div className="mt-auto text-base font-semibold text-[#5f000b]">
                       {item.price}
                     </div>
                   </div>
@@ -411,7 +381,7 @@ export default function Home() {
         <section id="story" className="bg-[#fbe0d6] py-20">
           <div className="mx-auto w-full overflow-hidden rounded-3xl bg-[#f7e4da] shadow-card">
             <div className="grid gap-0 lg:grid-cols-2">
-              <div className="flex flex-col justify-center gap-6 px-[clamp(1.5rem,4vw,3.5rem)] py-12 text-[#2f1b16]">
+              <div className="flex flex-col justify-center gap-6 px-[clamp(1.5rem,4vw,3.5rem)] py-12 text-[#5f000b]">
                 <p className="text-sm font-semibold uppercase text-[#8c4a2f]/80">
                   Нашата история
                 </p>
@@ -426,7 +396,7 @@ export default function Home() {
                 </p>
                 <Link
                   href="#"
-                  className="inline-flex w-fit items-center justify-center rounded-full bg-[#2f1b16] px-6 py-3 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:bg-[#561c19]"
+                  className="inline-flex w-fit items-center justify-center rounded-full bg-[#5f000b] px-6 py-3 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:bg-[#561c19]"
                 >
                   Научете повече
                 </Link>
@@ -447,7 +417,7 @@ export default function Home() {
         <section className="bg-[#f4e7e2] py-20">
           <div className="mx-auto w-full max-w-[clamp(0px,80vw,72rem)] px-[clamp(1rem,3vw,3rem)]">
             <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
-              <div className="text-[#2f1b16]">
+              <div className="text-[#5f000b]">
                 <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[#8c4a2f]/80">
                   Потвърдени отзиви
                 </p>
@@ -459,7 +429,7 @@ export default function Home() {
                 <button
                   type="button"
                   aria-label="Предишен отзив"
-                  className="flex h-11 w-11 items-center justify-center rounded-full border border-[#dcb1b1] bg-white text-[#2f1b16] transition hover:-translate-y-0.5 hover:bg-[#fbe0d6]"
+                  className="flex h-11 w-11 items-center justify-center rounded-full border border-[#dcb1b1] bg-white text-[#5f000b] transition hover:-translate-y-0.5 hover:bg-[#fbe0d6]"
                 >
                   <svg
                     aria-hidden="true"
@@ -480,7 +450,7 @@ export default function Home() {
                 <button
                   type="button"
                   aria-label="Следващ отзив"
-                  className="flex h-11 w-11 items-center justify-center rounded-full border border-[#dcb1b1] bg-white text-[#2f1b16] transition hover:-translate-y-0.5 hover:bg-[#fbe0d6]"
+                  className="flex h-11 w-11 items-center justify-center rounded-full border border-[#dcb1b1] bg-white text-[#5f000b] transition hover:-translate-y-0.5 hover:bg-[#fbe0d6]"
                 >
                   <svg
                     aria-hidden="true"
@@ -505,7 +475,7 @@ export default function Home() {
               {REVIEWS.map((review) => (
                 <article
                   key={review.id}
-                  className="flex h-full flex-col justify-between rounded-3xl bg-white p-8 text-[#2f1b16] shadow-card"
+                  className="flex h-full flex-col justify-between rounded-3xl bg-white p-8 text-[#5f000b] shadow-card"
                 >
                   <div className="space-y-4">
                     <h3 className="text-base font-semibold">{review.author}</h3>
@@ -522,7 +492,7 @@ export default function Home() {
                         height={48}
                         className="h-12 w-12 rounded-lg object-cover"
                       />
-                      <span className="text-sm font-semibold text-[#2f1b16]">
+                      <span className="text-sm font-semibold text-[#5f000b]">
                         {review.productName}
                       </span>
                     </div>

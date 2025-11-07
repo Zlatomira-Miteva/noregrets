@@ -1,19 +1,19 @@
 import type { Metadata } from "next";
-import { Days_One, Geologica } from "next/font/google";
+import { Alice, Sofia_Sans } from "next/font/google";
 import "./globals.css";
 import { CartProvider } from "@/context/CartContext";
 
-const daysOne = Days_One({
+const alice = Alice({
   weight: "400",
-  subsets: ["latin"],
-  variable: "--font-days-one",
+  subsets: ["latin", "cyrillic"],
+  variable: "--font-alice",
   display: "swap",
 });
 
-const geologica = Geologica({
+const sofiaSans = Sofia_Sans({
   weight: ["400", "500", "600"],
-  subsets: ["latin"],
-  variable: "--font-geologica",
+  subsets: ["latin", "cyrillic"],
+  variable: "--font-sofia-sans",
   display: "swap",
 });
 
@@ -29,7 +29,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${daysOne.variable} ${geologica.variable} antialiased`}>
+      <body className={`${alice.variable} ${sofiaSans.variable} antialiased`}>
         <CartProvider>{children}</CartProvider>
       </body>
     </html>
