@@ -35,6 +35,7 @@ export async function GET() {
           },
           body: JSON.stringify({ countryCode: "BGR", languageCode: "bg" }),
           next: { revalidate: 60 * 60 * 12 },
+          cache: "no-store",
         });
 
         if (!response.ok) {
@@ -60,14 +61,15 @@ export async function GET() {
     const cities = rawCities
       .filter((city) => {
         const countryCode = city.countryCode;
-        const isActive = city.isActive ?? true;
+       const isActive = city.isActive ?? true;
         return (countryCode === "BG" || countryCode === "BGR" || !countryCode) && isActive;
       })
       .map((city) => {
         const referenceId = String(city.cityID ?? city.id ?? "");
         const id = String(city.postCode ?? referenceId);
         const name = city.name ?? city.name_en ?? `Град ${referenceId}`;
-        return { id, referenceId, name };
+        const regionName = city.regionName;
+        return { id, referenceId, name, regionName };
       })
       .filter((city) => city.referenceId && city.name)
       .sort((a, b) => a.name.localeCompare(b.name, "bg"));

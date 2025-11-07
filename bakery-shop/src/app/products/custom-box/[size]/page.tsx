@@ -279,7 +279,7 @@ export default function CustomBoxPage({ params }: PageProps) {
                       <button
                         type="button"
                         onClick={handlePrevImage}
-                        className="absolute left-4 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/80 text-[#9d0012] opacity-0 shadow-card transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#9d0012] focus-visible:ring-offset-2 focus-visible:ring-offset-[#fcd9d9] pointer-events-none group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100"
+                        className="absolute left-4 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/80 text-[#2f1b16] opacity-0 shadow-card transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2f1b16] focus-visible:ring-offset-2 focus-visible:ring-offset-[#fcd9d9] pointer-events-none group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100"
                         aria-label="Предишно изображение"
                       >
                         <svg
@@ -300,7 +300,7 @@ export default function CustomBoxPage({ params }: PageProps) {
                       <button
                         type="button"
                         onClick={handleNextImage}
-                        className="absolute right-4 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/80 text-[#9d0012] opacity-0 shadow-card transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#9d0012] focus-visible:ring-offset-2 focus-visible:ring-offset-[#fcd9d9] pointer-events-none group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100"
+                        className="absolute right-4 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/80 text-[#2f1b16] opacity-0 shadow-card transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2f1b16] focus-visible:ring-offset-2 focus-visible:ring-offset-[#fcd9d9] pointer-events-none group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100"
                         aria-label="Следващо изображение"
                       >
                         <svg
@@ -333,7 +333,7 @@ export default function CustomBoxPage({ params }: PageProps) {
                       onClick={() => goToImage(imageIndex)}
                       className={`relative aspect-square overflow-hidden rounded-2xl border bg-[#fbdbe0] transition ${
                         isActive
-                          ? "border-[#9d0012] ring-2 ring-[#9d0012]"
+                          ? "border-[#2f1b16] ring-2 ring-[#2f1b16]"
                           : "border-white/40 hover:border-[#f1b8c4]"
                       }`}
                       aria-label={`Преглед на изображение ${position + 1}`}
@@ -357,30 +357,30 @@ export default function CustomBoxPage({ params }: PageProps) {
                   <h3 className="text-3xl leading-tight sm:text-4xl text-[#2f1b16]">
                     {config.name}
                   </h3>
-                  <span className="text-2xl font-semibold text-[#9d0012] sm:pt-1">
+                  <span className="text-2xl font-semibold text-[#2f1b16] sm:pt-1">
                     {config.price}
                   </span>
                 </div>
-                <p className="text-base text-[#8c4a2f]/90">
+                <p className="text-base text-[#2f1b16]/90">
                   {config.description}
                 </p>
-                <ul className="space-y-2 text-[#9d0012]">
+                <ul className="space-y-2 text-[#2f1b16]">
                   {config.highlights.map((item) => (
                     <li key={item}>• {item}</li>
                   ))}
                   <li>{config.weight}</li>
                 </ul>
-                <p className="text-xs uppercase tracking-[0.24em] text-[#9d0012]">
+                <p className="text-l uppercase text-[#2f1b16]">
                   {config.allergenNote}
                 </p>
               </header>
 
-              <section className="space-y-6 rounded-3xl bg-[#fce3e7] p-8 shadow-card">
+              <section className="space-y-6 rounded-s bg-[#fce3e7] p-8 shadow-card">
                 <div className="flex flex-col gap-1">
-                  <h4 className="text-lg font-semibold">Изберете бисквитки</h4>
-                  <p className="text-sm text-[#9d0012]/90">
+                  <h4 className="text-lg">Изберете бисквитки</h4>
+                  <p className="text-sm text-[#2f1b16]/90">
                     Изберете точно {requiredCount} кукита. Остават{" "}
-                    <span className="font-semibold text-[#9d0012]">
+                    <span className="font-semibold text-[#2f1b16]">
                       {Math.max(remainingSlots, 0)}
                     </span>{" "}
                     за добавяне.
@@ -393,11 +393,11 @@ export default function CustomBoxPage({ params }: PageProps) {
                     return (
                       <article
                         key={cookie.id}
-                        className="flex flex-col gap-5 overflow-hidden rounded-[2rem] border border-[#f4b9c2] bg-white p-6 shadow-card transition hover:-translate-y-0.5 hover:shadow-lg"
+                        className="flex flex-col gap-5 overflow-hidden rounded-s border border-[#f4b9c2] bg-white p-6 shadow-card transition hover:-translate-y-0.5 hover:shadow-lg"
                       >
                         <div className="flex items-center justify-between gap-6">
                           <div className="space-y-2">
-                            <h6 className="text-xl font-semibold text-[#9d0012]">
+                            <h6 className="text-xl font-semibold text-[#2f1b16]">
                               {cookie.name}
                             </h6>
                           </div>
@@ -416,7 +416,7 @@ export default function CustomBoxPage({ params }: PageProps) {
                           <button
                             type="button"
                             onClick={() => updateSelection(cookie.id, -1)}
-                            className="flex h-12 w-12 items-center justify-center rounded-full border border-[#f1b8c4] text-lg font-semibold text-[#9d0012] transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-40"
+                            className="flex h-12 w-12 items-center justify-center rounded-full border border-[#f1b8c4] text-lg font-semibold text-[#2f1b16] transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-40"
                             aria-label={`Премахни ${cookie.name}`}
                             disabled={count === 0}
                           >
@@ -428,7 +428,7 @@ export default function CustomBoxPage({ params }: PageProps) {
                           <button
                             type="button"
                             onClick={() => updateSelection(cookie.id, 1)}
-                            className="flex h-12 w-12 items-center justify-center rounded-full border border-[#f1b8c4] bg-white text-lg font-semibold text-[#9d0012] transition hover:bg-[#fce3e7] disabled:cursor-not-allowed disabled:opacity-40"
+                            className="flex h-12 w-12 items-center justify-center rounded-full border border-[#f1b8c4] bg-white text-lg font-semibold text-[#2f1b16] transition hover:bg-[#fce3e7] disabled:cursor-not-allowed disabled:opacity-40"
                             aria-label={`Добави ${cookie.name}`}
                             disabled={!remainingSlots}
                           >
@@ -442,7 +442,7 @@ export default function CustomBoxPage({ params }: PageProps) {
 
                 <button
                   type="button"
-                  className={`w-full rounded-full px-6 py-4 text-sm font-semibold uppercase tracking-[0.2em] transition ${
+                  className={`cta w-full rounded-full px-6 py-4 text-sm font-semibold uppercase transition ${
                     canAddToCart
                       ? "bg-[#2f1b16] text-white hover:bg-[#561c19]"
                       : "bg-[#bfa3aa] text-white/70 cursor-not-allowed"
@@ -457,7 +457,7 @@ export default function CustomBoxPage({ params }: PageProps) {
                     Изберете точно {requiredCount} кукита, за да продължите.
                   </p>
                 ) : feedback ? (
-                  <p className="text-center text-xs text-[#9d0012]">{feedback}</p>
+                  <p className="text-center text-xs text-[#2f1b16]">{feedback}</p>
                 ) : null}
               </section>
               <div className="space-y-6 rounded-2xl bg-white/80 p-6 text-sm text-[#8c4a2f]">

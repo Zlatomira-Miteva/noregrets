@@ -33,10 +33,7 @@ export async function GET(request: Request) {
   try {
     const numericId = Number.parseInt(String(cityId), 10);
     const cityPayload = Number.isFinite(numericId) ? numericId : cityId;
-    console.log({numericId, OFFICE_ENDPOINTS})
     let data: unknown = null;
-
-    debugger;
 
     for (const endpoint of OFFICE_ENDPOINTS) {
       try {
@@ -91,6 +88,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ offices: fallback, fallback: true }, { status: 200 });
     }
 
+    console.log({offices})
     return NextResponse.json({ offices }, { status: 200 });
   } catch (error) {
     console.error("Failed to load Econt offices", error);

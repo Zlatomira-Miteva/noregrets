@@ -250,8 +250,8 @@ export default function Home() {
                   </div>
                   <div className="flex flex-1 flex-col gap-3 px-5 pb-6 pt-5 text-[#2f1b16]">
                     <h6 className="text-lg leading-snug">{product.name}</h6>
-                    <div className="mt-auto flex items-center justify-between text-base font-semibold text-[#9d0012]">
-                      <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#f4b9b9] text-[#9d0012] transition group-hover:bg-[#9d0012] group-hover:text-white">
+                    <div className="mt-auto flex items-center justify-between text-base font-semibold text-[#2f1b16]">
+                      <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#f4b9b9] text-[#2f1b16] transition group-hover:bg-[#2f1b16] group-hover:text-white">
                         <svg
                           aria-hidden="true"
                           focusable="false"
@@ -303,7 +303,7 @@ export default function Home() {
 
         <section id="visit" className="bg-[#f6eae3] py-20">
           <div className="mx-auto flex w-full flex-col gap-12 px-[clamp(1rem,3vw,3rem)] lg:max-w-[clamp(0px,80vw,70rem)] lg:flex-row lg:items-center">
-            <div className="w-full overflow-hidden rounded-[2rem] bg-[#fce9df] shadow-card lg:max-w-[36rem]">
+            <div className="w-full overflow-hidden rounded-[1rem] bg-[#fce9df] shadow-card lg:max-w-[36rem]">
               <div className="relative aspect-[4/5] sm:aspect-[3/4] lg:aspect-[4/5]">
                 <Image
                   src={StorefrontImage}
@@ -351,7 +351,7 @@ export default function Home() {
                   Телефон:{" "}
                   <a
                     href={`tel:${STORE_INFO.phone.replace(/\s+/g, "")}`}
-                    className="font-semibold text-[#9d0012] transition hover:underline"
+                    className="font-semibold text-[#2f1b16] transition hover:underline"
                   >
                     {STORE_INFO.phone}
                   </a>
@@ -383,7 +383,7 @@ export default function Home() {
                   className="group relative flex h-full flex-col overflow-hidden rounded-lg bg-white shadow-card transition hover:-translate-y-1 hover:shadow-xl"
                 >
                   {item.bestSeller ? (
-                    <span className="absolute left-4 top-4 rounded-full bg-[#9d0012] px-3 py-1 text-xs font-semibold uppercase text-white">
+                    <span className="absolute left-4 top-4 rounded-full bg-[#2f1b16] px-3 py-1 text-xs font-semibold uppercase text-white">
                       Хит продукт
                     </span>
                   ) : null}
@@ -398,7 +398,7 @@ export default function Home() {
                   </div>
                   <div className="flex flex-1 flex-col gap-3 px-5 pb-6 pt-5 text-[#2f1b16]">
                     <h3 className="text-lg leading-snug">{item.name}</h3>
-                    <div className="mt-auto text-base font-semibold text-[#9d0012]">
+                    <div className="mt-auto text-base font-semibold text-[#2f1b16]">
                       {item.price}
                     </div>
                   </div>
@@ -459,7 +459,7 @@ export default function Home() {
                 <button
                   type="button"
                   aria-label="Предишен отзив"
-                  className="flex h-11 w-11 items-center justify-center rounded-full border border-[#dcb1b1] bg-white text-[#9d0012] transition hover:-translate-y-0.5 hover:bg-[#fbe0d6]"
+                  className="flex h-11 w-11 items-center justify-center rounded-full border border-[#dcb1b1] bg-white text-[#2f1b16] transition hover:-translate-y-0.5 hover:bg-[#fbe0d6]"
                 >
                   <svg
                     aria-hidden="true"
@@ -480,7 +480,7 @@ export default function Home() {
                 <button
                   type="button"
                   aria-label="Следващ отзив"
-                  className="flex h-11 w-11 items-center justify-center rounded-full border border-[#dcb1b1] bg-white text-[#9d0012] transition hover:-translate-y-0.5 hover:bg-[#fbe0d6]"
+                  className="flex h-11 w-11 items-center justify-center rounded-full border border-[#dcb1b1] bg-white text-[#2f1b16] transition hover:-translate-y-0.5 hover:bg-[#fbe0d6]"
                 >
                   <svg
                     aria-hidden="true"

@@ -85,16 +85,16 @@ export default function FAQPage() {
       <main className="flex-1 bg-[#f4b9c2] text-white">
         <div className="mx-auto flex w-full max-w-5xl flex-col gap-10 px-[clamp(1.5rem,4vw,4rem)] py-20">
           <header className="text-center">
-            <p className="text-sm uppercase tracking-[0.4em] text-white/70">
+            <p className="text-sm uppercase text-white/70">
               Вие попитахте, ние отговаряме
             </p>
-            <h1 className="mt-4 text-4xl font-bold sm:text-5xl">
+            <h1 className="mt-4 text-4xl sm:text-5xl">
               Често задавани въпроси
             </h1>
             <p className="mt-4 text-base text-white/80 sm:text-lg">
               Ако не намирате това, което търсите, пишете ни на{" "}
               <a href="mailto:hello@noregrets.bg" className="underline">
-                hello@noregrets.bg
+                zlati@noregrets.bg
               </a>
               .
             </p>

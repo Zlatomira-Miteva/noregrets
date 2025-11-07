@@ -48,7 +48,7 @@ const FeaturedTabs = ({ products }: FeaturedTabsProps) => {
               onClick={() => setActiveCategory(category.value)}
               className={`text-lg font-semibold transition ${
                 isActive
-                  ? "text-[#9d0012] underline decoration-4 underline-offset-8"
+                  ? "text-[#2f1b16] underline decoration-4 underline-offset-8"
                   : "text-[#8c4a2f]/60 hover:text-[#8c4a2f]"
               }`}
             >
@@ -82,7 +82,7 @@ const FeaturedTabs = ({ products }: FeaturedTabsProps) => {
                     <span>{product.leadTime}</span>
                     <span>{product.weight}</span>
                   </div>
-                  <div className="mt-auto text-base font-semibold text-[#9d0012]">
+                  <div className="mt-auto text-base font-semibold text-[#2f1b16]">
                     {product.price}
                   </div>
                 </div>
@@ -93,7 +93,7 @@ const FeaturedTabs = ({ products }: FeaturedTabsProps) => {
               <Link
                 key={product.id}
                 href={product.href}
-                className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#9d0012] focus-visible:ring-offset-2 focus-visible:ring-offset-[#fcd9d9]"
+                className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2f1b16] focus-visible:ring-offset-2 focus-visible:ring-offset-[#fcd9d9]"
               >
                 {card}
               </Link>
