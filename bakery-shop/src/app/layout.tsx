@@ -1,19 +1,13 @@
 import type { Metadata } from "next";
-import { Alice, Sofia_Sans } from "next/font/google";
+import { Montserrat_Alternates } from "next/font/google";
 import "./globals.css";
 import { CartProvider } from "@/context/CartContext";
+import AuthProvider from "@/components/AuthProvider";
 
-const alice = Alice({
-  weight: "400",
+const montserrat = Montserrat_Alternates({
+  weight: ["400", "500", "600", "700"],
   subsets: ["latin", "cyrillic"],
-  variable: "--font-alice",
-  display: "swap",
-});
-
-const sofiaSans = Sofia_Sans({
-  weight: ["400", "500", "600"],
-  subsets: ["latin", "cyrillic"],
-  variable: "--font-sofia-sans",
+  variable: "--font-montserrat",
   display: "swap",
 });
 
@@ -28,9 +22,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={`${alice.variable} ${sofiaSans.variable} antialiased`}>
-        <CartProvider>{children}</CartProvider>
+    <html lang="en" className={montserrat.variable}>
+      <body className="antialiased">
+        <AuthProvider>
+          <CartProvider>{children}</CartProvider>
+        </AuthProvider>
       </body>
     </html>
   );

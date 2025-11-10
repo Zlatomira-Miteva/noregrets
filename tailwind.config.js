@@ -5,12 +5,12 @@ module.exports = {
     extend: {
       colors: {
         brand: {
-          primary: "#F5CEC7",
+          primary: "#FFE6E2",
           secondary: "#9D0012",
           accent: "#9D0012",
           dark: "#370006ff",
           light: "#ffffff",
-          pink: "#F5CEC7",
+          pink: "#FFE6E2",
         },
       },
       fontFamily: {

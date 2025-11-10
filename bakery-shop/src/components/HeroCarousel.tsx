@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import Image, { type StaticImageData } from "next/image";
+import { useEffect, useState } from"react";
+import Image, { type StaticImageData } from"next/image";
 
-import CookieBoxPink from "../app/cookie-box-hero.jpg";
-import MochiePink from "../app/mochi-hero.jpg";
-import CookiesPink from "../app/cookies-hero.jpg";
-import CakeJars from "../app/cake-jars-hero.jpg";
+import CookieBoxPink from"../app/cookie-box-hero.jpg";
+import MochiePink from"../app/mochi-hero.jpg";
+import CookiesPink from"../app/cookies-hero.jpg";
+import CakeJars from"../app/cake-jars-hero.jpg";
 
 type Slide = {
   id: number;
@@ -20,31 +20,30 @@ const SLIDES: Slide[] = [
   {
     id: 1,
     image: CookiesPink,
-    title: "150 грама щастие",
-    description: "Прясно избечени големи кукита, доставени до теб.",
-    ctaLabel: "Виж бисквитите",
+    title:"150 грама щастие",
+    description:"Прясно избечени големи кукита, доставени до теб.",
+    ctaLabel:"Виж бисквитите",
   },
   {
     id: 2,
     image: CookieBoxPink,
-    title: "Кутия с любов",
-    description:
-      "Нашите най-заявани вкусове, подредени и готови да радват големи компании.",
-    ctaLabel: "Избери кутия",
+    title:"Кутия с любов",
+    description:"Нашите най-заявани вкусове, подредени и готови да радват големи компании.",
+    ctaLabel:"Избери кутия",
   },
   {
     id: 3,
     image: MochiePink,
-    title: "Мочи, което се топи в устата",
-    description: "Меки, нежни и пълни с крем",
-    ctaLabel: "Открий десертите",
+    title:"Мочи, което се топи в устата",
+    description:"Меки, нежни и пълни с крем",
+    ctaLabel:"Открий десертите",
   },
   {
     id: 4,
     image: CakeJars,
-    title: "Торта в буркан",
-    description: "Разнообразие от вкусове, доставени до теб.",
-    ctaLabel: "Поръчай торта",
+    title:"Торта в буркан",
+    description:"Разнообразие от вкусове, доставени до теб.",
+    ctaLabel:"Поръчай торта",
   },
 ];
 
@@ -65,7 +64,7 @@ const HeroCarousel = () => {
         <div
           key={slide.id}
           className={`absolute inset-0 transition-opacity duration-700 ease-out ${
-            index === activeIndex ? "opacity-100" : "opacity-0"
+            index === activeIndex ?"opacity-100" :"opacity-0"
           }`}
         >
           <Image
@@ -81,11 +80,11 @@ const HeroCarousel = () => {
               <h1 className="text-4xl font-semibold leading-tight md:text-6xl">
                 {slide.title}
               </h1>
-              <p className="text-base md:text-lg">{slide.description}</p>
+              <p className="md:text-lg">{slide.description}</p>
             </div>
             <button
               type="button"
-              className="cta inline-flex w-fit items-center justify-center rounded-full px-6 py-2 text-sm font-semibold text-white shadow-lg transition hover:-translate-y-0.5"
+              className="cta inline-flex w-fit items-center justify-center rounded-full px-6 py-2 text-sm font-semibold  shadow-lg transition hover:-translate-y-0.5"
             >
               {slide.ctaLabel}
             </button>
@@ -101,8 +100,8 @@ const HeroCarousel = () => {
             onClick={() => setActiveIndex(index)}
             className={`hero-index h-2.5 w-8 rounded-full transition ${
               index === activeIndex
-                ? "bg-white"
-                : "bg-white/40 hover:bg-white/70"
+                ?"bg-white"
+                :"bg-white/40 hover:bg-white/70"
             }`}
             aria-label={`Покажи слайд ${index + 1}`}
           />

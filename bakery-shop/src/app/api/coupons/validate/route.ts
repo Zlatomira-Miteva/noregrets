@@ -30,45 +30,6 @@ const decimalToNumber = (value: unknown) => {
   return null;
 };
 
-type CouponResponse = {
-  code: string;
-  description: string | null;
-  discountType: "PERCENT" | "FIXED";
-  discountValue: number;
-  minimumOrderAmount: number;
-  maximumDiscountAmount: number | null;
-};
-
-const buildCouponResponse = (coupon: CouponResponse, cartTotal: number) => {
-  const minAmount = coupon.minimumOrderAmount ?? 0;
-  if (cartTotal < minAmount) {
-    return NextResponse.json(
-      {
-        error: `Минималната стойност на поръчката за този код е ${minAmount.toFixed(2)} лв.`,
-      },
-      { status: 400 }
-    );
-  }
-
-  let discount = 0;
-  if (coupon.discountType === "PERCENT") {
-    discount = (cartTotal * coupon.discountValue) / 100;
-  } else {
-    discount = coupon.discountValue;
-  }
-  if (coupon.maximumDiscountAmount !== null) {
-    discount = Math.min(discount, coupon.maximumDiscountAmount);
-  }
-  discount = Math.min(discount, cartTotal);
-  const finalTotal = Math.max(0, cartTotal - discount);
-
-  return NextResponse.json({
-    coupon,
-    discountAmount: Number(discount.toFixed(2)),
-    finalTotal: Number(finalTotal.toFixed(2)),
-  });
-};
-
 export async function POST(request: Request) {
   try {
     const json = await request.json();
@@ -114,19 +75,37 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Кодът не е конфигуриран правилно." }, { status: 500 });
     }
 
-    const coupon: CouponResponse = {
-      code: couponRecord.code,
-      description: couponRecord.description ?? null,
-      discountType: couponRecord.discountType,
-      discountValue,
-      minimumOrderAmount,
-      maximumDiscountAmount,
-    };
+    const minAmount = minimumOrderAmount ?? 0;
+    if (cartTotal < minAmount) {
+      return NextResponse.json(
+        { error: `Минималната стойност на поръчката за този код е ${minAmount.toFixed(2)} лв.` },
+        { status: 400 }
+      );
+    }
 
-    return buildCouponResponse(coupon, cartTotal);
+    let discount = couponRecord.discountType === "PERCENT" ? (cartTotal * discountValue) / 100 : discountValue;
+    if (maximumDiscountAmount !== null) {
+      discount = Math.min(discount, maximumDiscountAmount);
+    }
+    discount = Math.min(discount, cartTotal);
+    const finalTotal = Math.max(0, cartTotal - discount);
+
+    return NextResponse.json({
+      coupon: {
+        code: couponRecord.code,
+        description: couponRecord.description ?? null,
+        discountType: couponRecord.discountType,
+        discountValue,
+        minimumOrderAmount,
+        maximumDiscountAmount,
+        maxRedemptions: couponRecord.maxRedemptions,
+        timesRedeemed: couponRecord.timesRedeemed,
+      },
+      discountAmount: Number(discount.toFixed(2)),
+      finalTotal: Number(finalTotal.toFixed(2)),
+    });
   } catch (error) {
     console.error("Failed to validate coupon", error);
     return NextResponse.json({ error: "Възникна проблем при валидирането на кода." }, { status: 500 });
   }
 }
-

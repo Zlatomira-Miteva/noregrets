@@ -14,7 +14,7 @@
 <stop stop-color="#F0ABAE"/>
 <stop offset="0.379808" stop-color="#C66F7A"/>
 <stop offset="0.697115" stop-color="#F0ABAE"/>
-<stop offset="1" stop-color="#F5CEC7"/>
+<stop offset="1" stop-color="#FFE6E2"/>
 </radialGradient>
 <clipPath id="clip0_121_171">
 <rect width="723" height="723" fill="white"/>

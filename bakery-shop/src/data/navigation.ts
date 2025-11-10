@@ -4,6 +4,7 @@ export type NavigationItem = {
 };
 
 export const NAVIGATION: NavigationItem[] = [
+  { href: "/", label: "Начало" },
   { href: "/#cookies", label: "Кукита" },
   { href: "/#cakes", label: "Торти" },
   { href: "/#other", label: "Други" },

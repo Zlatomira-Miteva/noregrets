@@ -5,8 +5,10 @@ export const FOOTER_LINK_GROUPS = [
       { label: "Контакт", href: "#visit" },
       { label: "ЧЗВ", href: "/faq" },
       { label: "Нашата история", href: "#story" },
-      { label: "Политика за доставка", href: "#" },
-      { label: "Политика за връщане", href: "#" },
+      { label: "Политика за доставка", href: "/shipping-policy" },
+      { label: "Политика за връщане", href: "/refund-policy" },
+      { label: "Общите условия", href: "/terms" },
+      { label: "Политика за поверителност", href: "/privacy" },
     ],
   },
   {

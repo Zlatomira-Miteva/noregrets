@@ -6,16 +6,12 @@ const SiteFooter = () => {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="bg-[#5f000b] text-[#fcefe7]">
+    <footer className="bg-[#311E20] text-white">
       <div className="mx-auto flex w-full flex-col gap-12 px-[clamp(1rem,3vw,3rem)] py-16">
         <div className="grid gap-12 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]">
           <div className="space-y-6">
-            <h4 className="text-3xl leading-tight sm:text-4xl">
-              Абонирайте се за новини и отстъпки
-            </h4>
-            <p className="text-m text-[#f3d6ca]">
-              Първи научавайте за нови вкусове, специални оферти и дегустации в магазина.
-            </p>
+            <h4 className="text-3xl leading-tight sm:text-4xl">Абонирайте се за новини и отстъпки</h4>
+            <p>Първи научавайте за нови вкусове, специални оферти и дегустации в магазина.</p>
             <form className="space-y-3">
               <div className="flex max-w-xl overflow-hidden rounded-full bg-white/10 shadow-inner backdrop-blur">
                 <input
@@ -23,32 +19,25 @@ const SiteFooter = () => {
                   name="email"
                   required
                   placeholder="Имейл адрес"
-                  className="w-full flex-1 border-none bg-transparent px-6 py-3 text-sm text-white placeholder:text-[#f3d6ca] focus:outline-none"
+                  className="w-full flex-1 border-none bg-transparent px-6 py-3 text-sm text-white placeholder:text-white/70 focus:outline-none"
                 />
                 <button
                   type="submit"
                   className="flex items-center gap-2 bg-white/20 px-6 text-sm font-semibold uppercase text-white transition hover:bg-white/40"
                 >
                   Изпрати
-                  <svg
-                    aria-hidden="true"
-                    viewBox="0 0 16 16"
-                    className="h-4 w-4"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
+                  <svg aria-hidden="true" viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M3 8h10M9 4l4 4-4 4" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 </button>
               </div>
-              <p className="text-xs text-[#f3d6ca]/80">
+              <p className="text-white/70">
                 С изпращането на формата приемате{" "}
-                <a href="#" className="underline hover:text-white">
+                <a href="/terms" className="underline hover:text-white">
                   Общите условия
                 </a>{" "}
                 и{" "}
-                <a href="#" className="underline hover:text-white">
+                <a href="/privacy" className="underline hover:text-white">
                   Политиката за поверителност
                 </a>
                 .
@@ -59,14 +48,11 @@ const SiteFooter = () => {
           <div className="grid gap-8 sm:grid-cols-2">
             {FOOTER_LINK_GROUPS.map((group) => (
               <div key={group.title} className="space-y-4">
-                <h4 className="text-lg text-white">{group.title}</h4>
-                <ul className="space-y-2 text-m text-[#f3d6ca]">
+                <h4 className="text-lg">{group.title}</h4>
+                <ul className="space-y-2 text-sm text-white/80">
                   {group.links.map((link) => (
                     <li key={link.label}>
-                      <a
-                        href={link.href}
-                        className="transition hover:text-white hover:underline"
-                      >
+                      <a href={link.href} className="transition hover:text-white hover:underline">
                         {link.label}
                       </a>
                     </li>
@@ -77,7 +63,7 @@ const SiteFooter = () => {
           </div>
         </div>
 
-        <div className="flex flex-col gap-6 border-t border-white/10 pt-8 text-sm text-[#f3d6ca] md:flex-row md:items-center md:justify-between">
+        <div className="flex flex-col gap-6 border-t border-white/10 pt-8 text-sm text-white/80 md:flex-row md:items-center md:justify-between">
           <button
             type="button"
             className="inline-flex items-center gap-3 rounded-full bg-white/10 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/20"
@@ -88,7 +74,7 @@ const SiteFooter = () => {
             България (BGN)
           </button>
 
-          <div className="flex flex-wrap items-center gap-4 text-xs uppercase text-[#f3d6ca]/80">
+          <div className="flex flex-wrap items-center gap-4 text-xs uppercase">
             <span>© {currentYear} No Regrets</span>
             <span className="hidden h-4 w-px bg-white/20 md:block" />
             <a href="#" className="hover:text-white">
