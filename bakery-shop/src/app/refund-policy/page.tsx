@@ -43,7 +43,7 @@ export default function RefundPolicyPage() {
       <main className="flex-1">
         <div className="mx-auto flex w-full max-w-4xl flex-col gap-10 px-[clamp(1.25rem,4vw,4rem)] py-20 ">
           <header className="space-y-4 text-center">
-            <p className="text-sm uppercase tracking-[0.35em]">
+            <p className="text-sm uppercase">
               Политика за възстановяване
             </p>
             <h1 className="text-4xl font-semibold sm:text-5xl">Условия за връщане и рекламации</h1>

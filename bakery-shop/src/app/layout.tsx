@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { Montserrat_Alternates } from "next/font/google";
 import "./globals.css";
-import { CartProvider } from "@/context/CartContext";
 import AuthProvider from "@/components/AuthProvider";
+import CartToast from "@/components/CartToast";
+import { CartProvider } from "@/context/CartContext";
 
 const montserrat = Montserrat_Alternates({
   weight: ["400", "500", "600", "700"],
@@ -25,7 +26,10 @@ export default function RootLayout({
     <html lang="en" className={montserrat.variable}>
       <body className="antialiased">
         <AuthProvider>
-          <CartProvider>{children}</CartProvider>
+          <CartProvider>
+            <CartToast />
+            {children}
+          </CartProvider>
         </AuthProvider>
       </body>
     </html>

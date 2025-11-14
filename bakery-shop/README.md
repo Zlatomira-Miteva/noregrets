@@ -20,6 +20,24 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Google Sheets newsletter signups
+
+Email addresses submitted through the footer form are appended to a Google Sheet via a service account.
+
+1. Create a Google Cloud service account, generate a JSON key, and share the destination sheet with the service account email.
+2. Add the following variables to `.env.local`:
+
+   ```bash
+   GOOGLE_SERVICE_ACCOUNT_EMAIL="service-account@project.iam.gserviceaccount.com"
+   GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nABC...\n-----END PRIVATE KEY-----\n"
+   GOOGLE_SHEET_ID="your-sheet-id-from-the-url"
+   # Optional – defaults to Sheet1
+   GOOGLE_SHEET_TAB_NAME="Newsletter"
+   ```
+
+   Keep the `\n` escape sequences in the private key so the server can reconstruct the multiline key.
+3. Restart the dev server so Next.js picks up the new environment variables.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

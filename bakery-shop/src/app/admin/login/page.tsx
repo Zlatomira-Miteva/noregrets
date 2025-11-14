@@ -35,10 +35,10 @@ const AdminLoginPage = () => {
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-[#f5cec7] px-6 text-[#5f000b]">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-[#ffefed] px-6 text-[#5f000b]">
       <form onSubmit={handleSubmit} className="w-full max-w-sm space-y-4 rounded-3xl bg-white p-6 shadow-card">
         <header className="space-y-1 text-center">
-          <p className="text-sm uppercase tracking-[0.35em] text-[#5f000b]/70">Админ панел</p>
+          <p className="text-sm uppercase text-[#5f000b]/70">Админ панел</p>
           <h1 className="text-2xl font-semibold">Вход</h1>
           <p className="text-sm">Въведете администраторските креденшъли.</p>
         </header>
@@ -64,7 +64,7 @@ const AdminLoginPage = () => {
         <button
           type="submit"
           disabled={loading}
-          className="w-full rounded-full bg-[#5f000b] px-4 py-3 text-sm font-semibold uppercase tracking-[0.3em] text-white transition hover:bg-[#561c19] disabled:opacity-60"
+          className="w-full rounded-full bg-[#5f000b] px-4 py-3 text-sm font-semibold uppercase text-white transition hover:bg-[#561c19] disabled:opacity-60"
         >
           {loading ? "Вход..." : "Влез"}
         </button>
@@ -74,4 +74,3 @@ const AdminLoginPage = () => {
 };
 
 export default AdminLoginPage;
-

@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 
 type CartItem = {
   key: string;
@@ -27,6 +27,8 @@ type CartContextValue = {
   clearCart: () => void;
   totalQuantity: number;
   totalPrice: number;
+  lastAddedEvent: CartAddEvent | null;
+  acknowledgeLastAdded: () => void;
 };
 
 const STORAGE_KEY = "noregrets-cart";
@@ -36,9 +38,17 @@ const CartContext = createContext<CartContextValue | undefined>(undefined);
 const createOptionsKey = (options?: string[]) =>
   options && options.length > 0 ? options.slice().sort().join("| ") : "";
 
+type CartAddEvent = {
+  id: number;
+  name: string;
+  timestamp: number;
+};
+
 export const CartProvider = ({ children }: { children: React.ReactNode }) => {
   const [items, setItems] = useState<CartItem[]>([]);
   const [isHydrated, setIsHydrated] = useState(false);
+  const [lastAddedEvent, setLastAddedEvent] = useState<CartAddEvent | null>(null);
+  const eventIncrement = useRef(0);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -93,6 +103,12 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
         },
       ];
     });
+
+    setLastAddedEvent({
+      id: eventIncrement.current++,
+      name: payload.name,
+      timestamp: Date.now(),
+    });
   };
 
   const removeItem = (key: string) => {
@@ -113,6 +129,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const clearCart = () => setItems([]);
+  const acknowledgeLastAdded = useCallback(() => setLastAddedEvent(null), []);
 
   const { totalQuantity, totalPrice } = useMemo(() => {
     return items.reduce(
@@ -133,6 +150,8 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     clearCart,
     totalQuantity,
     totalPrice,
+    lastAddedEvent,
+    acknowledgeLastAdded,
   };
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

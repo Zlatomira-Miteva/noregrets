@@ -57,7 +57,7 @@ export default function CouponAdminPage() {
 
   if (status === "loading") {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#f5cec7] text-[#5f000b]">
+      <div className="flex min-h-screen items-center justify-center bg-[#ffefed] text-[#5f000b]">
         <p>Зареждаме...</p>
       </div>
     );
@@ -98,16 +98,16 @@ export default function CouponAdminPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f5cec7] px-[clamp(1rem,4vw,4rem)] py-16 text-[#5f000b]">
+    <div className="min-h-screen bg-[#ffefed] px-[clamp(1rem,4vw,4rem)] py-16 text-[#5f000b]">
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-12">
         <header className="space-y-3 text-center">
-          <p className="text-sm uppercase tracking-[0.35em]">Админ панел</p>
+          <p className="text-sm uppercase">Админ панел</p>
           <h1 className="text-4xl font-semibold">Управление на промо кодове</h1>
           <p>Създайте нов код за отстъпка. Всеки код е валиден 30 дни и може да бъде използван само веднъж.</p>
           <button
             type="button"
             onClick={() => signOut({ callbackUrl: "/" })}
-            className="rounded-full border border-[#5f000b] px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] hover:bg-white/40"
+            className="rounded-full border border-[#5f000b] px-4 py-2 text-xs font-semibold uppercase hover:bg-white/40"
           >
             Изход
           </button>
@@ -115,7 +115,7 @@ export default function CouponAdminPage() {
 
         <section className="rounded-3xl bg-white/90 p-6 shadow-card">
           <form onSubmit={handleSubmit} className="grid gap-4 sm:grid-cols-2">
-            <label className="text-sm uppercase tracking-[0.25em]">
+            <label className="text-sm uppercase">
               Код
               <input
                 type="text"
@@ -126,7 +126,7 @@ export default function CouponAdminPage() {
               />
             </label>
 
-            <label className="text-sm uppercase tracking-[0.25em]">
+            <label className="text-sm uppercase">
               Тип
               <select
                 value={form.discountType}
@@ -138,7 +138,7 @@ export default function CouponAdminPage() {
               </select>
             </label>
 
-            <label className="text-sm uppercase tracking-[0.25em]">
+            <label className="text-sm uppercase">
               Стойност
               <input
                 type="number"
@@ -151,7 +151,7 @@ export default function CouponAdminPage() {
               />
             </label>
 
-            <label className="text-sm uppercase tracking-[0.25em]">
+            <label className="text-sm uppercase">
               Минимална сума
               <input
                 type="number"
@@ -163,7 +163,7 @@ export default function CouponAdminPage() {
               />
             </label>
 
-            <label className="text-sm uppercase tracking-[0.25em] sm:col-span-2">
+            <label className="text-sm uppercase sm:col-span-2">
               Максимална отстъпка
               <input
                 type="number"
@@ -179,7 +179,7 @@ export default function CouponAdminPage() {
             <button
               type="submit"
               disabled={loading}
-              className="sm:col-span-2 rounded-full bg-[#5f000b] px-6 py-3 text-sm font-semibold uppercase tracking-[0.3em] text-white transition hover:bg-[#561c19] disabled:opacity-60"
+              className="sm:col-span-2 rounded-full bg-[#5f000b] px-6 py-3 text-sm font-semibold uppercase text-white transition hover:bg-[#561c19] disabled:opacity-60"
             >
               {loading ? "Създаваме..." : "Добави промо код"}
             </button>
@@ -193,7 +193,7 @@ export default function CouponAdminPage() {
           <div className="mt-4 overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead>
-                <tr className="text-xs uppercase tracking-[0.3em] text-[#5f000b]/70">
+                <tr className="text-xs uppercase text-[#5f000b]/70">
                   <th className="pb-2">Код</th>
                   <th className="pb-2">Тип</th>
                   <th className="pb-2">Стойност</th>

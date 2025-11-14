@@ -20,22 +20,22 @@ const SLIDES: Slide[] = [
   {
     id: 1,
     image: CookiesPink,
-    title:"150 грама щастие",
-    description:"Прясно избечени големи кукита, доставени до теб.",
+    title:"Малки удоволствия. Големи вкусове.",
+    description:"Ръчно изпечени 150 грамови бисквитки с подбрани съставки и дръзки комбинации. Създадени за хора, които ценят вкуса, момента и свободата да се насладиш на всичко истинско.",
     ctaLabel:"Виж бисквитите",
   },
   {
     id: 2,
     image: CookieBoxPink,
-    title:"Кутия с любов",
-    description:"Нашите най-заявани вкусове, подредени и готови да радват големи компании.",
+    title:"Няма малки изкушения.",
+    description:"Ароматни мини кукита и крем от нутела - сладка симфония, която стопля сърцето. Сподели я с любимите си или запази за себе си. Няма грешен избор.",
     ctaLabel:"Избери кутия",
   },
   {
     id: 3,
     image: MochiePink,
-    title:"Мочи, което се топи в устата",
-    description:"Меки, нежни и пълни с крем",
+    title:"Меки. Кремообразни. Невъзможни за споделяне.",
+    description:"Фино мочи с ароматен крем, скрит под деликатна обвивка от оризово тесто. Сладък баланс между мекота, вкус и изкушение.",
     ctaLabel:"Открий десертите",
   },
   {
@@ -47,19 +47,25 @@ const SLIDES: Slide[] = [
   },
 ];
 
+const AUTO_ROTATE_MS = 10000;
+
 const HeroCarousel = () => {
   const [activeIndex, setActiveIndex] = useState(0);
 
   useEffect(() => {
-    const interval = setInterval(() => {
+    const timer = setTimeout(() => {
       setActiveIndex((prev) => (prev + 1) % SLIDES.length);
-    }, 5000);
+    }, AUTO_ROTATE_MS);
 
-    return () => clearInterval(interval);
-  }, []);
+    return () => clearTimeout(timer);
+  }, [activeIndex]);
+
+  const goToSlide = (index: number) => {
+    setActiveIndex(index);
+  };
 
   return (
-    <section className="relative isolate h-[28rem] overflow-hidden md:h-[34rem]">
+    <section className="relative isolate h-[40rem] overflow-hidden md:h-[46rem]">
       {SLIDES.map((slide, index) => (
         <div
           key={slide.id}
@@ -97,7 +103,7 @@ const HeroCarousel = () => {
           <button
             key={slide.id}
             type="button"
-            onClick={() => setActiveIndex(index)}
+            onClick={() => goToSlide(index)}
             className={`hero-index h-2.5 w-8 rounded-full transition ${
               index === activeIndex
                 ?"bg-white"

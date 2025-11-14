@@ -52,7 +52,7 @@ export default function ShippingPolicyPage() {
       <main className="flex-1">
         <div className="mx-auto flex w-full max-w-5xl flex-col gap-10 px-[clamp(1.25rem,4vw,4rem)] py-20 text-[#5f000b]">
           <header className="space-y-3 text-center">
-            <p className="text-sm uppercase tracking-[0.35em]">Политика за доставка</p>
+            <p className="text-sm uppercase">Политика за доставка</p>
             <h1 className="text-4xl font-semibold sm:text-5xl">Как пътуват нашите сладкиши</h1>
             <p>
               Имаме въпроси или коментари? Нашият екип е на линия от понеделник до петък, 08:00 – 15:00 ч.

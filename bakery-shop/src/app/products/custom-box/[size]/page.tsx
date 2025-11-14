@@ -2,7 +2,7 @@
 
 import Image, { type StaticImageData } from "next/image";
 import { useParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 import Marquee from "@/components/Marquee";
 import CookieShowcase from "@/components/CookieShowcase";
@@ -10,7 +10,6 @@ import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
 import { useCart } from "@/context/CartContext";
 import { parsePrice } from "@/utils/price";
-import CookieBoxImage from "@/app/cookie-box.jpg";
 import CookieBoxHero from "@/app/cookie-box-hero.jpg";
 import SmallBoxCookies from "@/app/small-box-cookies.webp";
 import NutellaCookie from "@/app/nutella-bueno-cookie.png";
@@ -55,21 +54,17 @@ type CookieOption = {
 };
 
 const COOKIE_OPTIONS: CookieOption[] = [
-  { id: "nutella-bueno", name: "Нутела Буено", image: NutellaCookie },
-  { id: "red-velvet", name: "Ред Велвет", image: SmallBoxCookies },
-  { id: "salted-caramel", name: "Солен карамел", image: CookieBoxHero },
-  { id: "pistachio-rose", name: "Шамфъстък и роза", image: SmallBoxCookies },
-  { id: "double-choc", name: "Двоен шоколад", image: NutellaCookie },
-  { id: "white-choc-matcha", name: "Матча и бял шоколад", image: CookieBoxHero },
+  { id: "nutella-bueno", name: "Nutella Bueno", image: "/nutella-bueno-top.png" },
+  { id: "red-velvet", name: "Red Velvet Cheesecake", image: "/red-velvet-cookie-top.png" },
+  { id: "biscoff", name: "Biskoff", image: "/biscoff-top.png" },
+  { id: "tripple-choc", name: "Tripple Choc", image: "/tripple-choc-top.png" },
+  { id: "new-york", name: "New York", image: "/new-york-top.png" },
+  { id: "oreo", name: "Oreo & White Choc", image: "/oreo-cookie-top.png" },
 ];
 
 const MOCHI_OPTIONS: CookieOption[] = [
   { id: "strawberry-mochi", name: "Ягодово мочи", image: SmallBoxCookies },
   { id: "matcha-mochi", name: "Матча мочи", image: CookieBoxHero },
-  { id: "mango-mochi", name: "Манго мочи", image: NutellaCookie },
-  { id: "black-sesame-mochi", name: "Черен сусам", image: CookieBoxImage },
-  { id: "taro-mochi", name: "Таро крем", image: SmallBoxCookies },
-  { id: "ube-mochi", name: "Убе", image: CookieBoxHero },
 ];
 
 const MAX_SELECTION = 12;
@@ -89,14 +84,6 @@ export default function CustomBoxPage() {
     Object.fromEntries(options.map((cookie) => [cookie.id, 0])),
   );
   const { addItem } = useCart();
-  const [feedback, setFeedback] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!feedback) return;
-    const timer = window.setTimeout(() => setFeedback(null), 2500);
-    return () => window.clearTimeout(timer);
-  }, [feedback]);
-
   const priceValue = useMemo(() => parsePrice(config.price), [config.price]);
 
   const wrapIndex = (index: number) => {
@@ -150,7 +137,6 @@ export default function CustomBoxPage() {
       quantity: 1,
       options: summary,
     });
-    setFeedback("Добавено в количката!");
   };
 
   if (!hasConfig) {
@@ -317,8 +303,6 @@ export default function CustomBoxPage() {
                 </button>
                 {!canAddToCart ? (
                   <p className="text-center">Изберете точно {requiredCount} кукита, за да продължите.</p>
-                ) : feedback ? (
-                  <p className="text-center ">{feedback}</p>
                 ) : null}
               </section>
 
@@ -355,4 +339,3 @@ export default function CustomBoxPage() {
     </div>
   );
 }
-

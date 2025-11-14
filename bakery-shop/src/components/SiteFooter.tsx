@@ -1,9 +1,57 @@
 'use client';
 
+import { FormEvent, useState } from "react";
+
 import { FOOTER_LINK_GROUPS, SOCIAL_LINKS } from "@/data/footer";
 
 const SiteFooter = () => {
   const currentYear = new Date().getFullYear();
+  const [email, setEmail] = useState("");
+  const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [message, setMessage] = useState("");
+  const isLoading = status === "loading";
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (isLoading) {
+      return;
+    }
+
+    const sanitizedEmail = email.trim().toLowerCase();
+
+    if (!sanitizedEmail) {
+      setStatus("error");
+      setMessage("Моля, въведете имейл адрес.");
+      return;
+    }
+
+    setStatus("loading");
+    setMessage("");
+
+    try {
+      const response = await fetch("/api/newsletter", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: sanitizedEmail }),
+      });
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(typeof data?.error === "string" ? data.error : "Неуспешно записване.");
+      }
+
+      setStatus("success");
+      setMessage("Благодарим! Успешно се абонирахте.");
+      setEmail("");
+    } catch (error) {
+      const fallbackMessage =
+        error instanceof Error ? error.message : "Нещо се обърка. Моля, опитайте отново.";
+      setStatus("error");
+      setMessage(fallbackMessage);
+    }
+  };
 
   return (
     <footer className="bg-[#311E20] text-white">
@@ -12,25 +60,38 @@ const SiteFooter = () => {
           <div className="space-y-6">
             <h4 className="text-3xl leading-tight sm:text-4xl">Абонирайте се за новини и отстъпки</h4>
             <p>Първи научавайте за нови вкусове, специални оферти и дегустации в магазина.</p>
-            <form className="space-y-3">
+            <form className="space-y-3" onSubmit={handleSubmit}>
               <div className="flex max-w-xl overflow-hidden rounded-full bg-white/10 shadow-inner backdrop-blur">
                 <input
                   type="email"
                   name="email"
                   required
                   placeholder="Имейл адрес"
+                  autoComplete="email"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
                   className="w-full flex-1 border-none bg-transparent px-6 py-3 text-sm text-white placeholder:text-white/70 focus:outline-none"
                 />
                 <button
                   type="submit"
-                  className="flex items-center gap-2 bg-white/20 px-6 text-sm font-semibold uppercase text-white transition hover:bg-white/40"
+                  disabled={isLoading}
+                  className="flex items-center gap-2 bg-white/20 px-6 text-sm font-semibold uppercase text-white transition hover:bg-white/40 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  Изпрати
+                  {isLoading ? "Изпращане..." : "Изпрати"}
                   <svg aria-hidden="true" viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M3 8h10M9 4l4 4-4 4" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 </button>
               </div>
+              {message && (
+                <p
+                  className={`text-sm ${status === "success" ? "text-emerald-200" : "text-rose-200"}`}
+                  aria-live="polite"
+                  role="status"
+                >
+                  {message}
+                </p>
+              )}
               <p className="text-white/70">
                 С изпращането на формата приемате{" "}
                 <a href="/terms" className="underline hover:text-white">
