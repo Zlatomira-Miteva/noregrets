@@ -193,8 +193,9 @@ export default function Home() {
       <SiteHeader />
       <main>
         <HeroCarousel />
-        <CookieShowcase />
         <FeaturedTabs products={PRODUCTS} />
+        <CookieShowcase />
+
         <section id="cakes" className="mt-16">
           <div className="mx-auto grid w-full gap-12 px-[clamp(1rem,3vw,3rem)] py-12 lg:grid-cols-[minmax(0,0.5fr)_minmax(0,1.1fr)] lg:items-center">
             <div className="space-y-4 ">
@@ -318,7 +319,7 @@ export default function Home() {
             </div>
           </div>
         </section>
-        <section id="merch" className=" pb-20 pt-8">
+        {/* <section id="merch" className=" pb-20 pt-8">
           <div className="mx-auto flex w-full flex-col gap-10 px-[clamp(1rem,3vw,3rem)]">
             <div className="text-center ">
               <p className="font-semibold uppercase">
@@ -369,7 +370,7 @@ export default function Home() {
               ))}{" "}
             </div>
           </div>
-        </section>
+        </section> */}
         <section id="story" className=" py-20">
           <div className="mx-auto w-full overflow-hidden rounded-3xl shadow-card">
             <div className="grid gap-0 lg:grid-cols-2">
@@ -390,7 +391,7 @@ export default function Home() {
                   любов. 🍪✨{" "}
                 </p>
                 <Link
-                  href="#"
+                  href="/about"
                   className="cta inline-flex w-fit items-center justify-center rounded-full px-6 py-3 text-sm font-semibold  transition hover:-translate-y-0.5 hover:bg-[#561c19]"
                 >
                   {" "}

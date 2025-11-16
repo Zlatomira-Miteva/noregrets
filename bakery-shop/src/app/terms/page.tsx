@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import Marquee from "@/components/Marquee";
 import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
@@ -37,7 +38,16 @@ const TERMS_SECTIONS = [
   {
     title: "5. Връщания и възстановявания",
     content: [
-      "Вижте отделната страница „Политика за връщане“, която е неразделна част от тези условия и описва кога може да се инициира връщане или замяна.",
+      (
+        <>
+          Вижте отделната страница{" "}
+          <Link href="/refund-policy" className="underline decoration-dotted underline-offset-4">
+            „Политика за връщане“
+          </Link>
+          , която е неразделна част от тези условия и описва кога може да се инициира връщане или
+          замяна.
+        </>
+      ),
     ],
   },
   {
@@ -82,8 +92,7 @@ export default function TermsPage() {
       <main className="flex-1">
         <div className="mx-auto flex w-full max-w-5xl flex-col gap-10 px-[clamp(1.25rem,4vw,4rem)] py-20">
           <header className="space-y-4 text-center">
-            <p className="text-sm uppercase">Общи условия</p>
-            <h1 className="text-4xl font-semibold sm:text-5xl">Условия за продажба</h1>
+            <h1 className="text-4xl font-semibold sm:text-5xl">Общи условия</h1>
             <p>
               Тези условия се отнасят за всички онлайн поръчки. С направата на поръчка приемате текста по-долу.
             </p>
@@ -108,4 +117,3 @@ export default function TermsPage() {
     </div>
   );
 }
-

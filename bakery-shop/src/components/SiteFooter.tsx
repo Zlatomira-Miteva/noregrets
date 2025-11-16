@@ -138,12 +138,12 @@ const SiteFooter = () => {
           <div className="flex flex-wrap items-center gap-4 text-xs uppercase">
             <span>© {currentYear} No Regrets</span>
             <span className="hidden h-4 w-px bg-white/20 md:block" />
-            <a href="#" className="hover:text-white">
+            <a href="/privacy" className="hover:text-white">
               Политика за поверителност
             </a>
             <span className="hidden h-4 w-px bg-white/20 md:block" />
-            <a href="#" className="hover:text-white">
-              Условия за ползване
+            <a href="/terms" className="hover:text-white">
+              Общи условия
             </a>
           </div>
 
