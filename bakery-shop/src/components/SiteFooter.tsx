@@ -9,6 +9,7 @@ const SiteFooter = () => {
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [message, setMessage] = useState("");
+  const [honeypot, setHoneypot] = useState("");
   const isLoading = status === "loading";
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -33,7 +34,7 @@ const SiteFooter = () => {
       const response = await fetch("/api/newsletter", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: sanitizedEmail }),
+        body: JSON.stringify({ email: sanitizedEmail, honeypot }),
       });
 
       const data = await response.json().catch(() => ({}));
@@ -45,6 +46,7 @@ const SiteFooter = () => {
       setStatus("success");
       setMessage("Благодарим! Успешно се абонирахте.");
       setEmail("");
+      setHoneypot("");
     } catch (error) {
       const fallbackMessage =
         error instanceof Error ? error.message : "Нещо се обърка. Моля, опитайте отново.";
@@ -60,7 +62,7 @@ const SiteFooter = () => {
           <div className="space-y-6">
             <h4 className="text-3xl leading-tight sm:text-4xl">Абонирайте се за новини и отстъпки</h4>
             <p>Първи научавайте за нови вкусове, специални оферти и дегустации в магазина.</p>
-            <form className="space-y-3" onSubmit={handleSubmit}>
+            <form className="space-y-3" onSubmit={handleSubmit} noValidate>
               <div className="flex max-w-xl overflow-hidden rounded-full bg-white/10 shadow-inner backdrop-blur">
                 <input
                   type="email"
@@ -68,9 +70,21 @@ const SiteFooter = () => {
                   required
                   placeholder="Имейл адрес"
                   autoComplete="email"
+                  inputMode="email"
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
                   className="w-full flex-1 border-none bg-transparent px-6 py-3 text-sm text-white placeholder:text-white/70 focus:outline-none"
+                />
+
+                <input
+                  type="text"
+                  name="favoriteDessert"
+                  tabIndex={-1}
+                  autoComplete="off"
+                  value={honeypot}
+                  onChange={(event) => setHoneypot(event.target.value)}
+                  className="hidden"
+                  aria-hidden="true"
                 />
                 <button
                   type="submit"
