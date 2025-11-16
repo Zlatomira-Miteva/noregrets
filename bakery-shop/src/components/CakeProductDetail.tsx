@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import Image from "next/image";
 import { useMemo, useState } from "react";
@@ -7,10 +7,9 @@ import { CakeProduct } from "@/data/cakes";
 import { useCart } from "@/context/CartContext";
 import { parsePrice } from "@/utils/price";
 
-const STORAGE_TEXT =
-  "Съхранявайте тортата в хладилник до 48 часа. Извадете я 20 минути преди сервиране, за да се отпуснат кремовете.";
+const STORAGE_TEXT = "Съхранявайте тортата в хладилник до 48 часа.";
 const DELIVERY_TEXT =
-  "Изпращаме охладени торти от понеделник до четвъртък. Поръчки след 17:00 ч. се обработват на следващия работен ден.";
+  "Изпращаме охладени торти от понеделник до четвъртък. Поръчки след 16:30 ч. се обработват на следващия работен ден.";
 const ALLERGEN_TEXT =
   "Всички торти съдържат глутен, млечни продукти и яйца. Някои варианти включват ядки или следи от тях.";
 
@@ -58,10 +57,16 @@ const CakeProductDetail = ({ cake }: Props) => {
           <header className="space-y-4">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div>
-                <p className="text-sm uppercase text-[#5f000b]/70">{cake.leadTime}</p>
-                <h1 className="text-3xl font-semibold leading-tight sm:text-4xl">{cake.name}</h1>
+                <p className="text-sm uppercase text-[#5f000b]/70">
+                  {cake.leadTime}
+                </p>
+                <h1 className="text-3xl font-semibold leading-tight sm:text-4xl">
+                  {cake.name}
+                </h1>
               </div>
-              <span className="text-2xl font-semibold sm:pt-1">{cake.price}</span>
+              <span className="text-2xl font-semibold sm:pt-1">
+                {cake.price}
+              </span>
             </div>
             <p className="text-[#3d1b20]">{cake.description}</p>
             <ul className="space-y-1 text-sm">
@@ -70,13 +75,17 @@ const CakeProductDetail = ({ cake }: Props) => {
                 <li key={highlight}>• {highlight}</li>
               ))}
             </ul>
-            <p className="uppercase text-sm text-[#5f000b]/70">{ALLERGEN_TEXT}</p>
+            <p className="uppercase text-sm text-[#5f000b]/70">
+              {ALLERGEN_TEXT}
+            </p>
           </header>
 
-          <section className="space-y-6 rounded-3xl bg-white p-8 shadow-card">
+          <section className="space-y-6 rounded-3xl bg-white shadow-card">
             <div className="space-y-2">
               <h2 className="text-lg font-semibold">Количество</h2>
-              <p className="text-sm text-[#5f000b]/70">Всяка торта се доставя охладена и готова за сервиране.</p>
+              <p className="text-sm text-[#5f000b]/70">
+                Всяка торта се доставя с хладилна кутия и е готова за сервиране.
+              </p>
             </div>
             <div className="flex items-center gap-4">
               <button
@@ -124,7 +133,9 @@ const CakeProductDetail = ({ cake }: Props) => {
           </section>
 
           <section className="space-y-3 rounded-2xl bg-white/90 p-6 shadow-card">
-            <strong className="text-base font-semibold text-[#5f000b]">Какво има вътре</strong>
+            <strong className="text-base font-semibold text-[#5f000b]">
+              Какво има вътре
+            </strong>
             <div className="flex flex-wrap gap-2">
               {cake.fillings.map((item) => (
                 <span

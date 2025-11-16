@@ -10,11 +10,30 @@ import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
 import { useCart } from "@/context/CartContext";
 import { parsePrice } from "@/utils/price";
-import CookieBoxHero from "@/app/cookie-box-hero.jpg";
-import SmallBoxCookies from "@/app/small-box-cookies.webp";
-import NutellaCookie from "@/app/nutella-bueno-cookie.png";
+import RedVelvetIg from "@/app/red velvet ig.png";
+import NutellaIg from "@/app/nutella ig.png";
+import BiscoffIg from "@/app/biscoff ig.png";
+import OreoIg from "@/app/oreo ig.png";
+import NewYorkIg from "@/app/new york ig.png";
+import TrippleChocIg from "@/app/tripple choc ig.png";
+import BoxSixCookiesOpen from "@/app/box-six-cookies-open.png";
+import CookieBoxHeroImage from "@/app/cookie-box.jpg";
+import CookieBoxClosedImage from "@/app/cookie-box-closed.png";
+import CookieBoxThreeOpen from "@/app/cooke-box-3-open.png";
 
-const GALLERY_IMAGES: StaticImageData[] = [CookieBoxHero, SmallBoxCookies, NutellaCookie];
+const BASE_GALLERY_IMAGES: StaticImageData[] = [RedVelvetIg, NutellaIg, BiscoffIg, OreoIg, NewYorkIg, TrippleChocIg];
+
+const getGalleryImages = (size: string): StaticImageData[] => {
+  const extras: StaticImageData[] = [];
+
+  if (size === "6") {
+    extras.push(BoxSixCookiesOpen, CookieBoxHeroImage, CookieBoxClosedImage);
+  } else if (size === "3") {
+    extras.push(CookieBoxThreeOpen, CookieBoxHeroImage, CookieBoxClosedImage);
+  }
+
+  return [...extras, ...BASE_GALLERY_IMAGES];
+};
 
 type BoxConfig = {
   size: number;
@@ -27,6 +46,18 @@ type BoxConfig = {
 };
 
 const BOX_CONFIG: Record<string, BoxConfig> = {
+  "3": {
+    size: 3,
+    name: "Направи сам кутия с 3 кукита",
+    price: "21.00 лв",
+    description: "Създайте персонална селекция от три любими вкуса – перфектни за подарък или дегустация.",
+    highlights: [
+      "Доставка до 3 дни",
+      "Всяко кукито е опаковано индивидуално за максимална свежест",
+    ],
+    weight: "Нетно тегло: 450 гр.",
+    allergenNote: "Всички кукита съдържат глутен, яйца и млечни продукти. Възможни са следи от ядки и фъстъци.",
+  },
   "6": {
     size: 6,
     name: "Направи сам кутия с 6 кукита",
@@ -89,8 +120,8 @@ const COOKIE_OPTIONS: CookieOption[] = [
 ];
 
 const MOCHI_OPTIONS: CookieOption[] = [
-  { id: "strawberry-mochi", name: "Ягодово мочи", image: SmallBoxCookies },
-  { id: "matcha-mochi", name: "Матча мочи", image: CookieBoxHero },
+  { id: "strawberry-mochi", name: "Ягодово мочи", image: RedVelvetIg },
+  { id: "matcha-mochi", name: "Матча мочи", image: RedVelvetIg },
 ];
 
 const MAX_SELECTION = 12;
@@ -104,7 +135,8 @@ export default function CustomBoxPage() {
   const config = BOX_CONFIG[normalizedSize];
   const isMochiBox = normalizedSize.startsWith("mochi");
   const options = isMochiBox ? MOCHI_OPTIONS : COOKIE_OPTIONS;
-  const totalImages = GALLERY_IMAGES.length;
+  const galleryImages = useMemo(() => getGalleryImages(normalizedSize), [normalizedSize]);
+  const totalImages = galleryImages.length;
 
   const [activeIndex, setActiveIndex] = useState(0);
   const [selection, setSelection] = useState<Record<string, number>>(() =>
@@ -164,6 +196,8 @@ export default function CustomBoxPage() {
       quantity: 1,
       options: summary,
     });
+
+    setSelection(Object.fromEntries(options.map((cookie) => [cookie.id, 0])));
   };
 
   if (!hasConfig) {
@@ -194,7 +228,7 @@ export default function CustomBoxPage() {
               <div className="overflow-hidden rounded-[1rem] bg-white p-1 shadow-card">
                 <div className="group relative aspect-square overflow-hidden rounded-[0.75rem]">
                   <Image
-                    src={GALLERY_IMAGES[activeIndex]}
+                    src={galleryImages[activeIndex]}
                     alt="Кутия с кукита"
                     fill
                     className="object-cover transition duration-500"
@@ -229,7 +263,7 @@ export default function CustomBoxPage() {
 
               <div className="grid grid-cols-3 gap-4">
                 {visibleIndices.map((imageIndex, position) => {
-                  const image = GALLERY_IMAGES[imageIndex];
+                  const image = galleryImages[imageIndex];
                   const isActive = imageIndex === activeIndex;
                   return (
                     <button
@@ -264,7 +298,7 @@ export default function CustomBoxPage() {
                 <p className="uppercase ">{config.allergenNote}</p>
               </header>
 
-              <section className="space-y-6 rounded-s p-8 shadow-card">
+              <section className="space-y-6 rounded-s shadow-card">
                 <div className="flex flex-col gap-1">
                   <h4 className="text-lg">Изберете бисквитки</h4>
                   <p>
@@ -277,41 +311,39 @@ export default function CustomBoxPage() {
                   {options.map((cookie) => {
                     const count = selection[cookie.id] ?? 0;
                     return (
-                      <article
-                        key={cookie.id}
-                        className="flex flex-col gap-5 overflow-hidden rounded-s border border-[#f4b9c2] bg-white p-6 shadow-card transition hover:-translate-y-0.5 hover:shadow-lg"
-                      >
-                        <div className="flex items-center justify-between gap-6">
-                          <div className="space-y-2">
-                            <h6 className="text-xl font-semibold ">{cookie.name}</h6>
-                          </div>
-                          <div className="relative h-20 w-20 overflow-hidden rounded-full border border-[#fbd0d9]">
-                            <Image src={cookie.image} alt={cookie.name} fill className="object-cover" sizes="120px" />
-                          </div>
-                        </div>
+                      <article key={cookie.id} className="rounded-[1.75rem] bg-[#ffeef1] p-1 shadow-card transition hover:-translate-y-0.5 hover:shadow-lg">
+                        <div className="flex flex-col gap-6 rounded-[1.5rem] border border-[#f4b9c2] bg-white p-6 sm:flex-row sm:items-center sm:justify-between">
+                          <div className="space-y-4 sm:max-w-[60%]">
+                            <h6 className="text-xl font-semibold text-[#5f000b]">{cookie.name}</h6>
 
-                        <div className="flex items-center justify-center gap-3 rounded-full p-3">
-                          <button
-                            type="button"
-                            onClick={() => updateSelection(cookie.id, -1)}
-                            className="flex h-12 w-12 items-center justify-center rounded-full border border-[#f1b8c4] text-lg font-semibold transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-40"
-                            aria-label={`Премахни ${cookie.name}`}
-                            disabled={count === 0}
-                          >
-                            –
-                          </button>
-                          <span className="flex h-12 min-w-[3.5rem] items-center justify-center rounded-full border border-[#f1b8c4] bg-white text-lg font-semibold ">
-                            {count}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => updateSelection(cookie.id, 1)}
-                            className="flex h-12 w-12 items-center justify-center rounded-full border border-[#f1b8c4] bg-white text-lg font-semibold transition hover: disabled:cursor-not-allowed disabled:opacity-40"
-                            aria-label={`Добави ${cookie.name}`}
-                            disabled={!remainingSlots}
-                          >
-                            +
-                          </button>
+                            <div className="flex items-center gap-4 text-[#5f000b]">
+                              <button
+                                type="button"
+                                onClick={() => updateSelection(cookie.id, -1)}
+                                className="flex h-12 w-12 items-center justify-center rounded-full border border-[#f4b9c2] text-lg font-semibold transition hover:bg-[#fff5f7] disabled:cursor-not-allowed disabled:opacity-40"
+                                aria-label={`Премахни ${cookie.name}`}
+                                disabled={count === 0}
+                              >
+                                –
+                              </button>
+                              <span className="flex h-12 min-w-[3.5rem] items-center justify-center rounded-full border border-[#f4b9c2] bg-white text-lg font-semibold">
+                                {count}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => updateSelection(cookie.id, 1)}
+                                className="flex h-12 w-12 items-center justify-center rounded-full border border-[#f4b9c2] text-lg font-semibold transition hover:bg-[#fff5f7] disabled:cursor-not-allowed disabled:opacity-40"
+                                aria-label={`Добави ${cookie.name}`}
+                                disabled={!remainingSlots}
+                              >
+                                +
+                              </button>
+                            </div>
+                          </div>
+
+                          <div className="relative h-24 w-24 overflow-hidden rounded-[1.25rem] bg-white">
+                            <Image src={cookie.image} alt={cookie.name} fill className="object-cover" sizes="96px" />
+                          </div>
                         </div>
                       </article>
                     );
@@ -337,7 +369,7 @@ export default function CustomBoxPage() {
                 <div className="space-y-3">
                   <strong className="text-base font-semibold ">Грижа за кукитата</strong>
                   <p>
-                    Печем всичко в деня на изпращане и използваме въздушно запечатване за максимална свежест. Кукитата остават най-вкусни до две седмици, ако се
+                    Печем всичко в деня на изпращане и пакетираме бисквитките за максимална свежест. Кукитата остават най-вкусни до две седмици, ако се
                     съхраняват на стайна температура.
                   </p>
                   <p>Ако предпочитате да ги запазите за по-късно, поставете ги във фризер до един месец и ги затоплете за няколко минути преди сервиране.</p>
@@ -346,8 +378,8 @@ export default function CustomBoxPage() {
                 <div className="space-y-3">
                   <strong className="text-base font-semibold ">Информация за доставка</strong>
                   <p>
-                    Моля, предвидете 1-2 работни дни за изпращане и 1-2 работни дни за доставка. Изпращаме от понеделник до четвъртък. Ако поръчката ви е направена
-                    след 17:00 ч. в четвъртък, тя ще бъде изпратена следващия понеделник.
+                    Моля, предвидете 3 работни дни за доставка. Изпращаме от понеделник до четвъртък. Ако поръчката ви е направена
+                    след 16:30 ч. в четвъртък, тя ще бъде изпратена следващия понеделник.
                   </p>
                 </div>
 

@@ -6,7 +6,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import { COOKIES } from "@/data/cookies";
 
-const AUTO_ROTATE_INTERVAL = 5000;
+const AUTO_ROTATE_INTERVAL = 15000;
 
 const CookieShowcase = () => {
   const [activeIndex, setActiveIndex] = useState(0);

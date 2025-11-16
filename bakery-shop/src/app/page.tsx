@@ -1,7 +1,12 @@
 import Image, { type StaticImageData } from "next/image";
 import Link from "next/link";
 import ProductImage from "./small-box-cookies.webp";
-import CookieBoxImage from "./cookie-box.jpg";
+import CookieBoxImage from "./cookie-box-closed.png";
+import CookieBoxHeroImage from "./cookie-box.jpg";
+import AtelieImage from "./atelie-no-regrets.png";
+import BoxSixCookiesOpen from "./box-six-cookies-open.png";
+import CookieBoxThreeOpen from "./cooke-box-3-open.png";
+import BestSellersCookieBox from "./best sellers cookie box.png";
 import StorefrontImage from "./cookie-box-hero.jpg";
 import MascarponeRaspberryPresentCake from "./mascarpone-raspberry-present-cake.png";
 import NutellaBiscoffPresentCake from "./nutella-biscoff-present-cake.png";
@@ -29,8 +34,8 @@ const PRODUCTS: Product[] = [
     name: "Best Sellers кутия от 3 кукита",
     price: "21.00 лв",
     leadTime: "Доставка до 3 дни",
-    weight: "900 гр.",
-    image: "/best-sellers.png",
+    weight: "450 гр.",
+    image: BestSellersCookieBox,
     category: "cookies",
     href: "/products/best-sellers",
   },
@@ -40,7 +45,7 @@ const PRODUCTS: Product[] = [
     price: "42.00 лв",
     leadTime: "Доставка до 3 дни",
     weight: "900 гр.",
-    image: ProductImage,
+    image: BoxSixCookiesOpen,
     category: "cookies",
     href: "/products/custom-box/6",
   },
@@ -50,16 +55,17 @@ const PRODUCTS: Product[] = [
     price: "21.00 лв",
     leadTime: "Доставка до 3 дни",
     weight: "450 гр.",
-    image: ProductImage,
+    image: CookieBoxThreeOpen,
     category: "cookies",
+    href: "/products/custom-box/3",
   },
   {
     id: 4,
     name: "Мини кукита с течен шоколад",
-    price: "12.00 лв",
+    price: "10.00 лв",
     leadTime: "Доставка до 3 дни",
     weight: "240 гр.",
-    image: CookieBoxImage,
+    image: CookieBoxHeroImage,
     category: "cookies",
     href: "/products/mini-cookies",
   },
@@ -410,8 +416,8 @@ export default function Home() {
               </div>
               <div className="relative h-72 overflow-hidden sm:h-96 lg:h-full">
                 <Image
-                  src={CookieBoxImage}
-                  alt="Пекар в нашето ателие подготвя свежи печива"
+                  src={AtelieImage}
+                  alt="Сладкарско ателие No Regrets"
                   fill
                   sizes="(min-width: 1024px) 50vw, 100vw"
                   className="object-cover"

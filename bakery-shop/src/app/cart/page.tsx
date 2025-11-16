@@ -268,7 +268,7 @@ const CartPage = () => {
               {" "}
               <Link
                 href="/"
-                className="rounded-full bg-[#5f000b] px-6 py-3 text-sm font-semibold uppercase  transition hover:bg-[#561c19]"
+                className="cta rounded-full bg-[#5f000b] px-6 py-3 text-sm font-semibold uppercase  transition hover:bg-[#561c19]"
               >
                 {" "}
                 Към продуктите{" "}
@@ -292,7 +292,7 @@ const CartPage = () => {
                     {" "}
                     <div className="flex items-start gap-4">
                       {" "}
-                      <div className="relative hidden h-20 w-20 overflow-hidden rounded-2xl sm:block">
+                      <div className="ratio-square relative hidden h-20 w-20 overflow-hidden rounded-2xl sm:block">
                         {" "}
                         <Image
                           src={CookieBoxHero}
@@ -303,7 +303,7 @@ const CartPage = () => {
                       </div>{" "}
                       <div className="space-y-2">
                         {" "}
-                        <h3 className="text-lg">{item.name}</h3>{" "}
+                        <h6 className="text-lg">{item.name}</h6>{" "}
                         {item.options && item.options.length > 0 ? (
                           <ul className="space-y-1 text-xs">
                             {" "}
