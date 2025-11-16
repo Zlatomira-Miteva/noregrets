@@ -1,6 +1,5 @@
 import type { StaticImageData } from "next/image";
 
-import LemonJar from "@/app/lemon-cake-jar.png";
 import MascarponeRaspberryJar from "@/app/mascarpone-raspberry-cake-jar.png";
 import NutellaBiscoffJar from "@/app/nutella-biscoff-cake-jar.png";
 import RedVelvetJar from "@/app/red-velvet-cake-jar.png";
@@ -37,13 +36,5 @@ export const CAKE_JARS: CakeJarInfo[] = [
       "Въздушен маскарпоне крем, малинов конфитюр и ванилови блатове. Баланс между свежест, леко кисела малина и копринен крем.",
     layers: ["Ванилов блат", "Малиново сладко", "Маскарпоне и сметана"],
     image: MascarponeRaspberryJar,
-  },
-  {
-    id: "lemon",
-    name: "Торта с лимонов домашен крем",
-    description:
-      "Слънчево лимоново курд, пухкав ванилов блат и шамфъстъчен крем. Свеж, ароматен и с приятно ядков финал.",
-    layers: ["Ванилов блат", "Лимон", "Домашен крем"],
-    image: LemonJar,
   },
 ];

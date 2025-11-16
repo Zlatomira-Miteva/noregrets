@@ -36,13 +36,39 @@ const BOX_CONFIG: Record<string, BoxConfig> = {
     weight: "Нетно тегло: 900 гр.",
     allergenNote: "Всички кукита съдържат глутен, яйца и млечни продукти. Възможни са следи от ядки и фъстъци.",
   },
+  "mochi-4": {
+    size: 4,
+    name: "Направи сам кутия от 4 мочи",
+    price: "20.00 лв",
+    description: "Селекция от четири ръчно приготвени мочита – идеални за подарък или следобеден десерт.",
+    highlights: [
+      "Доставка до 3 дни",
+      "Свежо приготвени и шоково замразени за транспорт",
+      "Включена картичка с инструкции за сервиране",
+    ],
+    weight: "Нетно тегло: 240 гр.",
+    allergenNote: "Съдържа глутен, млечни продукти и следи от ядки.",
+  },
   mochi: {
     size: 4,
-    name: "Кутия с 4 бр. мочи",
+    name: "Направи сам кутия от 4 мочи",
     price: "20.00 лв",
-    description: "Създайте собствена селекция от японски мочи десерти – четири аромата по ваш избор в елегантна кутия.",
-    highlights: ["Доставка до 3 дни", "Свежо приготвени и шоково замразени за доставка", "Включен лист с инструкции за сервиране"],
+    description: "Селекция от четири ръчно приготвени мочита – идеални за подарък или следобеден десерт.",
+    highlights: [
+      "Доставка до 3 дни",
+      "Свежо приготвени и шоково замразени за транспорт",
+      "Включена картичка с инструкции за сервиране",
+    ],
     weight: "Нетно тегло: 240 гр.",
+    allergenNote: "Съдържа глутен, млечни продукти и следи от ядки.",
+  },
+  "mochi-9": {
+    size: 9,
+    name: "Направи сам кутия от 9 мочи",
+    price: "45.00 лв",
+    description: "Максимум удоволствие – девет любими вкуса, комбинирани в голяма кутия за споделяне.",
+    highlights: ["Доставка до 3 дни", "Възможност за комбиниране на до девет вкуса", "Сладко изживяване за парти или офис"],
+    weight: "Нетно тегло: 540 гр.",
     allergenNote: "Съдържа глутен, млечни продукти и следи от ядки.",
   },
 };
@@ -76,7 +102,8 @@ export default function CustomBoxPage() {
   const hasConfig = Boolean(BOX_CONFIG[requestedSize]);
   const normalizedSize = hasConfig ? requestedSize : DEFAULT_SIZE;
   const config = BOX_CONFIG[normalizedSize];
-  const options = normalizedSize === "mochi" ? MOCHI_OPTIONS : COOKIE_OPTIONS;
+  const isMochiBox = normalizedSize.startsWith("mochi");
+  const options = isMochiBox ? MOCHI_OPTIONS : COOKIE_OPTIONS;
   const totalImages = GALLERY_IMAGES.length;
 
   const [activeIndex, setActiveIndex] = useState(0);

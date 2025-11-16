@@ -54,12 +54,6 @@ const FILLING_OPTIONS: FillingOption[] = [
     description: "Маскарпоне крем и блатове червено кадифе.",
     image: CookieBoxImage,
   },
-  {
-    id: "pistachio",
-    name: "Лимонов домашен крем",
-    description: "Домашен крем с лимон и ванилов блат.",
-    image: CookieBoxHero,
-  },
 ];
 export default function CakeJarPage() {
   const [activeIndex, setActiveIndex] = useState(0);

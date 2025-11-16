@@ -40,14 +40,20 @@ export default function MochiPage() {
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-4">
             <Link
-              href="/products/custom-box/mochi"
+              href="/products/custom-box/mochi-4"
               className="cta rounded-full bg-[#5f004f] px-6 py-3 text-sm font-semibold uppercase text-white transition hover:bg-[#7c1a6a]"
             >
-              Направи своя кутия
+              Кутия от 4 мочи
+            </Link>
+            <Link
+              href="/products/custom-box/mochi-9"
+              className="rounded-full border border-[#5f004f] px-6 py-3 text-sm font-semibold uppercase transition hover:bg-white/60"
+            >
+              Кутия от 9 мочи
             </Link>
             <Link
               href="/cart"
-              className="rounded-full border border-[#5f004f] px-6 py-3 text-sm font-semibold uppercase transition hover:bg-white/60"
+              className="rounded-full border border-transparent bg-white/20 px-6 py-3 text-sm font-semibold uppercase text-[#5f004f] transition hover:bg-white/40"
             >
               Виж количката
             </Link>

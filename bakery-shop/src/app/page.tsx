@@ -3,7 +3,6 @@ import Link from "next/link";
 import ProductImage from "./small-box-cookies.webp";
 import CookieBoxImage from "./cookie-box.jpg";
 import StorefrontImage from "./cookie-box-hero.jpg";
-import LemonPresentCake from "./lemon-present-cake.png";
 import MascarponeRaspberryPresentCake from "./mascarpone-raspberry-present-cake.png";
 import NutellaBiscoffPresentCake from "./nutella-biscoff-present-cake.png";
 import RedVelvetPresentCake from "./red-velvet-present-cake.png";
@@ -95,16 +94,26 @@ const PRODUCTS: Product[] = [
     href: "/products/cakes/nutella-biscoff",
   },
   {
-    id: 8,
-    name: "Лимонов домашен крем",
-    price: "10.00 лв",
+    id: 9,
+    name: "Направи сам кутия от 4 мочи",
+    price: "20.00 лв",
     leadTime: "Доставка до 3 дни",
-    weight: "330 гр.",
-    image: LemonPresentCake,
-    category: "cakes",
-    href: "/products/cakes/lemon-meringue",
+    weight: "4 бр. свежи мочита",
+    image: CookieBoxImage,
+    category: "mochi",
+    href: "/products/custom-box/mochi-4",
   },
-]; // { // id: 6, // name:"Кутия с Къп кейкове", // price:"20.00 лв", // leadTime:"Взимане от място", // weight:"240 гр.", // image: ProductImage, // category:"cakes", // }, { id: 5, name:"Торта в буркан", price:"20.00 лв", leadTime:"Доставка до 3 дни", weight:"240 гр.", image: ProductImage, category:"cakes", href:"/products/cake-jar", }, { id: 6, name:"Торта по поръчка", price:"20.00 лв", leadTime:"Взимане от място", weight:"240 гр.", image: ProductImage, category:"cakes", }, { id: 7, name:"Кутия с 4 бр. мочи", price:"20.00 лв", leadTime:"Доставка до 3 дни", weight:"240 гр.", image: ProductImage, category:"mochi", href:"/products/custom-box/mochi", }, ];
+  {
+    id: 10,
+    name: "Направи сам кутия от 9 мочи",
+    price: "45.00 лв",
+    leadTime: "Доставка до 3 дни",
+    weight: "9 бр. свежи мочита",
+    image: ProductImage,
+    category: "mochi",
+    href: "/products/custom-box/mochi-9",
+  },
+];
 const BEST_SELLERS = [
   { id: 1, name: "Кукита", image: ProductImage },
   { id: 2, name: "Торти", image: ProductImage },

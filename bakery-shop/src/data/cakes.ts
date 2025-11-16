@@ -1,6 +1,5 @@
 import type { StaticImageData } from "next/image";
 
-import LemonPresentCake from "@/app/lemon-present-cake.png";
 import MascarponeRaspberryPresentCake from "@/app/mascarpone-raspberry-present-cake.png";
 import NutellaBiscoffPresentCake from "@/app/nutella-biscoff-present-cake.png";
 import RedVelvetPresentCake from "@/app/red-velvet-present-cake.png";
@@ -65,21 +64,5 @@ export const CAKES: CakeProduct[] = [
     ],
     fillings: ["Шоколадов блат", "Nutella", "Biscoff крем", "Швейцарски крем"],
     image: NutellaBiscoffPresentCake,
-  },
-  {
-    slug: "lemon-meringue",
-    name: "Лимонов домашен крем",
-    price: "10.00 лв",
-    weight: "340 гр.",
-    leadTime: "Доставка до 3 дни",
-    description:
-      "Слънчев лимонов курд, ванилови блатове и лек меренг. Тортата е освежаваща, ароматна и нежна – идеална за пролетни поводи.",
-    highlights: [
-      "Ръчно приготвена",
-      "Възможност за лична бележка",
-      "Охлаждане преди сервиране 30 мин",
-    ],
-    fillings: ["Ванилов блат", "Лимон", "Домашен крем"],
-    image: LemonPresentCake,
   },
 ];
