@@ -11,6 +11,7 @@ import Marquee from "@/components/Marquee";
 import HeroCarousel from "@/components/HeroCarousel";
 import CookieShowcase from "@/components/CookieShowcase";
 import FeaturedTabs from "@/components/FeaturedTabs";
+import ReviewsCarousel from "@/components/ReviewsCarousel";
 import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
 type Product = {
@@ -410,95 +411,7 @@ export default function Home() {
             </div>
           </div>
         </section>
-        <section className=" py-20">
-          <div className="mx-auto w-full max-w-[clamp(0px,80vw,72rem)] px-[clamp(1rem,3vw,3rem)]">
-            <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
-              <div className="">
-                <p className="font-semibold uppercase tracking-[0.2em]">
-                  {" "}
-                  Потвърдени отзиви{" "}
-                </p>
-                <h2 className="mt-2 text-3xl font-bold sm:text-4xl">
-                  {" "}
-                  Истории от нашите клиенти{" "}
-                </h2>
-              </div>
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  aria-label="Предишен отзив"
-                  className="flex h-11 w-11 items-center justify-center rounded-full border border-[#dcb1b1] bg-white transition hover:-translate-y-0.5 hover:"
-                >
-                  <svg
-                    aria-hidden="true"
-                    className="h-5 w-5"
-                    viewBox="0 0 20 20"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      d="M12.5 5l-5 5 5 5"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </button>
-                <button
-                  type="button"
-                  aria-label="Следващ отзив"
-                  className="flex h-11 w-11 items-center justify-center rounded-full border border-[#dcb1b1] bg-white transition hover:-translate-y-0.5 hover:"
-                >
-                  <svg
-                    aria-hidden="true"
-                    className="h-5 w-5"
-                    viewBox="0 0 20 20"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      d="M7.5 5l5 5-5 5"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </button>
-              </div>
-            </div>
-            <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {" "}
-              {REVIEWS.map((review) => (
-                <article
-                  key={review.id}
-                  className="flex h-full flex-col justify-between rounded-3xl bg-white p-8 shadow-card"
-                >
-                  <div className="space-y-4">
-                    <h3 className="text-base font-semibold">{review.author}</h3>
-                    <p className="leading-relaxed"> {review.content} </p>
-                  </div>
-                  <div className="mt-6 border-t border-[#f3d2c4] pt-4">
-                    <div className="flex items-center gap-3">
-                      <Image
-                        src={review.productImage}
-                        alt={review.productName}
-                        width={48}
-                        height={48}
-                        className="h-12 w-12 rounded-lg object-cover"
-                      />
-                      <span className="text-sm font-semibold ">
-                        {" "}
-                        {review.productName}{" "}
-                      </span>
-                    </div>
-                  </div>
-                </article>
-              ))}{" "}
-            </div>
-          </div>
-        </section>
+        <ReviewsCarousel reviews={REVIEWS} />
         <SiteFooter />
       </main>
     </div>
