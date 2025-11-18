@@ -3,6 +3,7 @@ import type { StaticImageData } from "next/image";
 import MascarponeRaspberryPresentCake from "@/app/mascarpone-raspberry-present-cake.png";
 import NutellaBiscoffPresentCake from "@/app/nutella-biscoff-present-cake.png";
 import RedVelvetPresentCake from "@/app/red-velvet-present-cake.png";
+import { formatPrice } from "@/utils/price";
 
 export type CakeProduct = {
   slug: string;
@@ -20,7 +21,7 @@ export const CAKES: CakeProduct[] = [
   {
     slug: "red-velvet",
     name: "Червено Кадифе",
-    price: "10.00 лв",
+    price: formatPrice(10),
     weight: "220 гр.",
     leadTime: "Доставка до 3 дни",
     description:
@@ -35,7 +36,7 @@ export const CAKES: CakeProduct[] = [
   {
     slug: "mascarpone-raspberry",
     name: "Маскарпоне и малина",
-    price: "10.00 лв",
+    price: formatPrice(10),
     weight: "240 гр.",
     leadTime: "Доставка до 3 дни",
     description:
@@ -50,7 +51,7 @@ export const CAKES: CakeProduct[] = [
   {
     slug: "nutella-biscoff",
     name: "Nutella Biscoff",
-    price: "12.00 лв",
+    price: formatPrice(12),
     weight: "220 гр.",
     leadTime: "Доставка до 3 дни",
     description:

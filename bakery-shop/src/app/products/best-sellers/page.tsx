@@ -31,7 +31,7 @@ const INCLUDED_COOKIES: Array<{ name: string; image: StaticImageData }> = [
 
 const FALLBACK_DETAILS = {
   name: "Best Sellers кутия",
-  price: "52.00 лв",
+  price: formatPrice(52),
   description:
     "Нашата най-популярна селекция от шест емблематични кукита – внимателно опаковани и готови за подарък или споделяне.",
   highlights: [

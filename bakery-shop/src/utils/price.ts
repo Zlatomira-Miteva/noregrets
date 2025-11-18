@@ -1,13 +1,19 @@
+const EUR_CONVERSION_RATE = 1.95583;
+
 export const parsePrice = (price: string): number => {
-  const numeric = price.replace(/[^0-9,\.]/g, "").replace(",", ".");
-  const value = Number.parseFloat(numeric);
+  if (!price) return 0;
+  const normalized = price.replace(",", ".");
+  const match = normalized.match(/[0-9]+(?:\.[0-9]+)?/);
+  const value = match ? Number.parseFloat(match[0]) : 0;
   return Number.isFinite(value) ? value : 0;
 };
 
 export const formatPrice = (value: number | string | null | undefined): string => {
-  const numericValue = typeof value === "number" ? value : value ? Number(value) : 0;
+  const numericValue =
+    typeof value === "number" ? value : value !== null && value !== undefined ? parsePrice(String(value)) : 0;
   if (!Number.isFinite(numericValue)) {
-    return "0.00 лв";
+    return "0.00 лв / 0.00 €";
   }
-  return `${numericValue.toFixed(2)} лв`;
+  const eurValue = numericValue / EUR_CONVERSION_RATE;
+  return `${numericValue.toFixed(2)} лв / ${eurValue.toFixed(2)} €`;
 };

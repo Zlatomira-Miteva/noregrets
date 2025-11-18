@@ -15,7 +15,7 @@ type GalleryImage = StaticImageData | string;
 const FALLBACK_GALLERY: GalleryImage[] = [CookieBoxImage, MiniCookiesFalling];
 const FALLBACK_DETAILS = {
   name: "Мини кукита с течен шоколад",
-  price: "12.00 лв",
+  price: formatPrice(12),
   description:
     "Най-обичаните ни мини кукита, сервирани с кутийка с Nutella. Перфектни за споделяне, подарък или сладко изкушение у дома.",
   highlights: [

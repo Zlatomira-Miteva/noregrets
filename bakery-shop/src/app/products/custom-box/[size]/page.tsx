@@ -51,7 +51,7 @@ const BOX_CONFIG: Record<string, BoxConfig> = {
   "3": {
     size: 3,
     name: "Направи сам кутия с 3 кукита",
-    price: "21.00 лв",
+    price: formatPrice(21),
     description: "Създайте персонална селекция от три любими вкуса – перфектни за подарък или дегустация.",
     highlights: [
       "Доставка до 3 дни",
@@ -63,7 +63,7 @@ const BOX_CONFIG: Record<string, BoxConfig> = {
   "6": {
     size: 6,
     name: "Направи сам кутия с 6 кукита",
-    price: "50.00 лв",
+    price: formatPrice(50),
     description: "Създайте своята мечтана селекция с шест любими вкуса, изпечени по ваша поръчка и доставени до дома ви.",
     highlights: ["Доставка до 3 дни", "Всяко кукито е опаковано индивидуално за максимална свежест"],
     weight: "Нетно тегло: 900 гр.",
@@ -72,7 +72,7 @@ const BOX_CONFIG: Record<string, BoxConfig> = {
   "mochi-4": {
     size: 4,
     name: "Направи сам кутия от 4 мочи",
-    price: "20.00 лв",
+    price: formatPrice(20),
     description: "Селекция от четири ръчно приготвени мочита – идеални за подарък или следобеден десерт.",
     highlights: [
       "Доставка до 3 дни",
@@ -85,7 +85,7 @@ const BOX_CONFIG: Record<string, BoxConfig> = {
   mochi: {
     size: 4,
     name: "Направи сам кутия от 4 мочи",
-    price: "20.00 лв",
+    price: formatPrice(20),
     description: "Селекция от четири ръчно приготвени мочита – идеални за подарък или следобеден десерт.",
     highlights: [
       "Доставка до 3 дни",
@@ -98,7 +98,7 @@ const BOX_CONFIG: Record<string, BoxConfig> = {
   "mochi-9": {
     size: 9,
     name: "Направи сам кутия от 9 мочи",
-    price: "45.00 лв",
+    price: formatPrice(45),
     description: "Максимум удоволствие – девет любими вкуса, комбинирани в голяма кутия за споделяне.",
     highlights: ["Доставка до 3 дни", "Възможност за комбиниране на до девет вкуса", "Сладко изживяване за парти или офис"],
     weight: "Нетно тегло: 540 гр.",

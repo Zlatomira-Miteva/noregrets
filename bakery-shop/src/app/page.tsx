@@ -18,6 +18,7 @@ import FeaturedTabs from "@/components/FeaturedTabs";
 import ReviewsCarousel from "@/components/ReviewsCarousel";
 import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
+import { formatPrice } from "@/utils/price";
 type Product = {
   id: number;
   name: string;
@@ -32,7 +33,7 @@ const PRODUCTS: Product[] = [
   {
     id: 1,
     name: "Best Sellers кутия от 3 кукита",
-    price: "21.00 лв",
+    price: formatPrice(21),
     leadTime: "Доставка до 3 дни",
     weight: "450 гр.",
     image: BestSellersCookieBox,
@@ -42,7 +43,7 @@ const PRODUCTS: Product[] = [
   {
     id: 2,
     name: "Направи сам кутия от 6 кукита",
-    price: "42.00 лв",
+    price: formatPrice(42),
     leadTime: "Доставка до 3 дни",
     weight: "900 гр.",
     image: BoxSixCookiesOpen,
@@ -52,7 +53,7 @@ const PRODUCTS: Product[] = [
   {
     id: 3,
     name: "Направи сам кутия от 3 кукита",
-    price: "21.00 лв",
+    price: formatPrice(21),
     leadTime: "Доставка до 3 дни",
     weight: "450 гр.",
     image: CookieBoxThreeOpen,
@@ -62,7 +63,7 @@ const PRODUCTS: Product[] = [
   {
     id: 4,
     name: "Мини кукита с течен шоколад",
-    price: "10.00 лв",
+    price: formatPrice(10),
     leadTime: "Доставка до 3 дни",
     weight: "240 гр.",
     image: CookieBoxHeroImage,
@@ -72,7 +73,7 @@ const PRODUCTS: Product[] = [
   {
     id: 5,
     name: "Червено кадифе",
-    price: "10.00 лв",
+    price: formatPrice(10),
     leadTime: "Доставка до 3 дни",
     weight: "220 гр.",
     image: RedVelvetPresentCake,
@@ -82,7 +83,7 @@ const PRODUCTS: Product[] = [
   {
     id: 6,
     name: "Маскарпоне и малина",
-    price: "10.00 лв",
+    price: formatPrice(10),
     leadTime: "Доставка до 3 дни",
     weight: "240 гр.",
     image: MascarponeRaspberryPresentCake,
@@ -92,7 +93,7 @@ const PRODUCTS: Product[] = [
   {
     id: 7,
     name: "Nutella Biscoff",
-    price: "12.00 лв",
+    price: formatPrice(12),
     leadTime: "Доставка до 3 дни",
     weight: "220 гр.",
     image: NutellaBiscoffPresentCake,
@@ -102,7 +103,7 @@ const PRODUCTS: Product[] = [
   {
     id: 9,
     name: "Направи сам кутия от 4 мочи",
-    price: "20.00 лв",
+    price: formatPrice(20),
     leadTime: "Доставка до 3 дни",
     weight: "4 бр. свежи мочита",
     image: CookieBoxImage,
@@ -112,7 +113,7 @@ const PRODUCTS: Product[] = [
   {
     id: 10,
     name: "Направи сам кутия от 9 мочи",
-    price: "45.00 лв",
+    price: formatPrice(45),
     leadTime: "Доставка до 3 дни",
     weight: "9 бр. свежи мочита",
     image: ProductImage,
@@ -135,28 +136,28 @@ const MERCH_ITEMS = [
   {
     id: 1,
     name: "Фартук No Regrets",
-    price: "45.00 лв",
+    price: formatPrice(45),
     image: ProductImage,
     bestSeller: true,
   },
   {
     id: 2,
     name: "Кепка No Regrets",
-    price: "32.00 лв",
+    price: formatPrice(32),
     image: CookieBoxImage,
     bestSeller: true,
   },
   {
     id: 3,
     name: "Чанта за пазар No Regrets",
-    price: "38.00 лв",
+    price: formatPrice(38),
     image: ProductImage,
     bestSeller: false,
   },
   {
     id: 4,
     name: "Подложка за печене",
-    price: "24.00 лв",
+    price: formatPrice(24),
     image: CookieBoxImage,
     bestSeller: false,
   },

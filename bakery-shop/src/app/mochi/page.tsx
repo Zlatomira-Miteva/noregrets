@@ -8,9 +8,9 @@ import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
 import { MOCHIS } from "@/data/mochis";
 import { useCart } from "@/context/CartContext";
-import { parsePrice } from "@/utils/price";
+import { formatPrice, parsePrice } from "@/utils/price";
 
-const PRICE_LABEL = "20.00 лв";
+const PRICE_LABEL = formatPrice(20);
 const allergenNote =
   "Мочитата съдържат оризово брашно, млечни продукти и могат да имат следи от ядки и глутен.";
 
