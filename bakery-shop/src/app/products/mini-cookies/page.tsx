@@ -1,16 +1,19 @@
 "use client";
 import Image, { type StaticImageData } from "next/image";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Marquee from "@/components/Marquee";
 import CookieShowcase from "@/components/CookieShowcase";
 import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
 import { useCart } from "@/context/CartContext";
-import { parsePrice } from "@/utils/price";
+import { formatPrice, parsePrice } from "@/utils/price";
 import CookieBoxImage from "@/app/cookie-box.jpg";
 import MiniCookiesFalling from "@/app/mini-cookies-falling.png";
-const GALLERY_IMAGES: StaticImageData[] = [CookieBoxImage, MiniCookiesFalling];
-const PRODUCT_DETAILS = {
+
+type GalleryImage = StaticImageData | string;
+
+const FALLBACK_GALLERY: GalleryImage[] = [CookieBoxImage, MiniCookiesFalling];
+const FALLBACK_DETAILS = {
   name: "Мини кукита с течен шоколад",
   price: "12.00 лв",
   description:
@@ -25,17 +28,68 @@ const PRODUCT_DETAILS = {
 export default function MiniCookiesPage() {
   const [activeIndex, setActiveIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
+  const [productDetails, setProductDetails] =
+    useState<typeof FALLBACK_DETAILS>(FALLBACK_DETAILS);
+  const [galleryImages, setGalleryImages] = useState<GalleryImage[]>(FALLBACK_GALLERY);
   const { addItem } = useCart();
-  const priceValue = useMemo(() => parsePrice(PRODUCT_DETAILS.price), []);
+  useEffect(() => {
+    let isMounted = true;
+    const loadProduct = async () => {
+      try {
+        const response = await fetch("/api/products/mini-cookies");
+        if (!response.ok) {
+          throw new Error("Неуспешно зареждане на продукта.");
+        }
+        const data: { name?: string; price?: number; description?: string; weight?: string } = await response.json();
+        if (!isMounted) return;
+        setProductDetails((prev) => ({
+          ...prev,
+          name: data.name || prev.name,
+          description: data.description || prev.description,
+          weight: data.weight || prev.weight,
+          price: typeof data.price === "number" ? formatPrice(data.price) : prev.price,
+        }));
+      } catch (error) {
+        console.error(error);
+      }
+    };
+    loadProduct();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+  const priceValue = useMemo(() => parsePrice(productDetails.price), [productDetails.price]);
+  useEffect(() => {
+    let isMounted = true;
+    const loadGallery = async () => {
+      try {
+        const response = await fetch("/api/products/mini-cookies");
+        if (!response.ok) {
+          throw new Error("Неуспешно зареждане на продукта.");
+        }
+        const data: { galleryImages?: string[] } = await response.json();
+        if (isMounted && data.galleryImages?.length) {
+          setGalleryImages(data.galleryImages);
+          setActiveIndex(0);
+        }
+      } catch (error) {
+        console.error(error);
+      }
+    };
+    loadGallery();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
   const wrapIndex = (index: number) => {
-    const total = GALLERY_IMAGES.length;
+    const total = galleryImages.length;
     if (total === 0) return 0;
     return (index + total) % total;
   };
   const visibleIndices =
-    GALLERY_IMAGES.length >= 3
+    galleryImages.length >= 3
       ? [wrapIndex(activeIndex - 1), activeIndex, wrapIndex(activeIndex + 1)]
-      : Array.from({ length: GALLERY_IMAGES.length }, (_, idx) => idx);
+      : Array.from({ length: galleryImages.length }, (_, idx) => idx);
   const handlePrev = () => setActiveIndex((prev) => wrapIndex(prev - 1));
   const handleNext = () => setActiveIndex((prev) => wrapIndex(prev + 1));
   const increaseQuantity = () => setQuantity((prev) => prev + 1);
@@ -43,7 +97,7 @@ export default function MiniCookiesPage() {
   const handleAddToCart = () => {
     addItem({
       productId: "mini-cookies",
-      name: PRODUCT_DETAILS.name,
+      name: productDetails.name,
       price: priceValue,
       quantity,
     });
@@ -66,13 +120,13 @@ export default function MiniCookiesPage() {
                 <div className="group relative aspect-square overflow-hidden rounded-[0.75rem]">
                   {" "}
                   <Image
-                    src={GALLERY_IMAGES[activeIndex]}
-                    alt={PRODUCT_DETAILS.name}
+                    src={galleryImages[activeIndex]}
+                    alt={productDetails.name}
                     fill
                     className="object-cover transition duration-500"
                     sizes="(min-width: 1024px) 512px, 100vw"
                   />{" "}
-                  {GALLERY_IMAGES.length > 1 ? (
+                  {galleryImages.length > 1 ? (
                     <>
                       {" "}
                       <button
@@ -126,11 +180,12 @@ export default function MiniCookiesPage() {
               <div className="grid grid-cols-3 gap-4">
                 {" "}
                 {visibleIndices.map((imageIndex, position) => {
-                  const image = GALLERY_IMAGES[imageIndex];
+                  const image = galleryImages[imageIndex];
+                  const imageKey = typeof image === "string" ? image : image.src;
                   const isActive = imageIndex === activeIndex;
                   return (
                     <button
-                      key={`${image.src}-${position}`}
+                      key={`${imageKey}-${position}`}
                       type="button"
                       onClick={() => setActiveIndex(imageIndex)}
                       className={`relative aspect-square overflow-hidden rounded-2xl border transition ${
@@ -162,22 +217,22 @@ export default function MiniCookiesPage() {
                   {" "}
                   <h3 className="text-3xl leading-tight sm:text-4xl ">
                     {" "}
-                    {PRODUCT_DETAILS.name}{" "}
+                    {productDetails.name}{" "}
                   </h3>{" "}
                   <span className="text-2xl font-semibold sm:pt-1">
                     {" "}
-                    {PRODUCT_DETAILS.price}{" "}
+                    {productDetails.price}{" "}
                   </span>{" "}
                 </div>{" "}
-                <p className="/90"> {PRODUCT_DETAILS.description} </p>{" "}
+                <p className="/90"> {productDetails.description} </p>{" "}
                 <ul className="space-y-2 ">
                   {" "}
-                  {PRODUCT_DETAILS.highlights.map((item) => (
+                  {productDetails.highlights.map((item) => (
                     <li key={item}>• {item}</li>
                   ))}{" "}
-                  <li>{PRODUCT_DETAILS.weight}</li>{" "}
+                  <li>{productDetails.weight}</li>{" "}
                 </ul>{" "}
-                <p className="uppercase "> {PRODUCT_DETAILS.allergenNote} </p>{" "}
+                <p className="uppercase "> {productDetails.allergenNote} </p>{" "}
               </header>{" "}
               <section className="space-y-6 rounded-s  shadow-card">
                 {" "}

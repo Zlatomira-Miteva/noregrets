@@ -391,16 +391,15 @@ export default function Home() {
           <div className="mx-auto w-full overflow-hidden rounded-3xl shadow-card">
             <div className="grid gap-0 lg:grid-cols-2">
               <div className="flex flex-col justify-center gap-6 px-[clamp(1.5rem,4vw,3.5rem)] py-12 ">
-                <p className="font-semibold uppercase"> Нашата история </p>
                 <h2 className="text-3xl font-bold sm:text-4xl">
                   {" "}
-                  Сладкарско ателие No Regrets{" "}
+                  Нашата история{" "}
                 </h2>
                 <p className="leading-relaxed">
                   {" "}
                   Печенето на кукита, торти и най-различни сладки изкушения е
                   моя страст още от 2015 г. За мен приготвянето им е истинско
-                  изкуство – начин да изразя себе си и да създам малки моменти
+                  изкуство - начин да изразя себе си и да създам малки моменти
                   на щастие. Най-голямото удоволствие е да видя усмивките на
                   хората, когато опитват от моите сладости. Всяко изделие се
                   приготвя с подбрани съставки, внимание към детайла и щипка

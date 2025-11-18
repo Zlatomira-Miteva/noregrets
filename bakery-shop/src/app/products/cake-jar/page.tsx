@@ -1,339 +1,276 @@
 "use client";
-import Image, { type StaticImageData } from "next/image";
-import { useMemo, useState } from "react";
+
+import Image from "next/image";
+import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
+
 import Marquee from "@/components/Marquee";
 import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
 import { useCart } from "@/context/CartContext";
-import { parsePrice } from "@/utils/price";
-import CookieBoxImage from "@/app/cookie-box.jpg";
-import CookieBoxHero from "@/app/cookie-box-hero.jpg";
-import SmallBoxCookies from "@/app/small-box-cookies.webp";
-import NutellaCookie from "@/app/nutella-bueno-cookie.png";
-const GALLERY_IMAGES: StaticImageData[] = [
-  CookieBoxHero,
-  CookieBoxImage,
-  SmallBoxCookies,
-];
-const PRODUCT_DETAILS = {
-  name: "Торта в буркан",
-  price: "20.00 лв",
-  description:
-    "Изберете любимия си крем и се насладете на персонализирана торта, сервирана в удобен буркан – идеална за подарък или сладко изкушение в движение.",
-  highlights: [
-    "Доставка до 3 дни",
-    "Приготвена в деня на изпращане",
-    "Изберете един от най-популярните ни кремове",
-  ],
-  weight: "Нетно тегло: 240 гр.",
-  allergenNote: "Съдържа глутен, яйца, млечни продукти и следи от ядки.",
-};
-type FillingOption = {
+import { formatPrice } from "@/utils/price";
+
+type CakeJar = {
   id: string;
+  slug: string;
   name: string;
   description: string;
-  image: StaticImageData;
+  layers: string[];
+  heroImage: string;
+  galleryImages: string[];
+  categoryImages: string[];
+  price: number;
+  weight: string;
+  leadTime: string;
 };
-const FILLING_OPTIONS: FillingOption[] = [
-  {
-    id: "nutella",
-    name: "Nutella Biscoff",
-    description:
-      "Швейцарски крем, Нутела, натрошени бисквити Лотус, крем Лотус и какови блатове.",
-    image: NutellaCookie,
-  },
-  {
-    id: "berry",
-    name: "Маскарпоне и малини",
-    description: "Лек крем със сладко от малини и ванилови блатове.",
-    image: SmallBoxCookies,
-  },
-  {
-    id: "tiramisu",
-    name: "Червено кадифе",
-    description: "Маскарпоне крем и блатове червено кадифе.",
-    image: CookieBoxImage,
-  },
-];
+
+const normalizeImage = (value?: string) => {
+  if (!value) return "/red-velvet-cake-jar.png";
+  if (value.startsWith("http://") || value.startsWith("https://") || value.startsWith("/")) {
+    return value;
+  }
+  return `/${value.replace(/^\/+/, "")}`;
+};
+
 export default function CakeJarPage() {
-  const [activeIndex, setActiveIndex] = useState(0);
-  const [selectedFilling, setSelectedFilling] = useState<string | null>(null);
+  const searchParams = useSearchParams();
   const { addItem } = useCart();
-  const priceValue = useMemo(() => parsePrice(PRODUCT_DETAILS.price), []);
-  const wrapIndex = (index: number) => {
-    const total = GALLERY_IMAGES.length;
-    if (total === 0) return 0;
-    return (index + total) % total;
-  };
-  const visibleIndices =
-    GALLERY_IMAGES.length >= 3
-      ? [wrapIndex(activeIndex - 1), activeIndex, wrapIndex(activeIndex + 1)]
-      : Array.from({ length: GALLERY_IMAGES.length }, (_, idx) => idx);
-  const handlePrev = () => setActiveIndex((prev) => wrapIndex(prev - 1));
-  const handleNext = () => setActiveIndex((prev) => wrapIndex(prev + 1));
-  const handleAddToCart = () => {
-    if (!selectedFilling) return;
-    const filling = FILLING_OPTIONS.find((f) => f.id === selectedFilling);
-    addItem({
-      productId: "cake-jar",
-      name: PRODUCT_DETAILS.name,
-      price: priceValue,
-      quantity: 1,
-      options: filling ? [filling.name] : undefined,
+
+  const [cakeJars, setCakeJars] = useState<CakeJar[]>([]);
+  const [activeSlug, setActiveSlug] = useState<string | null>(null);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [quantity, setQuantity] = useState(1);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loadJars = async () => {
+      try {
+        setIsLoading(true);
+        const response = await fetch("/api/cake-jars");
+        if (!response.ok) {
+          throw new Error("Не успяхме да заредим тортите в буркан.");
+        }
+        const data: CakeJar[] = await response.json();
+        setCakeJars(data);
+        const preferred = searchParams?.get("flavor");
+        if (preferred && data.some((jar) => jar.slug === preferred)) {
+          setActiveSlug(preferred);
+        } else {
+          setActiveSlug(data[0]?.slug ?? null);
+        }
+        setError(null);
+      } catch (fetchError) {
+        const message =
+          fetchError instanceof Error ? fetchError.message : "Възникна неочаквана грешка. Моля, опитайте отново.";
+        setError(message);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadJars();
+  }, [searchParams]);
+
+  useEffect(() => {
+    setActiveIndex(0);
+  }, [activeSlug]);
+
+  const activeJar = useMemo(
+    () => cakeJars.find((jar) => jar.slug === activeSlug) ?? cakeJars[0],
+    [cakeJars, activeSlug],
+  );
+
+  const galleryImages = useMemo(() => {
+    if (!activeJar) return [];
+    const normalized = activeJar.galleryImages?.length
+      ? activeJar.galleryImages.map(normalizeImage)
+      : [normalizeImage(activeJar.heroImage)];
+    return normalized;
+  }, [activeJar]);
+
+  const visibleImages = galleryImages.map((_, idx) => idx);
+
+  const handlePrev = () => {
+    setActiveIndex((prev) => {
+      const total = galleryImages.length || 1;
+      return (prev - 1 + total) % total;
     });
   };
+
+  const handleNext = () => {
+    setActiveIndex((prev) => {
+      const total = galleryImages.length || 1;
+      return (prev + 1) % total;
+    });
+  };
+
+  const handleAddToCart = () => {
+    if (!activeJar) return;
+    addItem({
+      productId: activeJar.id,
+      name: `Торта в буркан – ${activeJar.name}`,
+      price: activeJar.price,
+      quantity,
+      options: [activeJar.name],
+    });
+    setQuantity(1);
+  };
+
   return (
-    <div className="flex min-h-screen flex-col ">
-      {" "}
-      <Marquee /> <SiteHeader />{" "}
+    <div className="flex min-h-screen flex-col">
+      <Marquee />
+      <SiteHeader />
       <main className="flex-1">
-        {" "}
         <div className="mx-auto w-full px-[clamp(1rem,4vw,4rem)] py-16">
-          {" "}
-          <div className="grid gap-12 xl:grid-cols-[35%_minmax(0,1fr)]">
-            {" "}
-            <div className="space-y-6">
-              {" "}
-              <div className="overflow-hidden rounded-[1rem] bg-white p-4 shadow-card">
-                {" "}
-                <div className="group relative aspect-[4/3] overflow-hidden rounded-[1.75rem]">
-                  {" "}
-                  <Image
-                    src={GALLERY_IMAGES[activeIndex]}
-                    alt={PRODUCT_DETAILS.name}
-                    fill
-                    className="object-cover transition duration-500"
-                    sizes="(min-width: 1024px) 512px, 100vw"
-                  />{" "}
-                  {GALLERY_IMAGES.length > 1 ? (
-                    <>
-                      {" "}
-                      <button
-                        type="button"
-                        onClick={handlePrev}
-                        className="absolute left-4 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/80 opacity-0 shadow-card transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5f000b] focus-visible:ring-offset-2 focus-visible:ring-offset-[#fcd9d9] pointer-events-none group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100"
-                        aria-label="Предишно изображение"
-                      >
-                        {" "}
-                        <svg
-                          viewBox="0 0 16 16"
-                          className="h-5 w-5"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
+          <div className="mb-10 flex flex-wrap items-center gap-3">
+            {isLoading && <span className="text-sm text-[#5f000b]/70">Зареждаме...</span>}
+            {error && <span className="text-sm text-red-600">{error}</span>}
+          </div>
+
+          {activeJar ? (
+            <div className="grid gap-12 xl:grid-cols-[45%_minmax(0,1fr)]">
+              <div className="space-y-6">
+                <div className="overflow-hidden rounded-[1rem] bg-white p-4 shadow-card">
+                  <div className="group relative aspect-square overflow-hidden rounded-[0.75rem]">
+                    <Image
+                      src={galleryImages[activeIndex]}
+                      alt={activeJar.name}
+                      fill
+                      className="object-cover"
+                      sizes="(min-width: 1024px) 480px, 100vw"
+                    />
+                    {galleryImages.length > 1 ? (
+                      <>
+                        <button
+                          type="button"
+                          onClick={handlePrev}
+                          className="absolute left-4 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/80 opacity-0 shadow-card transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5f000b] focus-visible:ring-offset-2 focus-visible:ring-offset-[#fcd9d9] pointer-events-none group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100"
+                          aria-label="Предишно изображение"
                         >
-                          {" "}
-                          <path
-                            d="M10 4l-4 4 4 4"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />{" "}
-                        </svg>{" "}
-                      </button>{" "}
-                      <button
-                        type="button"
-                        onClick={handleNext}
-                        className="absolute right-4 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/80 opacity-0 shadow-card transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5f000b] focus-visible:ring-offset-2 focus-visible:ring-offset-[#fcd9d9] pointer-events-none group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100"
-                        aria-label="Следващо изображение"
-                      >
-                        {" "}
-                        <svg
-                          viewBox="0 0 16 16"
-                          className="h-5 w-5"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
+                          <svg viewBox="0 0 16 16" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M10 4l-4 4 4 4" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleNext}
+                          className="absolute right-4 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/80 opacity-0 shadow-card transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5f000b] focus-visible:ring-offset-2 focus-visible:ring-offset-[#fcd9d9] pointer-events-none group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100"
+                          aria-label="Следващо изображение"
                         >
-                          {" "}
-                          <path
-                            d="M6 4l4 4-4 4"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />{" "}
-                        </svg>{" "}
-                      </button>{" "}
-                    </>
-                  ) : null}{" "}
-                </div>{" "}
-              </div>{" "}
-              <div className="grid grid-cols-3 gap-4">
-                {" "}
-                {visibleIndices.map((imageIndex, position) => {
-                  const image = GALLERY_IMAGES[imageIndex];
-                  const isActive = imageIndex === activeIndex;
-                  return (
-                    <button
-                      key={`${image.src}-${position}`}
-                      type="button"
-                      onClick={() => setActiveIndex(imageIndex)}
-                      className={`relative aspect-square overflow-hidden rounded-2xl border transition ${
-                        isActive
-                          ? "border-[#5f000b] ring-2 ring-[#5f000b]"
-                          : "border-white/40 hover:border-[#f1b8c4]"
-                      }`}
-                      aria-label={`Преглед на изображение ${position + 1}`}
-                    >
-                      {" "}
-                      <Image
-                        src={image}
-                        alt=""
-                        fill
-                        className="object-cover"
-                        sizes="200px"
-                      />{" "}
-                    </button>
-                  );
-                })}{" "}
-              </div>{" "}
-            </div>{" "}
-            <div className="space-y-10">
-              {" "}
-              <header className="space-y-4">
-                {" "}
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                  {" "}
-                  <h1 className="text-3xl font-semibold leading-tight sm:text-4xl">
-                    {" "}
-                    {PRODUCT_DETAILS.name}{" "}
-                  </h1>{" "}
-                  <span className="text-2xl font-semibold sm:pt-1">
-                    {" "}
-                    {PRODUCT_DETAILS.price}{" "}
-                  </span>{" "}
-                </div>{" "}
-                <p className="/90">{PRODUCT_DETAILS.description}</p>{" "}
-                <ul className="space-y-2 text-sm ">
-                  {" "}
-                  {PRODUCT_DETAILS.highlights.map((item) => (
-                    <li key={item}>• {item}</li>
-                  ))}{" "}
-                  <li>{PRODUCT_DETAILS.weight}</li>{" "}
-                </ul>{" "}
-                <p className="uppercase "> {PRODUCT_DETAILS.allergenNote} </p>{" "}
-              </header>{" "}
-              <section className="space-y-6 rounded-3xl p-8 shadow-card">
-                {" "}
-                <div className="space-y-3">
-                  {" "}
-                  <h2 className="text-lg font-semibold">
-                    Изберете пълнеж
-                  </h2>{" "}
-                  <p className="/80">
-                    {" "}
-                    Кликнете върху любимото пълнежно предложение, за да
-                    персонализирате вашата торта в буркан.{" "}
-                  </p>{" "}
-                </div>{" "}
-                <div className="grid gap-4 sm:grid-cols-2">
-                  {" "}
-                  {FILLING_OPTIONS.map((option) => {
-                    const isActive = selectedFilling === option.id;
+                          <svg viewBox="0 0 16 16" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M6 4l4 4-4 4" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        </button>
+                      </>
+                    ) : null}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-4">
+                  {visibleImages.map((imageIndex, position) => {
+                    const image = galleryImages[imageIndex];
+                    const isActive = imageIndex === activeIndex;
                     return (
-                      <label
-                        key={option.id}
-                        className={`flex cursor-pointer flex-col gap-4 rounded-2xl border bg-white p-5 shadow-card transition hover:-translate-y-0.5 hover:shadow-lg ${
-                          isActive
-                            ? "border-[#5f000b] ring-2 ring-[#5f000b]"
-                            : "border-[#f4b9c2]"
+                      <button
+                        key={`${image}-${position}`}
+                        type="button"
+                        onClick={() => setActiveIndex(imageIndex)}
+                        className={`relative aspect-square overflow-hidden rounded-2xl border transition ${
+                          isActive ? "border-[#5f000b] ring-2 ring-[#5f000b]" : "border-white/40 hover:border-[#f1b8c4]"
                         }`}
+                        aria-label={`Преглед на изображение ${position + 1}`}
                       >
-                        {" "}
-                        <div className="flex items-center gap-4">
-                          {" "}
-                          <span className="relative aspect-square w-20 min-w-[5rem] overflow-hidden rounded-2xl border border-[#fbd0d9]">
-                            {" "}
-                            <Image
-                              src={option.image}
-                              alt={option.name}
-                              fill
-                              className="object-cover"
-                              sizes="140px"
-                            />{" "}
-                          </span>{" "}
-                          <div className="space-y-1">
-                            {" "}
-                            <span className="text-base font-semibold ">
-                              {option.name}
-                            </span>{" "}
-                            <p className="/80">{option.description}</p>{" "}
-                          </div>{" "}
-                        </div>{" "}
-                        <span className="flex items-center gap-2 text-sm ">
-                          {" "}
-                          <input
-                            type="radio"
-                            name="filling"
-                            value={option.id}
-                            checked={isActive}
-                            onChange={() => setSelectedFilling(option.id)}
-                            className="h-4 w-4 border-[#f4b9c2] focus:ring-[#5f000b]"
-                          />{" "}
-                          Избор на пълнеж{" "}
-                        </span>{" "}
-                      </label>
+                        <Image src={image} alt="" fill className="object-cover" sizes="200px" />
+                      </button>
                     );
-                  })}{" "}
-                </div>{" "}
-                <button
-                  type="button"
-                  onClick={handleAddToCart}
-                  className={`cta w-full rounded-full px-6 py-4 text-sm font-semibold uppercase transition ${
-                    selectedFilling
-                      ? "bg-[#5f000b]  hover:bg-[#561c19]"
-                      : "bg-[#bfa3aa]  cursor-not-allowed"
-                  }`}
-                  disabled={!selectedFilling}
-                >
-                  {" "}
-                  {selectedFilling
-                    ? "Добави в количката"
-                    : "Изберете пълнеж, за да продължите"}{" "}
-                </button>{" "}
-              </section>{" "}
-              <div className="space-y-6 rounded-2xl bg-white/80 p-6 text-sm ">
-                {" "}
-                <div className="space-y-3">
-                  {" "}
-                  <strong className="text-base font-semibold ">
-                    {" "}
-                    Съвети за съхранение{" "}
-                  </strong>{" "}
-                  <p>
-                    {" "}
-                    Съхранявайте тортата в хладилник до три дни. За най-добър
-                    вкус извадете буркана 15 минути преди сервиране.{" "}
-                  </p>{" "}
-                </div>{" "}
-                <div className="space-y-3">
-                  {" "}
-                  <strong className="text-base font-semibold ">
-                    {" "}
-                    Информация за доставка{" "}
-                  </strong>{" "}
-                  <p>
-                    {" "}
-                    Изпращаме от понеделник до четвъртък. Поръчките след 17:00
-                    ч. в четвъртък се изпращат в понеделник.{" "}
-                  </p>{" "}
-                </div>{" "}
-                <div className="space-y-3">
-                  {" "}
-                  <strong className="text-base font-semibold ">
-                    {" "}
-                    Алергени{" "}
-                  </strong>{" "}
-                  <p>
-                    {" "}
-                    Всички варианти съдържат глутен, млечни продукти и яйца.
-                    Някои пълнежи съдържат ядки.{" "}
-                  </p>{" "}
-                </div>{" "}
-              </div>{" "}
-            </div>{" "}
-          </div>{" "}
-        </div>{" "}
-      </main>{" "}
-      <SiteFooter />{" "}
+                  })}
+                </div>
+              </div>
+
+              <div className="space-y-10">
+                <header className="space-y-4">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <h1 className="text-3xl font-semibold leading-tight sm:text-4xl">{activeJar.name}</h1>
+                    <span className="text-2xl font-semibold sm:pt-1">{formatPrice(activeJar.price)}</span>
+                  </div>
+                  <p className="text-[#5f000b]/80">{activeJar.description}</p>
+                  <div className="flex flex-wrap gap-4 text-sm text-[#5f000b]/80">
+                    <span>{activeJar.leadTime || "Доставка до 3 дни"}</span>
+                    <span>{activeJar.weight || "220 гр."}</span>
+                  </div>
+                </header>
+
+                <div className="rounded-[1rem] bg-white p-5 shadow-card">
+                  <p className="text-sm uppercase text-[#5f000b]/60">Избери вкус</p>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {cakeJars.map((jar) => {
+                      const isActive = jar.slug === activeJar.slug;
+                      return (
+                        <button
+                          key={jar.slug}
+                          type="button"
+                          onClick={() => setActiveSlug(jar.slug)}
+                          className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+                            isActive ? "bg-[#5f000b] text-white" : "border border-[#5f000b] text-[#5f000b]"
+                          }`}
+                        >
+                          {jar.name}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <section className="space-y-3">
+                  <p className="text-sm uppercase text-[#5f000b]/60">Какво има вътре</p>
+                  <p>{activeJar.layers?.join(", ") || "Сезонни слоеве крем и блатове."}</p>
+                </section>
+
+                <div className="space-y-4 rounded-[1rem] bg-white/80 p-5 shadow-card">
+                  <div className="space-y-2">
+                    <p className="text-sm font-semibold">Количество</p>
+                    <div className="flex items-center gap-4">
+                      <button
+                        type="button"
+                        onClick={() => setQuantity((prev) => Math.max(1, prev - 1))}
+                        className="flex h-10 w-10 items-center justify-center rounded-full border border-[#f3bec8] text-lg font-semibold transition hover:bg-[#fff6f8]"
+                        aria-label="Намали количеството"
+                      >
+                        –
+                      </button>
+                      <span className="flex h-10 min-w-[3rem] items-center justify-center rounded-full border border-[#f3bec8] bg-white text-lg font-semibold">
+                        {quantity}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setQuantity((prev) => prev + 1)}
+                        className="flex h-10 w-10 items-center justify-center rounded-full border border-[#f3bec8] bg-white text-lg font-semibold transition hover:bg-[#fff6f8]"
+                        aria-label="Увеличи количеството"
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleAddToCart}
+                    className="w-full rounded-full bg-[#5f000b] px-6 py-3 text-sm font-semibold uppercase text-white transition hover:bg-[#781e21]"
+                  >
+                    Добави {quantity} в количката
+                  </button>
+                  <p className="text-xs text-[#5f000b]/70">Печем в деня на доставка. Ако имате алергии, моля, свържете се с нас.</p>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="rounded-3xl bg-white/80 p-8 text-center shadow-card">
+              {error ? <p className="text-[#5f000b]">{error}</p> : <p className="text-[#5f000b]">Зареждаме...</p>}
+            </div>
+          )}
+        </div>
+      </main>
+      <SiteFooter />
     </div>
   );
 }

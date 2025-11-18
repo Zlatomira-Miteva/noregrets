@@ -1,8 +1,11 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
+import Link from "next/link";
 import { signOut, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+
+import { formatPrice } from "@/utils/price";
 
 type Coupon = {
   id: string;
@@ -16,24 +19,26 @@ type Coupon = {
   isActive: boolean;
 };
 
-const defaultFormState = {
+const defaultCouponForm = {
   code: "",
-  discountType: "PERCENT" as "PERCENT" | "FIXED",
-  discountValue: 10,
-  minimumOrderAmount: 0,
+  discountType: "PERCENT",
+  discountValue: "10",
+  minimumOrderAmount: "0",
   maximumDiscountAmount: "",
 };
 
-export default function CouponAdminPage() {
+export default function AdminCouponsPage() {
   const { status } = useSession();
   const router = useRouter();
+
   const [coupons, setCoupons] = useState<Coupon[]>([]);
-  const [form, setForm] = useState(defaultFormState);
-  const [statusMessage, setStatusMessage] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [couponForm, setCouponForm] = useState(defaultCouponForm);
+  const [couponLoading, setCouponLoading] = useState(false);
+  const [couponMessage, setCouponMessage] = useState<string | null>(null);
+  const [couponError, setCouponError] = useState<string | null>(null);
 
   const loadCoupons = () => {
+    setCouponError(null);
     fetch("/api/coupons")
       .then((res) => {
         if (res.status === 401) {
@@ -42,7 +47,7 @@ export default function CouponAdminPage() {
         return res.json();
       })
       .then((data) => setCoupons(data.coupons ?? []))
-      .catch((err) => setError(err.message || "Неуспешно зареждане на купоните."));
+      .catch((err) => setCouponError(err.message || "Неуспешно зареждане на купоните."));
   };
 
   useEffect(() => {
@@ -53,7 +58,7 @@ export default function CouponAdminPage() {
     if (status === "unauthenticated") {
       router.replace("/admin/login");
     }
-  }, [status, router]);
+  }, [router, status]);
 
   if (status === "loading") {
     return (
@@ -67,21 +72,31 @@ export default function CouponAdminPage() {
     return null;
   }
 
-  const handleSubmit = (event: FormEvent) => {
+  const handleCouponSubmit = (event: FormEvent) => {
     event.preventDefault();
-    setLoading(true);
-    setStatusMessage(null);
-    setError(null);
+    setCouponLoading(true);
+    setCouponMessage(null);
+    setCouponError(null);
+
+    const discountValue = Number(couponForm.discountValue);
+    const minimumAmount = Number(couponForm.minimumOrderAmount);
+    const maximumAmount = couponForm.maximumDiscountAmount ? Number(couponForm.maximumDiscountAmount) : null;
+
+    if (Number.isNaN(discountValue) || Number.isNaN(minimumAmount) || (maximumAmount !== null && Number.isNaN(maximumAmount))) {
+      setCouponError("Моля, въведете валидни числа.");
+      setCouponLoading(false);
+      return;
+    }
 
     fetch("/api/coupons", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        code: form.code,
-        discountType: form.discountType,
-        discountValue: Number(form.discountValue),
-        minimumOrderAmount: Number(form.minimumOrderAmount),
-        maximumDiscountAmount: form.maximumDiscountAmount ? Number(form.maximumDiscountAmount) : null,
+        code: couponForm.code.trim(),
+        discountType: couponForm.discountType as "PERCENT" | "FIXED",
+        discountValue,
+        minimumOrderAmount: minimumAmount,
+        maximumDiscountAmount: maximumAmount,
       }),
     })
       .then(async (res) => {
@@ -89,38 +104,47 @@ export default function CouponAdminPage() {
         if (!res.ok) {
           throw new Error(payload.error ?? "Неуспешно създаване на купон.");
         }
-        setStatusMessage("Купонът е създаден успешно.");
-        setForm(defaultFormState);
+        setCouponMessage("Купонът е създаден успешно.");
+        setCouponForm(defaultCouponForm);
         loadCoupons();
       })
-      .catch((err: Error) => setError(err.message))
-      .finally(() => setLoading(false));
+      .catch((err: Error) => setCouponError(err.message))
+      .finally(() => setCouponLoading(false));
   };
 
   return (
     <div className="min-h-screen bg-[#ffefed] px-[clamp(1rem,4vw,4rem)] py-16 text-[#5f000b]">
-      <div className="mx-auto flex w-full max-w-5xl flex-col gap-12">
+      <div className="mx-auto flex w-full max-w-4xl flex-col gap-10">
         <header className="space-y-3 text-center">
           <p className="text-sm uppercase">Админ панел</p>
-          <h1 className="text-4xl font-semibold">Управление на промо кодове</h1>
-          <p>Създайте нов код за отстъпка. Всеки код е валиден 30 дни и може да бъде използван само веднъж.</p>
-          <button
-            type="button"
-            onClick={() => signOut({ callbackUrl: "/" })}
-            className="rounded-full border border-[#5f000b] px-4 py-2 text-xs font-semibold uppercase hover:bg-white/40"
-          >
-            Изход
-          </button>
+          <h1 className="text-4xl font-semibold">Промо кодове</h1>
+          <p>Добавяйте и следете активните промо кодове за No Regrets.</p>
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            <Link
+              href="/admin/products"
+              className="rounded-full border border-[#5f000b] px-4 py-2 text-xs font-semibold uppercase hover:bg-white/40"
+            >
+              Категории и продукти
+            </Link>
+            <button
+              type="button"
+              onClick={() => signOut({ callbackUrl: "/" })}
+              className="rounded-full border border-[#5f000b] px-4 py-2 text-xs font-semibold uppercase hover:bg-white/40"
+            >
+              Изход
+            </button>
+          </div>
         </header>
 
         <section className="rounded-3xl bg-white/90 p-6 shadow-card">
-          <form onSubmit={handleSubmit} className="grid gap-4 sm:grid-cols-2">
+          <h2 className="text-2xl font-semibold">Създай промо код</h2>
+          <form onSubmit={handleCouponSubmit} className="mt-6 grid gap-4 sm:grid-cols-2">
             <label className="text-sm uppercase">
               Код
               <input
                 type="text"
-                value={form.code}
-                onChange={(event) => setForm((prev) => ({ ...prev, code: event.target.value }))}
+                value={couponForm.code}
+                onChange={(event) => setCouponForm((prev) => ({ ...prev, code: event.target.value }))}
                 className="mt-1 w-full rounded-2xl border border-[#dcb1b1] bg-white px-4 py-3 text-sm focus:border-[#5f000b] focus:outline-none"
                 required
               />
@@ -129,8 +153,8 @@ export default function CouponAdminPage() {
             <label className="text-sm uppercase">
               Тип
               <select
-                value={form.discountType}
-                onChange={(event) => setForm((prev) => ({ ...prev, discountType: event.target.value as "PERCENT" | "FIXED" }))}
+                value={couponForm.discountType}
+                onChange={(event) => setCouponForm((prev) => ({ ...prev, discountType: event.target.value }))}
                 className="mt-1 w-full rounded-2xl border border-[#dcb1b1] bg-white px-4 py-3 text-sm focus:border-[#5f000b] focus:outline-none"
               >
                 <option value="PERCENT">Процент</option>
@@ -144,8 +168,8 @@ export default function CouponAdminPage() {
                 type="number"
                 min={0}
                 step={0.01}
-                value={form.discountValue}
-                onChange={(event) => setForm((prev) => ({ ...prev, discountValue: Number(event.target.value) }))}
+                value={couponForm.discountValue}
+                onChange={(event) => setCouponForm((prev) => ({ ...prev, discountValue: event.target.value }))}
                 className="mt-1 w-full rounded-2xl border border-[#dcb1b1] bg-white px-4 py-3 text-sm focus:border-[#5f000b] focus:outline-none"
                 required
               />
@@ -157,8 +181,8 @@ export default function CouponAdminPage() {
                 type="number"
                 min={0}
                 step={0.01}
-                value={form.minimumOrderAmount}
-                onChange={(event) => setForm((prev) => ({ ...prev, minimumOrderAmount: Number(event.target.value) }))}
+                value={couponForm.minimumOrderAmount}
+                onChange={(event) => setCouponForm((prev) => ({ ...prev, minimumOrderAmount: event.target.value }))}
                 className="mt-1 w-full rounded-2xl border border-[#dcb1b1] bg-white px-4 py-3 text-sm focus:border-[#5f000b] focus:outline-none"
               />
             </label>
@@ -169,8 +193,8 @@ export default function CouponAdminPage() {
                 type="number"
                 min={0}
                 step={0.01}
-                value={form.maximumDiscountAmount}
-                onChange={(event) => setForm((prev) => ({ ...prev, maximumDiscountAmount: event.target.value }))}
+                value={couponForm.maximumDiscountAmount}
+                onChange={(event) => setCouponForm((prev) => ({ ...prev, maximumDiscountAmount: event.target.value }))}
                 className="mt-1 w-full rounded-2xl border border-[#dcb1b1] bg-white px-4 py-3 text-sm focus:border-[#5f000b] focus:outline-none"
                 placeholder="По избор"
               />
@@ -178,14 +202,14 @@ export default function CouponAdminPage() {
 
             <button
               type="submit"
-              disabled={loading}
+              disabled={couponLoading}
               className="sm:col-span-2 rounded-full bg-[#5f000b] px-6 py-3 text-sm font-semibold uppercase text-white transition hover:bg-[#561c19] disabled:opacity-60"
             >
-              {loading ? "Създаваме..." : "Добави промо код"}
+              {couponLoading ? "Създаваме..." : "Добави промо код"}
             </button>
           </form>
-          {statusMessage ? <p className="mt-4 text-sm text-green-700">{statusMessage}</p> : null}
-          {error ? <p className="mt-4 text-sm text-[#b42318]">{error}</p> : null}
+          {couponMessage ? <p className="mt-4 text-sm text-green-700">{couponMessage}</p> : null}
+          {couponError ? <p className="mt-4 text-sm text-[#b42318]">{couponError}</p> : null}
         </section>
 
         <section className="rounded-3xl bg-white/90 p-6 shadow-card">
@@ -198,38 +222,30 @@ export default function CouponAdminPage() {
                   <th className="pb-2">Тип</th>
                   <th className="pb-2">Стойност</th>
                   <th className="pb-2">Минимум</th>
-                  <th className="pb-2">Макс. отстъпка</th>
-                  <th className="pb-2">Валиден до</th>
-                  <th className="pb-2">Статус</th>
+                  <th className="pb-2">Валидност</th>
                 </tr>
               </thead>
               <tbody>
                 {coupons.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="py-4 text-center text-sm">
-                      Няма създадени купони.
+                    <td className="py-4 text-center text-sm text-[#5f000b]/70" colSpan={5}>
+                      Все още няма добавени промо кодове.
                     </td>
                   </tr>
                 ) : (
                   coupons.map((coupon) => (
-                    <tr key={coupon.id} className="border-t border-[#efd5d0]">
+                    <tr key={coupon.id} className="border-t border-[#f5d5d6]">
                       <td className="py-2 font-semibold">{coupon.code}</td>
-                      <td className="py-2">{coupon.discountType === "PERCENT" ? "Процент" : "Сума"}</td>
+                      <td className="py-2">{coupon.discountType === "PERCENT" ? "%" : "лв"}</td>
                       <td className="py-2">
                         {coupon.discountType === "PERCENT"
                           ? `${coupon.discountValue}%`
-                          : `${Number(coupon.discountValue).toFixed(2)} лв`}
+                          : formatPrice(coupon.discountValue)}
                       </td>
-                      <td className="py-2">{Number(coupon.minimumOrderAmount ?? 0).toFixed(2)} лв</td>
-                      <td className="py-2">
-                        {coupon.maximumDiscountAmount !== null
-                          ? `${Number(coupon.maximumDiscountAmount).toFixed(2)} лв`
-                          : "-"}
+                      <td className="py-2">{formatPrice(coupon.minimumOrderAmount)}</td>
+                      <td className="py-2 text-sm text-[#5f000b]/70">
+                        {coupon.validUntil ? new Date(coupon.validUntil).toLocaleDateString("bg-BG") : "—"}
                       </td>
-                      <td className="py-2">
-                        {coupon.validUntil ? new Date(coupon.validUntil).toLocaleDateString("bg-BG") : "-"}
-                      </td>
-                      <td className="py-2">{coupon.isActive ? "Активен" : "Използван"}</td>
                     </tr>
                   ))
                 )}

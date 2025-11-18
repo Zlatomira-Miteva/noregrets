@@ -4,7 +4,10 @@ export const parsePrice = (price: string): number => {
   return Number.isFinite(value) ? value : 0;
 };
 
-export const formatPrice = (value: number): string => {
-  return `${value.toFixed(2)} лв`;
+export const formatPrice = (value: number | string | null | undefined): string => {
+  const numericValue = typeof value === "number" ? value : value ? Number(value) : 0;
+  if (!Number.isFinite(numericValue)) {
+    return "0.00 лв";
+  }
+  return `${numericValue.toFixed(2)} лв`;
 };
-

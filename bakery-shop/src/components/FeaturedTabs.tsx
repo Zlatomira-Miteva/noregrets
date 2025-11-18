@@ -5,11 +5,11 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 import { useCart } from "@/context/CartContext";
-import { parsePrice } from "@/utils/price";
+import { formatPrice, parsePrice } from "@/utils/price";
 
 type FeaturedTabsProps = {
   products: Array<{
-    id: number;
+    id: number | string;
     name: string;
     price: string;
     leadTime: string;
@@ -17,6 +17,7 @@ type FeaturedTabsProps = {
     image: string | StaticImageData;
     category: "cookies" | "cakes" | "mochi";
     href?: string;
+    slug?: string;
   }>;
 };
 
@@ -34,6 +35,10 @@ const HASH_TO_CATEGORY: Record<string, (typeof CATEGORIES)[number]["value"]> = {
 
 const FeaturedTabs = ({ products }: FeaturedTabsProps) => {
   const [activeCategory, setActiveCategory] = useState<(typeof CATEGORIES)[number]["value"]>(CATEGORIES[0].value);
+  const [backendCakes, setBackendCakes] = useState<FeaturedTabsProps["products"]>([]);
+  const [cakesError, setCakesError] = useState<string | null>(null);
+  const [cookieBoxes, setCookieBoxes] = useState<FeaturedTabsProps["products"]>([]);
+  const [cookiesError, setCookiesError] = useState<string | null>(null);
   const { addItem } = useCart();
 
   useEffect(() => {
@@ -53,9 +58,101 @@ const FeaturedTabs = ({ products }: FeaturedTabsProps) => {
     return () => window.removeEventListener("hashchange", setCategoryFromHash);
   }, []);
 
+  useEffect(() => {
+    const loadCakes = async () => {
+      try {
+        const response = await fetch("/api/cake-jars");
+        if (!response.ok) {
+          throw new Error("Неуспешно зареждане на тортите в буркан.");
+        }
+        const data: Array<{
+          id: string;
+          name: string;
+          slug: string;
+          price: number;
+          weight: string;
+          leadTime: string;
+          heroImage: string;
+        }> = await response.json();
+
+        const mapped: FeaturedTabsProps["products"] = data.map((item) => ({
+          id: item.id,
+          name: item.name,
+          price: formatPrice(item.price ?? 0),
+          leadTime: item.leadTime || "Доставка до 3 дни",
+          weight: item.weight || "220 гр.",
+          image: item.heroImage || "",
+          category: "cakes",
+          slug: item.slug,
+          href: `/products/cake-jar?flavor=${encodeURIComponent(item.slug)}`,
+        }));
+        setBackendCakes(mapped);
+        setCakesError(null);
+      } catch (error) {
+        console.error(error);
+        setCakesError(error instanceof Error ? error.message : "Неуспешно зареждане.");
+      }
+    };
+
+    loadCakes();
+  }, []);
+
+  useEffect(() => {
+    const loadCookieBoxes = async () => {
+      try {
+        const response = await fetch("/api/products/category/cookie-boxes");
+        if (!response.ok) {
+          throw new Error("Неуспешно зареждане на кутиите с кукита.");
+        }
+        const data: {
+          products: Array<{
+            id: string;
+            slug: string;
+            name: string;
+            price: number;
+            weight: string;
+            leadTime: string;
+            image: string;
+            href?: string;
+          }>;
+        } = await response.json();
+        const mapped: FeaturedTabsProps["products"] = data.products.map((product) => ({
+          id: product.id,
+          name: product.name,
+          price: formatPrice(product.price ?? 0),
+          leadTime: product.leadTime || "Доставка до 3 дни",
+          weight: product.weight || "450 гр.",
+          image: product.image,
+          category: "cookies",
+          href: product.href || `/products/${product.slug}`,
+        }));
+        setCookieBoxes(mapped);
+        setCookiesError(null);
+      } catch (error) {
+        console.error(error);
+        setCookiesError(error instanceof Error ? error.message : "Неуспешно зареждане на кутиите.");
+      }
+    };
+
+    loadCookieBoxes();
+  }, []);
+
+  const mergedProducts = useMemo(() => {
+    let list = products;
+    if (cookieBoxes.length) {
+      const nonCookies = list.filter((product) => product.category !== "cookies");
+      list = [...nonCookies, ...cookieBoxes];
+    }
+    if (backendCakes.length) {
+      const nonCakes = list.filter((product) => product.category !== "cakes");
+      list = [...nonCakes, ...backendCakes];
+    }
+    return list;
+  }, [products, backendCakes, cookieBoxes]);
+
   const filteredProducts = useMemo(
-    () => products.filter((product) => product.category === activeCategory),
-    [activeCategory, products],
+    () => mergedProducts.filter((product) => product.category === activeCategory),
+    [activeCategory, mergedProducts],
   );
 
   const handleCategoryChange = (category: (typeof CATEGORIES)[number]["value"]) => {
@@ -72,7 +169,7 @@ const FeaturedTabs = ({ products }: FeaturedTabsProps) => {
     if (product.category !== "cakes") return;
     const slug = product.href?.split("/").pop() ?? product.id.toString();
     addItem({
-      productId: `cake-${slug}`,
+      productId: typeof product.id === "number" ? product.id.toString() : (product.id ?? slug),
       name: product.name,
       price: parsePrice(product.price),
       quantity: 1,
@@ -106,7 +203,13 @@ const FeaturedTabs = ({ products }: FeaturedTabsProps) => {
 
         <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {filteredProducts.length === 0 ? (
-            <p className="col-span-full">Скоро ще добавим продукти в тази категория. Следете ни за новости!</p>
+            <p className="col-span-full">
+              {activeCategory === "cakes" && cakesError
+                ? "Не успяхме да заредим продуктите. Моля, опитайте отново."
+                : activeCategory === "cookies" && cookiesError
+                  ? "Не успяхме да заредим кутиите с кукита. Моля, опитайте пак."
+                  : "Скоро ще добавим продукти в тази категория. Следете ни за новости!"}
+            </p>
           ) : (
             filteredProducts.map((product) => {
               const isCake = product.category === "cakes";

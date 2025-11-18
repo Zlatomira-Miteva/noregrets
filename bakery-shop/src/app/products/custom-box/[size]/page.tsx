@@ -2,14 +2,14 @@
 
 import Image, { type StaticImageData } from "next/image";
 import { useParams } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import Marquee from "@/components/Marquee";
 import CookieShowcase from "@/components/CookieShowcase";
 import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
 import { useCart } from "@/context/CartContext";
-import { parsePrice } from "@/utils/price";
+import { formatPrice, parsePrice } from "@/utils/price";
 import RedVelvetIg from "@/app/red velvet ig.png";
 import NutellaIg from "@/app/nutella ig.png";
 import BiscoffIg from "@/app/biscoff ig.png";
@@ -21,10 +21,12 @@ import CookieBoxHeroImage from "@/app/cookie-box.jpg";
 import CookieBoxClosedImage from "@/app/cookie-box-closed.png";
 import CookieBoxThreeOpen from "@/app/cooke-box-3-open.png";
 
-const BASE_GALLERY_IMAGES: StaticImageData[] = [RedVelvetIg, NutellaIg, BiscoffIg, OreoIg, NewYorkIg, TrippleChocIg];
+type GalleryImage = StaticImageData | string;
 
-const getGalleryImages = (size: string): StaticImageData[] => {
-  const extras: StaticImageData[] = [];
+const BASE_GALLERY_IMAGES: GalleryImage[] = [RedVelvetIg, NutellaIg, BiscoffIg, OreoIg, NewYorkIg, TrippleChocIg];
+
+const getGalleryImages = (size: string): GalleryImage[] => {
+  const extras: GalleryImage[] = [];
 
   if (size === "6") {
     extras.push(BoxSixCookiesOpen, CookieBoxHeroImage, CookieBoxClosedImage);
@@ -135,15 +137,60 @@ export default function CustomBoxPage() {
   const config = BOX_CONFIG[normalizedSize];
   const isMochiBox = normalizedSize.startsWith("mochi");
   const options = isMochiBox ? MOCHI_OPTIONS : COOKIE_OPTIONS;
-  const galleryImages = useMemo(() => getGalleryImages(normalizedSize), [normalizedSize]);
-  const totalImages = galleryImages.length;
-
+  const fallbackGallery = useMemo(() => getGalleryImages(normalizedSize), [normalizedSize]);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [galleryImages, setGalleryImages] = useState<GalleryImage[]>(fallbackGallery);
+  const fallbackDetails = useMemo(
+    () => ({
+      name: config.name,
+      price: config.price,
+      description: config.description,
+      weight: config.weight,
+    }),
+    [config],
+  );
+  const [productDetails, setProductDetails] = useState(fallbackDetails);
+  useEffect(() => {
+    setGalleryImages(fallbackGallery);
+    setProductDetails(fallbackDetails);
+    setActiveIndex(0);
+  }, [fallbackGallery, fallbackDetails]);
+  useEffect(() => {
+    let isMounted = true;
+    const loadGallery = async () => {
+      try {
+        const response = await fetch(`/api/products/custom-box-${normalizedSize}`);
+        if (!response.ok) {
+          return;
+        }
+        const data: { galleryImages?: string[]; name?: string; price?: number; description?: string; weight?: string } = await response.json();
+        if (!isMounted) return;
+        if (data.galleryImages?.length) {
+          setGalleryImages(data.galleryImages);
+          setActiveIndex(0);
+        }
+        setProductDetails((prev) => ({
+          ...prev,
+          name: data.name || prev.name,
+          description: data.description || prev.description,
+          weight: data.weight || prev.weight,
+          price: typeof data.price === "number" ? formatPrice(data.price) : prev.price,
+        }));
+      } catch (error) {
+        console.error(error);
+      }
+    };
+    loadGallery();
+    return () => {
+      isMounted = false;
+    };
+  }, [normalizedSize]);
+  const totalImages = galleryImages.length;
   const [selection, setSelection] = useState<Record<string, number>>(() =>
     Object.fromEntries(options.map((cookie) => [cookie.id, 0])),
   );
   const { addItem } = useCart();
-  const priceValue = useMemo(() => parsePrice(config.price), [config.price]);
+  const priceValue = useMemo(() => parsePrice(productDetails.price), [productDetails.price]);
 
   const wrapIndex = (index: number) => {
     if (totalImages === 0) return 0;
@@ -191,7 +238,7 @@ export default function CustomBoxPage() {
 
     addItem({
       productId: `custom-box-${normalizedSize}`,
-      name: config.name,
+      name: productDetails.name,
       price: priceValue,
       quantity: 1,
       options: summary,
@@ -264,11 +311,12 @@ export default function CustomBoxPage() {
               <div className="grid grid-cols-3 gap-4">
                 {visibleIndices.map((imageIndex, position) => {
                   const image = galleryImages[imageIndex];
+                  const imageKey = typeof image === "string" ? image : image.src;
                   const isActive = imageIndex === activeIndex;
                   return (
                     <button
                       type="button"
-                      key={`${image.src}-${position}`}
+                      key={`${imageKey}-${position}`}
                       onClick={() => goToImage(imageIndex)}
                       className={`relative aspect-square overflow-hidden rounded-2xl border transition ${
                         isActive ? "border-[#5f000b] ring-2 ring-[#5f000b]" : "border-white/40 hover:border-[#f1b8c4]"
@@ -285,15 +333,15 @@ export default function CustomBoxPage() {
             <div className="space-y-10">
               <header className="space-y-4">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                  <h3 className="text-3xl leading-tight sm:text-4xl ">{config.name}</h3>
-                  <span className="text-2xl font-semibold sm:pt-1">{config.price}</span>
+                  <h3 className="text-3xl leading-tight sm:text-4xl ">{productDetails.name}</h3>
+                  <span className="text-2xl font-semibold sm:pt-1">{productDetails.price}</span>
                 </div>
-                <p>{config.description}</p>
+                <p>{productDetails.description}</p>
                 <ul className="space-y-2 ">
                   {config.highlights.map((item) => (
                     <li key={item}>• {item}</li>
                   ))}
-                  <li>{config.weight}</li>
+                  <li>{productDetails.weight}</li>
                 </ul>
                 <p className="uppercase ">{config.allergenNote}</p>
               </header>
