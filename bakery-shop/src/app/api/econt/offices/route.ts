@@ -5,21 +5,61 @@ const OFFICE_ENDPOINTS = [
   "https://www.econt.com/services/Nomenclatures/NomenclaturesService.getOffices.json",
 ];
 
+const trimCityPrefix = (label: string, cityName?: string | null) => {
+  if (!label) return label;
+  const trimmedCity = (cityName ?? "").trim();
+  const normalizedLabel = label.trimStart();
+
+  if (!trimmedCity) {
+    return normalizedLabel;
+  }
+
+  const labelLower = normalizedLabel.toLowerCase();
+  const cityLower = trimmedCity.toLowerCase();
+
+  if (!labelLower.startsWith(cityLower)) {
+    return normalizedLabel;
+  }
+
+  let rest = normalizedLabel.slice(trimmedCity.length);
+  rest = rest.replace(/^([\s,.\-–—]+)+/, "").trimStart();
+
+  return rest || normalizedLabel;
+};
+
 type EcontOffice = {
   id?: string | number;
   code?: string | number;
   name?: string;
+  nameEn?: string;
   name_en?: string;
-  address?: string;
-  address_en?: string;
+  address?: {
+    fullAddress?: string;
+    fullAddressEn?: string;
+    street?: string;
+    num?: string | number;
+    other?: string;
+    city?: {
+      id?: string | number;
+      cityID?: string | number;
+      postCode?: string | number;
+      name?: string;
+      nameEn?: string;
+      country?: {
+        code2?: string;
+        code3?: string;
+      };
+    };
+  };
   cityID?: string | number;
   city_id?: string | number;
+  isAPS?: boolean;
 };
 
 const FALLBACK_OFFICES = [
-  { id: "sofia-center", name: "София - Център, офис 1001", referenceCityId: "1000" },
-  { id: "plovdiv-maritsa", name: "Пловдив - Марица, офис 2034", referenceCityId: "4000" },
-  { id: "varna-seaside", name: "Варна - Морска градина, офис 3120", referenceCityId: "9000" },
+  { id: "sofia-center", name: "Център, офис 1001", referenceCityId: "1000" },
+  { id: "plovdiv-maritsa", name: "Марица, офис 2034", referenceCityId: "4000" },
+  { id: "varna-seaside", name: "Морска градина, офис 3120", referenceCityId: "9000" },
 ];
 
 export async function GET(request: Request) {
@@ -44,16 +84,17 @@ export async function GET(request: Request) {
           },
           body: JSON.stringify({ cityID: cityPayload, countryCode: "BGR", languageCode: "bg" }),
           next: { revalidate: 60 * 60 * 12 },
+          cache: "no-store",
         });
 
         if (!response.ok) {
           throw new Error(`Econt API responded with ${response.status}`);
         }
 
-        data = await response.json();
-        const parsedAttempt = data as { offices?: EcontOffice[] } | undefined;
-        if (parsedAttempt?.offices) {
-          return  NextResponse.json({offices: parsedAttempt?.offices, fallback: false }, { status: 200 });
+        const responsePayload = (await response.json()) as { offices?: EcontOffice[] };
+        if (Array.isArray(responsePayload?.offices)) {
+          data = responsePayload;
+          break;
         }
       } catch (error) {
         console.error(`Failed to load offices from ${endpoint}`, error);
@@ -66,20 +107,59 @@ export async function GET(request: Request) {
     const parsed = data as { offices?: EcontOffice[] } | undefined;
     const rawOffices: EcontOffice[] = Array.isArray(parsed?.offices) ? parsed.offices : [];
 
-    const normalizedCityId = String(cityId);
+    const normalizedCityId = String(cityPayload);
 
     const offices = rawOffices
-      .filter((office) => {
-        const cityIdentifier = String(office.cityID ?? office.city_id ?? "");
-        return cityIdentifier === normalizedCityId;
-      })
       .map((office) => {
+        const cityIdentifier =
+          office.cityID ??
+          office.city_id ??
+          office.address?.city?.id ??
+          office.address?.city?.cityID ??
+          office.address?.city?.postCode ??
+          "";
+        if (String(cityIdentifier) !== normalizedCityId) {
+          return null;
+        }
+
+        if (office.isAPS) {
+          return null;
+        }
+
+        const countryCode =
+          (office.address?.city?.country?.code2 ?? office.address?.city?.country?.code3 ?? "")
+            .toString()
+            .toUpperCase();
+        if (countryCode && countryCode !== "BG" && countryCode !== "BGR") {
+          return null;
+        }
+
         const id = String(office.id ?? office.code ?? office.name ?? "");
-        const name = office.name ?? office.name_en ?? `Офис ${id}`;
-        const address = office.address ?? office.address_en ?? "";
-        return { id, name, address };
+        const cityName = office.address?.city?.name ?? office.address?.city?.nameEn ?? "";
+        const rawName = office.name ?? office.name_en ?? office.nameEn ?? `Офис ${id}`;
+        const name = trimCityPrefix(rawName, cityName);
+        const normalizedName = name.toLowerCase();
+        if (normalizedName.includes("еконттомат") || normalizedName.includes("econtomat")) {
+          return null;
+        }
+
+        const fullAddress = office.address?.fullAddress ?? office.address?.fullAddressEn ?? "";
+        const parts = [
+          office.address?.street,
+          office.address?.num ? `№ ${office.address?.num}` : null,
+          office.address?.other,
+        ].filter(Boolean);
+        const composedAddress = fullAddress || parts.join(", ");
+
+        return {
+          id,
+          name,
+          address: composedAddress,
+        };
       })
-      .filter((office) => office.id && office.name);
+      .filter((office): office is { id: string; name: string; address: string } => {
+        return Boolean(office?.id && office?.name);
+      });
 
     if (offices.length === 0) {
       const fallback = FALLBACK_OFFICES.filter(
@@ -88,8 +168,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ offices: fallback, fallback: true }, { status: 200 });
     }
 
-    console.log({offices})
-    return NextResponse.json({ offices }, { status: 200 });
+    return NextResponse.json({ offices, fallback: false }, { status: 200 });
   } catch (error) {
     console.error("Failed to load Econt offices", error);
     return NextResponse.json(

@@ -1,19 +1,11 @@
 import type { Metadata } from "next";
 import Script from "next/script";
-import { Montserrat_Alternates } from "next/font/google";
 import "./globals.css";
 import AuthProvider from "@/components/AuthProvider";
 import CartToast from "@/components/CartToast";
 import { CartProvider } from "@/context/CartContext";
 
 const SITE_URL = "https://noregrets.bg";
-
-const montserrat = Montserrat_Alternates({
-  weight: ["400", "500", "600", "700"],
-  subsets: ["latin", "cyrillic"],
-  variable: "--font-montserrat",
-  display: "swap",
-});
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -52,7 +44,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="bg" className={montserrat.variable}>
+    <html lang="bg">
       <body className="antialiased">
         {process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID ? (
           <>

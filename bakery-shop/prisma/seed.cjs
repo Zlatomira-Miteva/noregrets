@@ -32,7 +32,7 @@ async function main() {
         "Ред Велвет блатове, напоени с ванилов сироп и покрити с нежен крем сирене с бял шоколад. Всеки буркан е кадифено сладък и изненадващо лек.",
       layers: ["Ред Велвет блат", "Крема сирене", "Швейцарски крем"],
       image: "red-velvet-cake-jar.png",
-      price: 20.0,
+      price: 5.0,
     },
     {
       slug: "nutella-biscoff",
@@ -41,7 +41,7 @@ async function main() {
         "Шоколадов мус с белгийско какао, хрупкави парченца Lotus и сърце от течна Nutella. Комбинация между дълбок шоколад и карамелен хрупкав слой.",
       layers: ["Шоколадов блат", "Nutella", "Biscoff крем", "Швейцарски крем"],
       image: "nutella-biscoff-cake-jar.png",
-      price: 20.0,
+      price: 6.0,
     },
     {
       slug: "mascarpone-raspberry",
@@ -50,9 +50,33 @@ async function main() {
         "Въздушен маскарпоне крем, малинов конфитюр и ванилови блатове. Баланс между свежест, леко кисела малина и копринен крем.",
       layers: ["Ванилов блат", "Малиново сладко", "Маскарпоне и сметана"],
       image: "mascarpone-raspberry-cake-jar.png",
-      price: 20.0,
+      price: 5.0,
     },
   ];
+
+  const cakeJarMeta = {
+    "red-velvet": {
+      heroImage: "red-velvet-cake-jar.png",
+      galleryImages: ["red-velvet-cake-jar.png"],
+      categoryImages: ["red-velvet-cake-jar.png"],
+      weight: "220 гр.",
+      leadTime: "Доставка до 3 дни",
+    },
+    "nutella-biscoff": {
+      heroImage: "nutella-biscoff-cake-jar.png",
+      galleryImages: ["nutella-biscoff-cake-jar.png"],
+      categoryImages: ["nutella-biscoff-cake-jar.png"],
+      weight: "220 гр.",
+      leadTime: "Доставка до 3 дни",
+    },
+    "mascarpone-raspberry": {
+      heroImage: "mascarpone-raspberry-cake-jar.png",
+      galleryImages: ["mascarpone-raspberry-cake-jar.png"],
+      categoryImages: ["mascarpone-raspberry-cake-jar.png"],
+      weight: "240 гр.",
+      leadTime: "Доставка до 3 дни",
+    },
+  };
 
   for (const jar of cakeJars) {
     await prisma.cakeJar.upsert({
@@ -82,8 +106,8 @@ async function main() {
       heroImage: "cookie-box-hero.jpg",
     },
     {
-      slug: "cakes",
-      name: "Торти",
+      slug: "cake-jars",
+      name: "Торти в буркан",
       description: "Торти за всеки повод.",
       heroImage: "cake-jars-hero.jpg",
     },
@@ -105,7 +129,7 @@ async function main() {
     categoryMap[record.slug] = record;
   }
 
-  const products = [
+  const baseProducts = [
     {
       slug: "best-sellers",
       name: "Best Sellers кутия от 3 кукита",
@@ -114,11 +138,16 @@ async function main() {
         "Три емблематични вкуса, селектирани от нас и опаковани в подаръчна кутия – готови за споделяне или сладък жест към любим човек.",
       weight: "450 гр.",
       leadTime: "Доставка до 3 дни",
-      heroImage: "best-sellers.png",
-      galleryImages: ["best-sellers.png", "cookie-box.jpg"],
+      heroImage: "best-sellers-cookie-box.png",
+      galleryImages: [
+        "best-sellers-cookie-box.png",
+        "nutella ig.png",
+        "biscoff ig.png",
+        "red velvet ig.png",
+      ],
       categoryImages: ["cookie-box-hero.jpg"],
       categorySlug: "cookie-boxes",
-      price: 21,
+      price: 19.50,
       status: "PUBLISHED",
       variantName: "Best Sellers кутия (3 кукита)",
     },
@@ -127,13 +156,21 @@ async function main() {
       name: "Направи сам кутия от 3 кукита",
       shortDescription: "Персонализирана кутия с три любими вкуса.",
       description: "Изберете три любими кукита и ги получете в елегантна кутия, готова за подарък.",
-      weight: "3 бр. кукита",
+      weight: "450 гр.",
       leadTime: "Доставка до 3 дни",
       heroImage: "cooke-box-3-open.png",
-      galleryImages: ["cooke-box-3-open.png", "cookie-box.jpg"],
+      galleryImages: [
+        "cooke-box-3-open.png",
+        "red velvet ig.png",
+        "nutella ig.png",
+        "biscoff ig.png",
+        "oreo ig.png",
+        "new york ig.png",
+        "tripple choc ig.png",
+      ],
       categoryImages: ["cookie-box-hero.jpg"],
       categorySlug: "cookie-boxes",
-      price: 21,
+      price: 19.50,
       status: "PUBLISHED",
       variantName: "Кутия от 3 кукита",
     },
@@ -142,13 +179,21 @@ async function main() {
       name: "Направи сам кутия от 6 кукита",
       shortDescription: "Класическата ни кутия с шест вкуса.",
       description: "Създайте мечтаната селекция с шест любими вкуса и доставете радост у дома.",
-      weight: "6 бр. кукита",
+      weight: "900 гр.",
       leadTime: "Доставка до 3 дни",
       heroImage: "box-six-cookies-open.png",
-      galleryImages: ["box-six-cookies-open.png", "cookie-box.jpg"],
+      galleryImages: [
+        "box-six-cookies-open.png",
+        "red velvet ig.png",
+        "nutella ig.png",
+        "biscoff ig.png",
+        "oreo ig.png",
+        "new york ig.png",
+        "tripple choc ig.png",
+      ],
       categoryImages: ["cookie-box-hero.jpg"],
       categorySlug: "cookie-boxes",
-      price: 42,
+      price: 39,
       status: "PUBLISHED",
       image: "box-six-cookies-open.png",
       variantName: "Кутия от 6 кукита",
@@ -158,13 +203,13 @@ async function main() {
       name: "Мини кукита с течен шоколад",
       shortDescription: "Дребни кукита със сос от Nutella.",
       description: "Перфектни за споделяне – мини кукита, сервирани с купичка Nutella за потапяне.",
-      weight: "20 мини кукита + сос",
+      weight: "240 гр.",
       leadTime: "Доставка до 3 дни",
       heroImage: "mini-cookies-falling.png",
       galleryImages: ["cookie-box.jpg", "mini-cookies-falling.png"],
       categoryImages: ["cookie-box.jpg"],
       categorySlug: "cookie-boxes",
-      price: 12,
+      price: 10,
       status: "PUBLISHED",
       image: "cookie-box.jpg",
       variantName: "Мини кукита",
@@ -201,6 +246,27 @@ async function main() {
       variantName: "Кутия от 9 мочи",
     },
   ];
+
+  const cakeJarProducts = cakeJars.map((jar) => {
+    const meta = cakeJarMeta[jar.slug] ?? {};
+    return {
+      slug: `cake-jar-${jar.slug}`,
+      name: jar.name,
+      shortDescription: jar.description,
+      description: jar.description,
+      weight: meta.weight ?? "",
+      leadTime: meta.leadTime ?? "Доставка до 3 дни",
+      heroImage: meta.heroImage ?? jar.image,
+      galleryImages: meta.galleryImages ?? [jar.image],
+      categoryImages: meta.categoryImages ?? [jar.image],
+      categorySlug: "cake-jars",
+      price: jar.price,
+      status: "PUBLISHED",
+      variantName: jar.name,
+    };
+  });
+
+  const products = [...baseProducts, ...cakeJarProducts];
 
   for (const product of products) {
     const category = categoryMap[product.categorySlug];
@@ -264,6 +330,26 @@ async function main() {
           ],
         },
       },
+    });
+  }
+
+  const cookieOptions = [
+    { slug: "nutella-bueno", name: "Nutella Bueno", image: "nutella-bueno-top.png" },
+    { slug: "red-velvet", name: "Red Velvet Cheesecake", image: "red-velvet-cookie-top.png" },
+    { slug: "biscoff", name: "Biscoff", image: "biscoff-top.png" },
+    { slug: "tripple-choc", name: "Tripple Choc", image: "tripple-choc-top.png" },
+    { slug: "new-york", name: "New York", image: "new-york-top.png" },
+    { slug: "oreo", name: "Oreo & White Choc", image: "oreo-cookie-top.png" },
+  ];
+
+  for (const option of cookieOptions) {
+    await prisma.cookieOption.upsert({
+      where: { slug: option.slug },
+      update: {
+        name: option.name,
+        image: option.image,
+      },
+      create: option,
     });
   }
 }

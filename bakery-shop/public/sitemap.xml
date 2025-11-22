@@ -10,9 +10,6 @@
     <loc>https://noregrets.bg/cookies</loc>
   </url>
   <url>
-    <loc>https://noregrets.bg/mochi</loc>
-  </url>
-  <url>
     <loc>https://noregrets.bg/cake-jars</loc>
   </url>
   <url>
@@ -30,12 +27,17 @@
   <url>
     <loc>https://noregrets.bg/products/custom-box/6</loc>
   </url>
+  <!-- <url>
+    <loc>https://noregrets.bg/mochi</loc>
+  </url> -->
+  <!--
   <url>
     <loc>https://noregrets.bg/products/custom-box/mochi-4</loc>
   </url>
   <url>
     <loc>https://noregrets.bg/products/custom-box/mochi-9</loc>
   </url>
+  -->
   <url>
     <loc>https://noregrets.bg/faq</loc>
   </url>

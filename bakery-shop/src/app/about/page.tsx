@@ -15,6 +15,9 @@ const SOCIAL_URLS = {
     "https://www.facebook.com/profile.php?id=100092485898884&viewas=100000686899395",
 };
 
+const PICKUP_WINDOW_NOTICE =
+  "Взимането от магазина е възможно само между 16:00 и 18:00 часа. Невзети поръчки до 18:00 часа могат да се вземат на следващия ден в същия часови диапазон.";
+
 const HERO_STATS = [
   { label: "От 2016 г.", description: "Експериментирам с вкусове и текстури" },
   {
@@ -150,6 +153,9 @@ export default function AboutPage() {
                 за социалните мрежи. Тепърва започвам, но вярвам, че
                 автентичните истории имат вкус на домашно приготвено и на
                 смелост да покажеш грешките си.
+              </p>
+              <p className="text-sm font-semibold text-[#5f000b]">
+                {PICKUP_WINDOW_NOTICE}
               </p>
               <div className="flex flex-wrap gap-6 rounded-s bg-white/70 p-6 shadow-card">
                 {HERO_STATS.map((item) => (
@@ -324,7 +330,7 @@ export default function AboutPage() {
                   Свържи се с мен
                 </Link>
                 <Link
-                  href="/cakes"
+                  href="/cookies"
                   className="inline-flex items-center justify-center rounded-full border border-[#5f000b] px-6 py-3 text-sm font-semibold uppercase text-[#5f000b] transition hover:-translate-y-0.5 hover:bg-[#5f000b]/10"
                 >
                   Разгледай предложенията

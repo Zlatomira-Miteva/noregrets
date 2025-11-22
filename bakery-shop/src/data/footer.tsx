@@ -2,7 +2,6 @@ export const FOOTER_LINK_GROUPS = [
   {
     title: "За нас",
     links: [
-      { label: "Контакт", href: "#visit" },
       { label: "ЧЗВ", href: "/faq" },
       { label: "Нашата история", href: "/about" },
       { label: "Политика за доставка", href: "/shipping-policy" },
@@ -14,6 +13,7 @@ export const FOOTER_LINK_GROUPS = [
   {
     title: "Обслужване на клиенти",
     links: [
+      { label: "Контакт", href: "/contact" },
       { label: "zlati@noregrets.bg", href: "mailto:zlati@noregrets.bg" },
       { label: "гр. Пловдив, ул. 'Богомил'48", href: "#visit" },
     ],
@@ -57,7 +57,7 @@ export const SOCIAL_LINKS = [
     href: "https://www.linkedin.com/company/noregrets-bg/about/?viewAsMember=true",
     icon: (
       <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor">
-        <path d="M21.6 7.2a2.5 2.5 0 0 0-1.8-1.8C18 5 12 5 12 5s-6 0-7.8.4a2.5 2.5 0 0 0-1.8 1.8A26.3 26.3 0 0 0 2 12a26.3 26.3 0 0 0 .4 4.8 2.5 2.5 0 0 0 1.8 1.8C6 19 12 19 12 19s6 0 7.8-.4a2.5 2.5 0 0 0 1.8-1.8A26.3 26.3 0 0 0 22 12a26.3 26.3 0 0 0-.4-4.8zM10 15.5v-7l6 3.5z" />
+        <path d="M4.5 3.5a2 2 0 1 1 0 4 2 2 0 0 1 0-4zM3 8h3v12H3zm7.5 0H13v1.8a4 4 0 0 1 3.3-1.8c2.3 0 4.2 1.4 4.2 4.8V20h-3v-6.6c0-1.6-.6-2.4-1.9-2.4-1.2 0-2 1-2 2.4V20h-3z" />
       </svg>
     ),
   },

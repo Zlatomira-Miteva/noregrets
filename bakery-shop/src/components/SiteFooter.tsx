@@ -108,11 +108,11 @@ const SiteFooter = () => {
               )}
               <p className="text-white/70">
                 С изпращането на формата приемате{" "}
-                <a href="/terms" className="underline hover:text-white">
+                <a href="/terms" className="link-underline underline hover:text-white">
                   Общите условия
                 </a>{" "}
                 и{" "}
-                <a href="/privacy" className="underline hover:text-white">
+                <a href="/privacy" className="link-underline underline hover:text-white">
                   Политиката за поверителност
                 </a>
                 .
@@ -167,6 +167,8 @@ const SiteFooter = () => {
                 key={item.id}
                 href={item.href}
                 aria-label={item.label}
+                target="_blank"
+                rel="noreferrer"
                 className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 transition hover:bg-white/30"
               >
                 {item.icon}

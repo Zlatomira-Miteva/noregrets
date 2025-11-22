@@ -4,13 +4,11 @@ import ProductImage from "./small-box-cookies.webp";
 import CookieBoxImage from "./cookie-box-closed.png";
 import CookieBoxHeroImage from "./cookie-box.jpg";
 import AtelieImage from "./atelie-no-regrets.png";
-import BoxSixCookiesOpen from "./box-six-cookies-open.png";
-import CookieBoxThreeOpen from "./cooke-box-3-open.png";
-import BestSellersCookieBox from "./best sellers cookie box.png";
-import StorefrontImage from "./cookie-box-hero.jpg";
-import MascarponeRaspberryPresentCake from "./mascarpone-raspberry-present-cake.png";
-import NutellaBiscoffPresentCake from "./nutella-biscoff-present-cake.png";
-import RedVelvetPresentCake from "./red-velvet-present-cake.png";
+import BestSellersCookieBox from "./best-sellers-cookie-box.png";
+import BoxSixCookiesImage from "./box-six-cookies-open.png";
+import MascarponeRaspberryCakeJar from "./mascarpone-raspberry-cake-jar.png";
+import NutellaBiscoffCakeJar from "./nutella-biscoff-cake-jar.png";
+import RedVelvetCakeJar from "./red-velvet-cake-jar.png";
 import Marquee from "@/components/Marquee";
 import HeroCarousel from "@/components/HeroCarousel";
 import CookieShowcase from "@/components/CookieShowcase";
@@ -19,113 +17,77 @@ import ReviewsCarousel from "@/components/ReviewsCarousel";
 import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
 import { formatPrice } from "@/utils/price";
-type Product = {
-  id: number;
+import { getProductBySlug } from "@/lib/products";
+
+const PICKUP_WINDOW_NOTICE =
+  "Взимането от магазина е възможно само между 16:00 и 18:00 часа. Невзети поръчки до 18:00 часа могат да се вземат на следващия ден в същия часови диапазон.";
+
+type HomepageFeaturedCard = {
+  id: string;
   name: string;
-  price: string;
-  leadTime: string;
-  weight: string;
-  image: string | StaticImageData;
-  category: "cookies" | "mochi" | "cakes";
-  href?: string;
+  href: string;
+  imageSrc: string;
+  leadTime?: string;
+  weight?: string;
+  priceLabel?: string;
 };
-const PRODUCTS: Product[] = [
+
+type FeaturedCardConfig = {
+  slug: string;
+  href: string;
+  label: string;
+  fallbackImage: StaticImageData;
+};
+
+const FEATURED_COOKIE_CONFIG: FeaturedCardConfig[] = [
   {
-    id: 1,
-    name: "Best Sellers кутия от 3 кукита",
-    price: formatPrice(21),
-    leadTime: "Доставка до 3 дни",
-    weight: "450 гр.",
-    image: BestSellersCookieBox,
-    category: "cookies",
-    href: "/products/best-sellers",
-  },
-  {
-    id: 2,
-    name: "Направи сам кутия от 6 кукита",
-    price: formatPrice(42),
-    leadTime: "Доставка до 3 дни",
-    weight: "900 гр.",
-    image: BoxSixCookiesOpen,
-    category: "cookies",
-    href: "/products/custom-box/6",
-  },
-  {
-    id: 3,
-    name: "Направи сам кутия от 3 кукита",
-    price: formatPrice(21),
-    leadTime: "Доставка до 3 дни",
-    weight: "450 гр.",
-    image: CookieBoxThreeOpen,
-    category: "cookies",
-    href: "/products/custom-box/3",
-  },
-  {
-    id: 4,
-    name: "Мини кукита с течен шоколад",
-    price: formatPrice(10),
-    leadTime: "Доставка до 3 дни",
-    weight: "240 гр.",
-    image: CookieBoxHeroImage,
-    category: "cookies",
+    slug: "mini-cookies",
     href: "/products/mini-cookies",
+    label: "Mini Cookie Box",
+    fallbackImage: ProductImage,
   },
   {
-    id: 5,
-    name: "Червено кадифе",
-    price: formatPrice(10),
-    leadTime: "Доставка до 3 дни",
-    weight: "220 гр.",
-    image: RedVelvetPresentCake,
-    category: "cakes",
-    href: "/products/cakes/red-velvet",
+    slug: "best-sellers",
+    href: "/products/best-sellers",
+    label: "Best Seller Cookie Box",
+    fallbackImage: BestSellersCookieBox,
   },
   {
-    id: 6,
-    name: "Маскарпоне и малина",
-    price: formatPrice(10),
-    leadTime: "Доставка до 3 дни",
-    weight: "240 гр.",
-    image: MascarponeRaspberryPresentCake,
-    category: "cakes",
-    href: "/products/cakes/mascarpone-raspberry",
-  },
-  {
-    id: 7,
-    name: "Nutella Biscoff",
-    price: formatPrice(12),
-    leadTime: "Доставка до 3 дни",
-    weight: "220 гр.",
-    image: NutellaBiscoffPresentCake,
-    category: "cakes",
-    href: "/products/cakes/nutella-biscoff",
-  },
-  {
-    id: 9,
-    name: "Направи сам кутия от 4 мочи",
-    price: formatPrice(20),
-    leadTime: "Доставка до 3 дни",
-    weight: "4 бр. свежи мочита",
-    image: CookieBoxImage,
-    category: "mochi",
-    href: "/products/custom-box/mochi-4",
-  },
-  {
-    id: 10,
-    name: "Направи сам кутия от 9 мочи",
-    price: formatPrice(45),
-    leadTime: "Доставка до 3 дни",
-    weight: "9 бр. свежи мочита",
-    image: ProductImage,
-    category: "mochi",
-    href: "/products/custom-box/mochi-9",
+    slug: "custom-box-6",
+    href: "/products/custom-box/6",
+    label: "Make Box of 6 Cookies",
+    fallbackImage: BoxSixCookiesImage,
   },
 ];
-const BEST_SELLERS = [
-  { id: 1, name: "Кукита", image: ProductImage },
-  { id: 2, name: "Торти", image: ProductImage },
-  { id: 3, name: "Мочита", image: ProductImage },
-];
+
+const FALLBACK_BEST_SELLER_CARDS: HomepageFeaturedCard[] = FEATURED_COOKIE_CONFIG.map(
+  (config) => ({
+    id: config.slug,
+    name: config.label,
+    href: config.href,
+    imageSrc: config.fallbackImage.src,
+  })
+);
+
+const loadHomepageFeaturedCards = async (): Promise<HomepageFeaturedCard[]> => {
+  const cards = await Promise.all(
+    FEATURED_COOKIE_CONFIG.map(async (config) => {
+      const product = await getProductBySlug(config.slug);
+      if (!product) return null;
+      return {
+        id: product.slug,
+        name: product.name,
+        href: config.href,
+        imageSrc: product.heroImage || config.fallbackImage.src,
+        leadTime: product.leadTime || undefined,
+        weight: product.weight || undefined,
+        priceLabel: formatPrice(product.price ?? 0),
+      };
+    })
+  );
+
+  return cards.filter(Boolean) as HomepageFeaturedCard[];
+};
 const SERVICE_HIGHLIGHTS = [
   { id: 1, icon: "\u{1F381}", label: "Ръчно приготвени" },
   { id: 2, icon: "\u{2B50}", label: "Избрани продукти" },
@@ -162,13 +124,6 @@ const MERCH_ITEMS = [
     bestSeller: false,
   },
 ];
-const STORE_INFO = {
-  heading: "Сладкарско ателие No Regrets",
-  description:
-    "Поръчайте и вземете от място в нашия физически магазин и опитайте любимите кукита и торти направо от фурната.",
-  address: "ул. „Богомил“ 48, Пловдив",
-  email: "zlati@noregrets.bg",
-};
 const REVIEWS = [
   {
     id: 1,
@@ -203,14 +158,17 @@ const REVIEWS = [
     productImage: ProductImage,
   },
 ];
-export default function Home() {
+export default async function Home() {
+  const featuredCookieCards = await loadHomepageFeaturedCards();
+  const bestSellerCards = featuredCookieCards.length ? featuredCookieCards : FALLBACK_BEST_SELLER_CARDS;
+
   return (
     <div className="min-h-screen ">
       <Marquee />
       <SiteHeader />
       <main>
         <HeroCarousel />
-        <FeaturedTabs products={PRODUCTS} />
+        <FeaturedTabs />
         <CookieShowcase />
 
         <section id="cakes" className="mt-16">
@@ -231,46 +189,64 @@ export default function Home() {
               </p>
             </div>
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {" "}
-              {BEST_SELLERS.map((product) => (
-                <article
-                  key={product.id}
-                  className="group flex h-full flex-col overflow-hidden rounded-sm bg-white shadow-card transition hover:-translate-y-1 hover:shadow-xl"
-                >
-                  <div className="relative aspect-[1/1]">
-                    <Image
-                      src={product.image}
-                      alt={product.name}
-                      fill
-                      sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
-                      className="object-cover transition duration-500 group-hover:scale-105"
-                    />
-                  </div>
-                  <div className="flex flex-1 flex-col gap-3 px-5 pb-6 pt-5 ">
-                    <h6 className="text-lg leading-snug">{product.name}</h6>
-                    <div className="mt-auto flex items-center justify-between text-base font-semibold ">
-                      <span className="flex h-10 w-10 items-center justify-center rounded-full transition group-hover:bg-[#5f000b] group-hover:">
-                        <svg
-                          aria-hidden="true"
-                          focusable="false"
-                          className="h-4 w-4"
-                          viewBox="0 0 16 16"
-                          fill="none"
-                          xmlns="http://www.w3.org/2000/svg"
-                        >
-                          <path
-                            d="M5 3l5 5-5 5"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                        </svg>
-                      </span>
-                    </div>
-                  </div>
-                </article>
-              ))}{" "}
+              {bestSellerCards.map((product) => {
+                const hasMeta = Boolean(product.leadTime || product.weight);
+                const hasPrice = Boolean(product.priceLabel);
+                return (
+                  <article
+                    key={product.id}
+                    className="group flex h-full flex-col overflow-hidden rounded-sm bg-white shadow-card transition hover:-translate-y-1 hover:shadow-xl"
+                  >
+                    <Link
+                      href={product.href}
+                      className="flex flex-1 flex-col focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5f000b] focus-visible:ring-offset-2 focus-visible:ring-offset-[#fcd9d9]"
+                    >
+                      <div className="relative aspect-[1/1]">
+                        <Image
+                          src={product.imageSrc}
+                          alt={product.name}
+                          fill
+                          sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                          className="object-cover transition duration-500 group-hover:scale-105"
+                        />
+                      </div>
+                      <div className="flex flex-1 flex-col gap-3 px-5 pb-6 pt-5">
+                        <h6 className="text-lg leading-snug">{product.name}</h6>
+                        {hasMeta ? (
+                          <div className="flex flex-col gap-1 text-sm text-[#5f000b]/80">
+                            {product.leadTime ? <span>{product.leadTime}</span> : null}
+                            {product.weight ? <span>{product.weight}</span> : null}
+                          </div>
+                        ) : null}
+                        {hasPrice ? (
+                          <div className="mt-auto text-base font-semibold">{product.priceLabel}</div>
+                        ) : (
+                          <div className="mt-auto flex items-center justify-between text-base font-semibold">
+                            <span className="flex h-10 w-10 items-center justify-center rounded-full transition group-hover:bg-[#5f000b] group-hover:text-white">
+                              <svg
+                                aria-hidden="true"
+                                focusable="false"
+                                className="h-4 w-4"
+                                viewBox="0 0 16 16"
+                                fill="none"
+                                xmlns="http://www.w3.org/2000/svg"
+                              >
+                                <path
+                                  d="M5 3l5 5-5 5"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                />
+                              </svg>
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </Link>
+                  </article>
+                );
+              })}
             </div>
           </div>
         </section>
@@ -290,49 +266,6 @@ export default function Home() {
                   <span>{item.label}</span>
                 </div>
               ))}{" "}
-            </div>
-          </div>
-        </section>
-        <Marquee
-          message="Вземете от място · No Regrets"
-          repeat={10}
-          className="marquee--visit"
-        />
-        <section id="visit" className="w-full py-20">
-          <div className="flex w-full flex-col gap-24 px-[clamp(1rem,3vw,3rem)] lg:flex-row lg:items-center">
-            <div className="w-full overflow-hidden rounded-[0.75rem] shadow-card lg:max-w-[36rem]">
-              <div className="relative aspect-[16/9]">
-                <Image
-                  src={StorefrontImage}
-                  alt="Нашият магазин No Regrets отвън"
-                  fill
-                  sizes="(min-width: 1024px) 36rem, (min-width: 640px) 60vw, 90vw"
-                  className="object-cover"
-                />
-              </div>
-            </div>
-            <div className="w-full max-w-xl space-y-6 ">
-              <h2 className="text-3xl font-bold leading-tight sm:text-4xl">
-                {" "}
-                {STORE_INFO.heading}{" "}
-              </h2>
-              <p className="leading-relaxed "> {STORE_INFO.description} </p>
-              <div>
-                <div>
-                  <p className="mt-2"> {STORE_INFO.address} </p>
-                </div>
-                <p className="/90">
-                  {" "}
-                  Имейл:{""}{" "}
-                  <a
-                    href={`tel:${STORE_INFO.email.replace(/\s+/g, "")}`}
-                    className="font-semibold transition hover:underline"
-                  >
-                    {" "}
-                    {STORE_INFO.email}{" "}
-                  </a>
-                </p>
-              </div>
             </div>
           </div>
         </section>
@@ -406,6 +339,13 @@ export default function Home() {
                   приготвя с подбрани съставки, внимание към детайла и щипка
                   любов. 🍪✨{" "}
                 </p>
+                <p className="text-sm font-semibold text-[#5f000b]">
+                  {PICKUP_WINDOW_NOTICE}
+                </p>
+                <div className="text-sm text-[#5f000b]">
+                  <p>ул. „Богомил“ 48, Пловдив</p>
+                  <p>Имейл: zlati@noregrets.bg</p>
+                </div>
                 <Link
                   href="/about"
                   className="cta inline-flex w-fit items-center justify-center rounded-full px-6 py-3 text-sm font-semibold  transition hover:-translate-y-0.5 hover:bg-[#561c19]"
@@ -423,6 +363,37 @@ export default function Home() {
                   className="object-cover"
                 />
               </div>
+            </div>
+          </div>
+        </section>
+        <section className="py-20">
+          <div className="mx-auto grid w-full gap-10 bg-[#3e1b20] px-[clamp(1.5rem,4vw,3.5rem)] py-12 text-white lg:grid-cols-[1.1fr_minmax(0,0.9fr)]">
+            <div className="space-y-5">
+              <h2 className="text-3xl font-bold sm:text-4xl">Сладости за твоя бизнес</h2>
+              <p className="leading-relaxed text-white/90">
+                Ако управлявате кафе, сладкарница или офис и търсите свежи десерти за гостите и клиентите си,
+                можем да изготвим специално меню спрямо вашите нужди. Предлагам дегустации и съм
+                отворена за нестандартни запитвания.
+              </p>
+              <p className="leading-relaxed text-white/90">
+                Обичам персонализираните проекти – от брандирани кутии до специални вкусове за събития. Споделете
+                идеята си и ще подготвим сладко предложение, съобразено с обема и стила на вашия бизнес.
+              </p>
+              <Link
+                href="/contact"
+                className="cta inline-flex items-center justify-center rounded-full bg-white px-6 py-3 text-sm font-semibold uppercase text-[#5f000b] transition hover:bg-white/80"
+              >
+                Свържете се с мен
+              </Link>
+            </div>
+            <div className="rounded-2xl border border-white/20 bg-white/10 p-6 text-base leading-relaxed text-white/90">
+              <p className="text-sm font-semibold uppercase tracking-wide text-white/70">Как помагам</p>
+              <ul className="mt-4 space-y-3">
+                <li>• Седмични или месечни доставки на мини кутии, торти в буркан и сезонни десерти.</li>
+                <li>• Пробни дегустации и изработка на мостри за вашия екип.</li>
+                <li>• Специални рецепти по заявка и персонализирани опаковки.</li>
+                <li>• Бърза комуникация и съдействие за корпоративни подаръци и събития.</li>
+              </ul>
             </div>
           </div>
         </section>

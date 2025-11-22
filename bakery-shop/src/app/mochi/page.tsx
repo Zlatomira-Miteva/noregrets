@@ -51,12 +51,6 @@ export default function MochiPage() {
             >
               Кутия от 9 мочи
             </Link>
-            <Link
-              href="/cart"
-              className="rounded-full border border-transparent bg-white/20 px-6 py-3 text-sm font-semibold uppercase text-[#5f004f] transition hover:bg-white/40"
-            >
-              Виж количката
-            </Link>
           </div>
         </section>
 

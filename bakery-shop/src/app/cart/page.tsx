@@ -1,7 +1,7 @@
 "use client";
 import Image from "next/image";
 import Link from "next/link";
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useCart } from "@/context/CartContext";
 import { formatPrice } from "@/utils/price";
 import Marquee from "@/components/Marquee";
@@ -9,7 +9,10 @@ import SearchableSelect from "@/components/SearchableSelect";
 import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
 import CookieBoxHero from "@/app/cookie-box-hero.jpg";
+
 const FREE_SHIPPING_THRESHOLD = 150;
+const PICKUP_TIME_WINDOW = "16:00 - 18:00";
+
 type AppliedCoupon = {
   code: string;
   description: string | null;
@@ -18,32 +21,52 @@ type AppliedCoupon = {
   minimumOrderAmount: number;
   maximumDiscountAmount: number | null;
 };
+
 const CartPage = () => {
   const { items, totalPrice, clearCart, removeItem, updateQuantity } =
     useCart();
+
   const [reachMessage, setReachMessage] = useState<string | null>(null);
-  const [shippingType, setShippingType] = useState<"office" | "address">(
-    "office"
-  );
+  const [shippingType, setShippingType] = useState<
+    "office" | "address" | "pickup"
+  >("office");
+
   const [selectedCityId, setSelectedCityId] = useState<string>("");
   const [selectedOffice, setSelectedOffice] = useState<string>("");
+
   const [addressInfo, setAddressInfo] = useState({
     city: "",
     street: "",
     number: "",
     details: "",
   });
+
+  const [pickupDate, setPickupDate] = useState("");
+
+  const [customerInfo, setCustomerInfo] = useState({
+    firstName: "",
+    lastName: "",
+    phone: "",
+    email: "",
+  });
+  const [customerErrors, setCustomerErrors] = useState({
+    phone: "",
+    email: "",
+  });
+
   const [cities, setCities] = useState<
     Array<{ id: string; referenceId: string; name: string }>
   >([]);
   const [offices, setOffices] = useState<
     Array<{ id: string; name: string; address?: string }>
   >([]);
+
   const [citiesLoading, setCitiesLoading] = useState(false);
   const [officesLoading, setOfficesLoading] = useState(false);
   const [citiesError, setCitiesError] = useState<string | null>(null);
   const [officesError, setOfficesError] = useState<string | null>(null);
   const [noOfficesMessage, setNoOfficesMessage] = useState<string | null>(null);
+
   const [couponCode, setCouponCode] = useState("");
   const [couponDetails, setCouponDetails] = useState<AppliedCoupon | null>(
     null
@@ -51,51 +74,108 @@ const CartPage = () => {
   const [couponError, setCouponError] = useState<string | null>(null);
   const [couponStatus, setCouponStatus] = useState<string | null>(null);
   const [couponLoading, setCouponLoading] = useState(false);
-  const cityOptions = useMemo(
-    () =>
-      cities.map((city) => ({
-        value: city.referenceId,
-        label: city.name,
-        description: city.id ? `Пощенски код: ${city.id}` : undefined,
-      })),
-    [cities]
-  );
-  const couponEligible = useMemo(() => {
-    if (!couponDetails) {
-      return false;
+
+  const [orderStatus, setOrderStatus] = useState<string | null>(null);
+  const [orderError, setOrderError] = useState<string | null>(null);
+  const [isPreparingOrder, setIsPreparingOrder] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [marketingConsent, setMarketingConsent] = useState(false);
+
+  const pickupDateInputRef = useRef<HTMLInputElement | null>(null);
+
+  const openPickupDatePicker = () => {
+    const input = pickupDateInputRef.current;
+    if (!input) return;
+    if (typeof input.showPicker === "function") {
+      input.showPicker();
+    } else {
+      input.click();
     }
+  };
+
+  const cityOptions = useMemo(() => {
+    const unique: typeof cities = [];
+    const seen = new Set<string>();
+    for (const city of cities) {
+      if (!city.referenceId) continue;
+      if (seen.has(city.referenceId)) continue;
+      seen.add(city.referenceId);
+      unique.push(city);
+    }
+    return unique.map((city) => ({
+      value: city.referenceId,
+      label: city.name,
+      description: city.id ? `Пощенски код: ${city.id}` : undefined,
+    }));
+  }, [cities]);
+
+  const couponEligible = useMemo(() => {
+    if (!couponDetails) return false;
     return totalPrice >= couponDetails.minimumOrderAmount;
   }, [couponDetails, totalPrice]);
+
+  const validatePhoneValue = (value: string) => {
+    const trimmed = value.trim();
+    if (!trimmed) {
+      return "Въведете телефон.";
+    }
+    if (!/^0\d{9}$/.test(trimmed)) {
+      return "Телефонът трябва да започва с 0 и да съдържа 10 цифри.";
+    }
+    return "";
+  };
+
+  const validateEmailValue = (value: string) => {
+    const trimmed = value.trim();
+    if (!trimmed) {
+      return "Въведете имейл.";
+    }
+    const pattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!pattern.test(trimmed)) {
+      return "Невалиден формат на имейл.";
+    }
+    return "";
+  };
+
+  const validateContactInfo = () => {
+    const phoneError = validatePhoneValue(customerInfo.phone);
+    const emailError = validateEmailValue(customerInfo.email);
+    setCustomerErrors({ phone: phoneError, email: emailError });
+    if (phoneError || emailError) {
+      setOrderError(phoneError || emailError || "Проверете данните за контакт.");
+      return false;
+    }
+    return true;
+  };
+
   const couponDiscountAmount = useMemo(() => {
-    if (!couponDetails) {
-      return 0;
-    }
-    if (totalPrice <= 0) {
-      return 0;
-    }
-    if (totalPrice < couponDetails.minimumOrderAmount) {
-      return 0;
-    }
+    if (!couponDetails) return 0;
+    if (totalPrice <= 0) return 0;
+    if (totalPrice < couponDetails.minimumOrderAmount) return 0;
+
     let discount =
       couponDetails.discountType === "PERCENT"
         ? (totalPrice * couponDetails.discountValue) / 100
         : couponDetails.discountValue;
+
     if (
       couponDetails.maximumDiscountAmount !== null &&
       couponDetails.maximumDiscountAmount >= 0
     ) {
       discount = Math.min(discount, couponDetails.maximumDiscountAmount);
     }
+
     return Math.min(discount, totalPrice);
   }, [couponDetails, totalPrice]);
+
   const finalTotal = useMemo(
     () => Math.max(0, totalPrice - couponDiscountAmount),
     [couponDiscountAmount, totalPrice]
   );
+
   const couponStatusMessage = useMemo(() => {
-    if (!couponDetails) {
-      return null;
-    }
+    if (!couponDetails) return null;
+
     if (
       couponDetails.minimumOrderAmount > 0 &&
       totalPrice < couponDetails.minimumOrderAmount
@@ -104,44 +184,51 @@ const CartPage = () => {
         0,
         couponDetails.minimumOrderAmount - totalPrice
       );
-      return `Добавете още ${formatPrice(remaining)} за да активирате код ${
-        couponDetails.code
-      }.`;
+      return `Добавете още ${formatPrice(
+        remaining
+      )} за да активирате код ${couponDetails.code}.`;
     }
-    if (couponDiscountAmount === 0) {
-      return null;
-    }
+
+    if (couponDiscountAmount === 0) return null;
+
     const baseLabel =
       couponDetails.discountType === "PERCENT"
         ? `${couponDetails.discountValue}%`
         : formatPrice(couponDetails.discountValue);
+
     return `Код ${couponDetails.code} е активен: -${formatPrice(
       couponDiscountAmount
     )} (${baseLabel}).`;
   }, [couponDetails, couponDiscountAmount, totalPrice]);
+
   const handleApplyCoupon = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+
     const trimmed = couponCode.trim();
     if (!trimmed) {
       setCouponError("Въведете код за отстъпка.");
       setCouponStatus(null);
       return;
     }
+
     const normalized = trimmed.toUpperCase();
     setCouponLoading(true);
     setCouponError(null);
     setCouponStatus(null);
+
     try {
       const response = await fetch("/api/coupons/validate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ code: normalized, cartTotal: totalPrice }),
       });
+
       const payload: {
         coupon?: AppliedCoupon;
         discountAmount?: number;
         error?: string;
       } = await response.json();
+
       if (!response.ok || !payload.coupon) {
         setCouponDetails(null);
         setCouponError(
@@ -151,6 +238,7 @@ const CartPage = () => {
         );
         return;
       }
+
       setCouponDetails(payload.coupon);
       setCouponCode(normalized);
       setCouponStatus(
@@ -168,12 +256,154 @@ const CartPage = () => {
       setCouponLoading(false);
     }
   };
+
   const handleRemoveCoupon = () => {
     setCouponDetails(null);
     setCouponCode("");
     setCouponError(null);
     setCouponStatus("Кодът е премахнат.");
   };
+
+  const buildOrderPayload = () => {
+    if (!items.length) {
+      setOrderError("Количката е празна.");
+      return null;
+    }
+
+    if (
+      !customerInfo.firstName ||
+      !customerInfo.lastName ||
+      !customerInfo.phone ||
+      !customerInfo.email
+    ) {
+      setOrderError("Моля, попълнете име, фамилия, телефон и имейл.");
+      return null;
+    }
+
+    if (!validateContactInfo()) {
+      return null;
+    }
+
+    if (shippingType === "office" && (!selectedCityId || !selectedOffice)) {
+      setOrderError("Моля, изберете град и офис на Еконт.");
+      return null;
+    }
+
+    if (
+      shippingType === "address" &&
+      (!addressInfo.city || !addressInfo.street || !addressInfo.number)
+    ) {
+      setOrderError("Моля, попълнете адрес за доставка.");
+      return null;
+    }
+
+    if (shippingType === "pickup") {
+      if (!pickupDate) {
+        setOrderError("Моля, изберете дата за взимане от магазина.");
+        return null;
+      }
+    }
+
+    if (!termsAccepted) {
+      setOrderError("Необходимо е да приемете Общите условия.");
+      return null;
+    }
+
+    const econtCity = cities.find(
+      (entry) => entry.referenceId === selectedCityId
+    );
+    const office = offices.find((entry) => entry.id === selectedOffice);
+
+    const deliveryLabel =
+      shippingType === "office"
+        ? `Офис Econt – ${econtCity?.name ?? ""}${
+            office ? `, ${office.name}` : ""
+          }`
+        : shippingType === "pickup"
+        ? `Вземане от магазин – ${pickupDate} ${PICKUP_TIME_WINDOW}`
+        : `Адрес: ${addressInfo.city}, ${addressInfo.street} ${
+            addressInfo.number
+          }${
+            addressInfo.details ? `, ${addressInfo.details}` : ""
+          }`;
+
+    const orderPayload = {
+      customer: customerInfo,
+      deliveryLabel,
+      items: items.map((item) => ({
+        name: item.name,
+        price: item.price,
+        quantity: item.quantity,
+      })),
+      totalQuantity: items.reduce((sum, item) => sum + item.quantity, 0),
+      totalAmount: finalTotal,
+      createdAt: new Date().toISOString(),
+      consents: {
+        termsAccepted,
+        marketing: marketingConsent,
+      },
+    };
+
+    setOrderError(null);
+    return orderPayload;
+  };
+
+  const handleCheckout = async () => {
+    const orderPayload = buildOrderPayload();
+    if (!orderPayload) return;
+
+    setIsPreparingOrder(true);
+
+    try {
+      sessionStorage.setItem("pendingOrder", JSON.stringify(orderPayload));
+      setOrderStatus("Данните са запазени. Моля, изчакайте…");
+
+      const response = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(orderPayload),
+      });
+
+      const payload: {
+        redirectUrl?: string;
+        error?: string;
+        form?: { endpoint: string; fields: Record<string, string> };
+      } = await response.json();
+
+      if (!response.ok) {
+        throw new Error(payload.error ?? "Checkout failed");
+      }
+
+      if (payload.form) {
+        const form = document.createElement("form");
+        form.method = "POST";
+        form.action = payload.form.endpoint;
+        Object.entries(payload.form.fields).forEach(([name, value]) => {
+          const input = document.createElement("input");
+          input.type = "hidden";
+          input.name = name;
+          input.value = value;
+          form.appendChild(input);
+        });
+        document.body.appendChild(form);
+        form.submit();
+        return;
+      }
+
+      if (!payload.redirectUrl) {
+        throw new Error(payload.error ?? "Checkout failed");
+      }
+
+      window.location.href = payload.redirectUrl;
+    } catch (error) {
+      console.error("Failed to store pending order", error);
+      setOrderError("Неуспешно стартиране на плащането. Опитайте отново.");
+      setOrderStatus(null);
+    } finally {
+      setIsPreparingOrder(false);
+    }
+  };
+
   useEffect(() => {
     if (totalPrice >= FREE_SHIPPING_THRESHOLD) {
       setReachMessage("Поздравления! Вие получавате безплатна доставка.");
@@ -184,6 +414,7 @@ const CartPage = () => {
       );
     }
   }, [totalPrice]);
+
   useEffect(() => {
     setCitiesLoading(true);
     fetch("/api/econt/cities")
@@ -195,6 +426,7 @@ const CartPage = () => {
       .catch(() => setCitiesError("Неуспешно зареждане на градовете."))
       .finally(() => setCitiesLoading(false));
   }, []);
+
   useEffect(() => {
     if (shippingType !== "office") {
       setSelectedCityId("");
@@ -203,14 +435,17 @@ const CartPage = () => {
       setNoOfficesMessage(null);
       return;
     }
+
     if (!selectedCityId) {
       setOffices([]);
       setSelectedOffice("");
       setNoOfficesMessage(null);
       return;
     }
+
     setOfficesLoading(true);
     const query = new URLSearchParams({ cityId: selectedCityId }).toString();
+
     fetch(`/api/econt/offices?${query}`)
       .then((response) => response.json())
       .then((data) => {
@@ -230,26 +465,21 @@ const CartPage = () => {
       })
       .finally(() => setOfficesLoading(false));
   }, [shippingType, selectedCityId]);
+
   return (
-    <div className="flex min-h-screen flex-col ">
-      {" "}
-      <Marquee /> <SiteHeader />{" "}
+    <div className="flex min-h-screen flex-col">
+      <Marquee />
+      <SiteHeader />
       <main className="flex-1 py-16">
-        {" "}
         <div className="mx-auto w-full max-w-5xl px-[clamp(1rem,4vw,4rem)]">
-          {" "}
-          <div className="space-y-4 text-center ">
-            {" "}
+          <div className="space-y-4 text-center">
             <h1 className="text-4xl font-semibold sm:text-5xl">
-              {" "}
-              Вашата количка{" "}
-            </h1>{" "}
+              Вашата количка
+            </h1>
             {reachMessage ? (
               <div className="mx-auto w-full max-w-xl space-y-3">
-                {" "}
-                <p className="/80">{reachMessage}</p>{" "}
+                <p className="/80">{reachMessage}</p>
                 <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/60">
-                  {" "}
                   <div
                     className="h-full rounded-full bg-[#5f000b] transition-all"
                     style={{
@@ -258,78 +488,70 @@ const CartPage = () => {
                         (totalPrice / FREE_SHIPPING_THRESHOLD) * 100
                       )}%`,
                     }}
-                  />{" "}
-                </div>{" "}
+                  />
+                </div>
               </div>
-            ) : null}{" "}
-          </div>{" "}
+            ) : null}
+          </div>
+
           {items.length === 0 ? (
             <div className="mt-10 flex justify-center">
-              {" "}
               <Link
                 href="/"
-                className="cta rounded-full bg-[#5f000b] px-6 py-3 text-sm font-semibold uppercase  transition hover:bg-[#561c19]"
+                className="cta rounded-full bg-[#5f000b] px-6 py-3 text-sm font-semibold uppercase transition hover:bg-[#561c19]"
               >
-                {" "}
-                Към продуктите{" "}
-              </Link>{" "}
+                Към продуктите
+              </Link>
             </div>
           ) : (
             <div className="mt-16 space-y-8">
-              {" "}
               <div className="hidden grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] gap-4 text-left text-sm font-semibold uppercase sm:grid">
-                {" "}
-                <span>Продукт</span> <span>Цена</span> <span>Количество</span>{" "}
-                <span>Общо</span>{" "}
-              </div>{" "}
+                <span>Продукт</span>
+                <span>Цена</span>
+                <span>Количество</span>
+                <span>Общо</span>
+              </div>
+
               <ul className="space-y-6">
-                {" "}
                 {items.map((item) => (
                   <li
                     key={item.key}
-                    className="grid gap-6 rounded-3xl bg-white p-6 text-sm shadow-card sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] sm:items-center"
+                    className="grid gap-6 rounded-s bg-white p-6 text-sm shadow-card sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] sm:items-center"
                   >
-                    {" "}
                     <div className="flex items-start gap-4">
-                      {" "}
-                      <div className="ratio-square relative hidden h-20 w-20 overflow-hidden rounded-2xl sm:block">
-                        {" "}
+                      <div className="ratio-square relative hidden h-20 w-20 overflow-hidden rounded-s sm:block">
                         <Image
                           src={CookieBoxHero}
                           alt={item.name}
                           fill
                           className="object-cover"
-                        />{" "}
-                      </div>{" "}
+                        />
+                      </div>
                       <div className="space-y-2">
-                        {" "}
-                        <h6 className="text-lg">{item.name}</h6>{" "}
+                        <h6 className="text-lg">{item.name}</h6>
                         {item.options && item.options.length > 0 ? (
                           <ul className="space-y-1 text-xs">
-                            {" "}
                             {item.options.map((option) => (
                               <li key={`${item.key}-${option}`}>{option}</li>
-                            ))}{" "}
+                            ))}
                           </ul>
-                        ) : null}{" "}
+                        ) : null}
                         <button
                           type="button"
                           onClick={() => removeItem(item.key)}
                           className="text-xs font-semibold uppercase underline"
                         >
-                          {" "}
-                          Премахни{" "}
-                        </button>{" "}
-                      </div>{" "}
-                    </div>{" "}
+                          Премахни
+                        </button>
+                      </div>
+                    </div>
+
                     <div className="hidden text-base font-semibold sm:block">
-                      {" "}
-                      {formatPrice(item.price)}{" "}
-                    </div>{" "}
+                      {formatPrice(item.price)}
+                    </div>
+
                     <div className="flex items-center justify-start sm:justify-center">
-                      {" "}
                       <div className="flex items-center gap-3 rounded-full p-3">
-                        {" "}
                         <button
                           type="button"
                           onClick={() =>
@@ -337,13 +559,11 @@ const CartPage = () => {
                           }
                           className="flex h-10 w-10 items-center justify-center rounded-full border border-[#f1b8c4] text-lg font-semibold transition hover:bg-white"
                         >
-                          {" "}
-                          –{" "}
-                        </button>{" "}
+                          –
+                        </button>
                         <span className="flex h-10 min-w-[3rem] items-center justify-center rounded-full border border-[#f1b8c4] bg-white text-base font-semibold">
-                          {" "}
-                          {item.quantity}{" "}
-                        </span>{" "}
+                          {item.quantity}
+                        </span>
                         <button
                           type="button"
                           onClick={() =>
@@ -351,32 +571,151 @@ const CartPage = () => {
                           }
                           className="flex h-10 w-10 items-center justify-center rounded-full border border-[#f1b8c4] bg-white text-lg font-semibold transition hover:"
                         >
-                          {" "}
-                          +{" "}
-                        </button>{" "}
-                      </div>{" "}
-                    </div>{" "}
-                    <div className="text-base font-semibold ">
-                      {" "}
-                      {formatPrice(item.price * item.quantity)}{" "}
-                    </div>{" "}
+                          +
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="text-base font-semibold">
+                      {formatPrice(item.price * item.quantity)}
+                    </div>
                   </li>
-                ))}{" "}
-              </ul>{" "}
+                ))}
+              </ul>
+
               <div className="space-y-6 rounded-3xl bg-white p-6 text-sm shadow-card">
-                {" "}
                 <div className="space-y-3">
-                  {" "}
-                  <h3 className="text-lg">Метод на плащане</h3>{" "}
-                  <p>Плащанията се извършват единствено с карта.</p>{" "}
+                  <h3 className="text-lg">Данни за клиента</h3>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <label className="space-y-1">
+                      <span className="text-xs uppercase text-[#5f000b]/70">
+                        Име
+                      </span>
+                      <input
+                        type="text"
+                        value={customerInfo.firstName}
+                        onChange={(event) =>
+                          setCustomerInfo((prev) => ({
+                            ...prev,
+                            firstName: event.target.value,
+                          }))
+                        }
+                        placeholder="Първо име"
+                        className="w-full rounded-2xl border border-[#f4b9c2] px-4 py-3 text-sm focus:border-[#5f000b] focus:outline-none"
+                      />
+                    </label>
+                    <label className="space-y-1">
+                      <span className="text-xs uppercase text-[#5f000b]/70">
+                        Фамилия
+                      </span>
+                      <input
+                        type="text"
+                        value={customerInfo.lastName}
+                        onChange={(event) =>
+                          setCustomerInfo((prev) => ({
+                            ...prev,
+                            lastName: event.target.value,
+                          }))
+                        }
+                        placeholder="Фамилия"
+                        className="w-full rounded-2xl border border-[#f4b9c2] px-4 py-3 text-sm focus:border-[#5f000b] focus:outline-none"
+                      />
+                    </label>
+                    <label className="space-y-1">
+                      <span className="text-xs uppercase text-[#5f000b]/70">
+                        Телефон
+                      </span>
+                      <input
+                        type="tel"
+                        value={customerInfo.phone}
+                        inputMode="tel"
+                        pattern="0[0-9]{9}"
+                        maxLength={10}
+                        minLength={10}
+                        onChange={(event) => {
+                          const next = event.target.value;
+                          setCustomerInfo((prev) => ({
+                            ...prev,
+                            phone: next,
+                          }));
+                          if (customerErrors.phone) {
+                            setCustomerErrors((prev) => ({
+                              ...prev,
+                              phone: validatePhoneValue(next),
+                            }));
+                          }
+                        }}
+                        onBlur={() =>
+                          setCustomerErrors((prev) => ({
+                            ...prev,
+                            phone: validatePhoneValue(customerInfo.phone),
+                          }))
+                        }
+                        placeholder="Напр. 0888 123 456"
+                        className={`w-full rounded-2xl border px-4 py-3 text-sm focus:outline-none ${
+                          customerErrors.phone
+                            ? "border-red-500 focus:border-red-600"
+                            : "border-[#f4b9c2] focus:border-[#5f000b]"
+                        }`}
+                      />
+                      {customerErrors.phone ? (
+                        <p className="text-xs text-red-600">
+                          {customerErrors.phone}
+                        </p>
+                      ) : null}
+                    </label>
+                    <label className="space-y-1">
+                      <span className="text-xs uppercase text-[#5f000b]/70">
+                        Имейл
+                      </span>
+                      <input
+                        type="email"
+                        value={customerInfo.email}
+                        inputMode="email"
+                        onChange={(event) => {
+                          const next = event.target.value;
+                          setCustomerInfo((prev) => ({
+                            ...prev,
+                            email: next,
+                          }));
+                          if (customerErrors.email) {
+                            setCustomerErrors((prev) => ({
+                              ...prev,
+                              email: validateEmailValue(next),
+                            }));
+                          }
+                        }}
+                        onBlur={() =>
+                          setCustomerErrors((prev) => ({
+                            ...prev,
+                            email: validateEmailValue(customerInfo.email),
+                          }))
+                        }
+                        placeholder="you@example.com"
+                        className={`w-full rounded-2xl border px-4 py-3 text-sm focus:outline-none ${
+                          customerErrors.email
+                            ? "border-red-500 focus:border-red-600"
+                            : "border-[#f4b9c2] focus:border-[#5f000b]"
+                        }`}
+                      />
+                      {customerErrors.email ? (
+                        <p className="text-xs text-red-600">
+                          {customerErrors.email}
+                        </p>
+                      ) : null}
+                    </label>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <h3 className="text-lg">Метод на плащане</h3>
+                  <p>Плащанията се извършват единствено с карта.</p>
                   <p>
                     При финализиране ще ви пренасочим към защитена myPOS
                     страница за плащане.
-                  </p>{" "}
+                  </p>
                   <div className="flex flex-col gap-3 sm:flex-row sm:gap-6">
-                    {" "}
                     <label className="flex cursor-default items-center gap-3 rounded-2xl border border-[#5f000b] px-4 py-3 ring-2 ring-[#5f000b]">
-                      {" "}
                       <input
                         type="radio"
                         name="payment"
@@ -384,16 +723,15 @@ const CartPage = () => {
                         checked
                         readOnly
                         className="h-4 w-4 border-[#f4b9c2] focus:ring-[#5f000b]"
-                      />{" "}
-                      <span className="text-sm">Онлайн плащане (myPOS)</span>{" "}
-                    </label>{" "}
-                  </div>{" "}
-                </div>{" "}
+                      />
+                      <span className="text-sm">Онлайн плащане (myPOS)</span>
+                    </label>
+                  </div>
+                </div>
+
                 <div className="space-y-3">
-                  {" "}
-                  <h3 className="text-lg">Доставка</h3>{" "}
+                  <h3 className="text-lg">Доставка</h3>
                   <div className="flex flex-col gap-3 sm:flex-row sm:gap-6">
-                    {" "}
                     <label
                       className={`flex cursor-pointer items-center gap-3 rounded-2xl border px-4 py-3 transition ${
                         shippingType === "office"
@@ -401,7 +739,6 @@ const CartPage = () => {
                           : "border-[#f4b9c2]"
                       }`}
                     >
-                      {" "}
                       <input
                         type="radio"
                         name="shipping"
@@ -409,9 +746,9 @@ const CartPage = () => {
                         checked={shippingType === "office"}
                         onChange={() => setShippingType("office")}
                         className="h-4 w-4 border-[#f4b9c2] focus:ring-[#5f000b]"
-                      />{" "}
-                      <span className="text-sm">Доставка до офис на Econt</span>{" "}
-                    </label>{" "}
+                      />
+                      <span className="text-sm">Доставка до офис на Econt</span>
+                    </label>
                     <label
                       className={`flex cursor-pointer items-center gap-3 rounded-2xl border px-4 py-3 transition ${
                         shippingType === "address"
@@ -419,7 +756,6 @@ const CartPage = () => {
                           : "border-[#f4b9c2]"
                       }`}
                     >
-                      {" "}
                       <input
                         type="radio"
                         name="shipping"
@@ -427,13 +763,30 @@ const CartPage = () => {
                         checked={shippingType === "address"}
                         onChange={() => setShippingType("address")}
                         className="h-4 w-4 border-[#f4b9c2] focus:ring-[#5f000b]"
-                      />{" "}
-                      <span className="text-sm">Доставка до адрес</span>{" "}
-                    </label>{" "}
-                  </div>{" "}
+                      />
+                      <span className="text-sm">Доставка до адрес</span>
+                    </label>
+                    <label
+                      className={`flex cursor-pointer items-center gap-3 rounded-2xl border px-4 py-3 transition ${
+                        shippingType === "pickup"
+                          ? "border-[#5f000b] ring-2 ring-[#5f000b]"
+                          : "border-[#f4b9c2]"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="shipping"
+                        value="pickup"
+                        checked={shippingType === "pickup"}
+                        onChange={() => setShippingType("pickup")}
+                        className="h-4 w-4 border-[#f4b9c2] focus:ring-[#5f000b]"
+                      />
+                      <span className="text-sm">Вземане от магазина</span>
+                    </label>
+                  </div>
+
                   {shippingType === "office" ? (
                     <div className="space-y-4">
-                      {" "}
                       <SearchableSelect
                         id="econt-city"
                         label="Град (Econt)"
@@ -443,16 +796,15 @@ const CartPage = () => {
                         disabled={citiesLoading}
                         placeholder="Изберете град…"
                         noResultsText="Няма град с това име"
-                      />{" "}
+                      />
                       {citiesLoading ? (
                         <p className="/70"> Зареждаме списък с градове… </p>
                       ) : citiesError ? (
-                        <p className="">{citiesError}</p>
-                      ) : null}{" "}
+                        <p>{citiesError}</p>
+                      ) : null}
                       {selectedCityId && !noOfficesMessage ? (
                         <label className="block text-l uppercase">
-                          {" "}
-                          Изберете офис на Econt{" "}
+                          Изберете офис на Econt
                           <select
                             className="mt-1 w-full rounded-2xl border border-[#f4b9c2] bg-white px-4 py-3 text-sm focus:border-[#5f000b] focus:outline-none"
                             value={selectedOffice}
@@ -461,33 +813,27 @@ const CartPage = () => {
                             }
                             disabled={officesLoading}
                           >
-                            {" "}
-                            <option value="">Изберете офис…</option>{" "}
+                            <option value="">Изберете офис…</option>
                             {offices.map((office) => (
                               <option key={office.id} value={office.id}>
-                                {" "}
-                                {office.name}{" "}
-                                {office.address ? ` — ${office.address}` : ""}{" "}
+                                {office.name}
+                                {office.address ? ` — ${office.address}` : ""}
                               </option>
-                            ))}{" "}
-                          </select>{" "}
+                            ))}
+                          </select>
                         </label>
-                      ) : null}{" "}
-                      {noOfficesMessage ? (
-                        <p className=""> {noOfficesMessage} </p>
-                      ) : null}{" "}
+                      ) : null}
+                      {noOfficesMessage ? <p>{noOfficesMessage}</p> : null}
                       {officesLoading ? (
                         <p className="/70"> Зареждаме офисите… </p>
                       ) : officesError ? (
-                        <p className="">{officesError}</p>
-                      ) : null}{" "}
+                        <p>{officesError}</p>
+                      ) : null}
                     </div>
-                  ) : (
+                  ) : shippingType === "address" ? (
                     <div className="grid gap-3 sm:grid-cols-2">
-                      {" "}
                       <label className="space-y-1 text-xs uppercase">
-                        {" "}
-                        Град{" "}
+                        Град
                         <input
                           type="text"
                           value={addressInfo.city}
@@ -499,11 +845,10 @@ const CartPage = () => {
                           }
                           className="w-full rounded-2xl border border-[#f4b9c2] bg-white px-4 py-3 text-sm focus:border-[#5f000b] focus:outline-none"
                           placeholder="Напр. София"
-                        />{" "}
-                      </label>{" "}
+                        />
+                      </label>
                       <label className="space-y-1 text-xs uppercase">
-                        {" "}
-                        Улица{" "}
+                        Улица
                         <input
                           type="text"
                           value={addressInfo.street}
@@ -515,11 +860,10 @@ const CartPage = () => {
                           }
                           className="w-full rounded-2xl border border-[#f4b9c2] bg-white px-4 py-3 text-sm focus:border-[#5f000b] focus:outline-none"
                           placeholder="Улица"
-                        />{" "}
-                      </label>{" "}
+                        />
+                      </label>
                       <label className="space-y-1 text-xs uppercase">
-                        {" "}
-                        Номер{" "}
+                        Номер
                         <input
                           type="text"
                           value={addressInfo.number}
@@ -531,11 +875,10 @@ const CartPage = () => {
                           }
                           className="w-full rounded-2xl border border-[#f4b9c2] bg-white px-4 py-3 text-sm focus:border-[#5f000b] focus:outline-none"
                           placeholder="№"
-                        />{" "}
-                      </label>{" "}
+                        />
+                      </label>
                       <label className="space-y-1 text-xs uppercase sm:col-span-2">
-                        {" "}
-                        Допълнителни указания{" "}
+                        Допълнителни указания
                         <textarea
                           value={addressInfo.details}
                           onChange={(event) =>
@@ -547,19 +890,60 @@ const CartPage = () => {
                           className="w-full rounded-2xl border border-[#f4b9c2] bg-white px-4 py-3 text-sm focus:border-[#5f000b] focus:outline-none"
                           rows={3}
                           placeholder="Етаж, вход, домофон и др."
-                        />{" "}
-                      </label>{" "}
+                        />
+                      </label>
                     </div>
-                  )}{" "}
-                </div>{" "}
+                  ) : null}
+
+                  {shippingType === "pickup" ? (
+                    <div className="space-y-3">
+                      <div className="space-y-4">
+                        <p className="rounded-2xl bg-[#b4102b] px-4 py-3 text-sm font-semibold uppercase tracking-wide text-white">
+                          Взимането от магазина е възможно само между 16:00 и 18:00 часа. Невзети поръчки до 18:00 часа могат да се вземат на следващия ден в същия часови диапазон.
+                        </p>
+                        <label
+                          className="space-y-1 text-xs uppercase"
+                          onClick={openPickupDatePicker}
+                        >
+                          Дата за взимане
+                          <div
+                            role="presentation"
+                            className="relative w-full cursor-pointer rounded-2xl border border-[#f4b9c2] px-4 py-3 text-sm focus-within:border-[#5f000b]"
+                            onClick={(event) => {
+                              event.preventDefault();
+                              openPickupDatePicker();
+                            }}
+                          >
+                            <span className="block text-base">
+                              {pickupDate
+                                ? new Date(pickupDate).toLocaleDateString("bg-BG", {
+                                    day: "2-digit",
+                                    month: "2-digit",
+                                    year: "numeric",
+                                  })
+                                : "Изберете дата"}
+                            </span>
+                            <input
+                              ref={pickupDateInputRef}
+                              type="date"
+                              min={new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)}
+                              value={pickupDate}
+                              onChange={(event) => setPickupDate(event.target.value)}
+                              className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                            />
+                          </div>
+                        </label>
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
+
                 <div className="space-y-3">
-                  {" "}
-                  <h3 className="text-lg">Код за отстъпка</h3>{" "}
+                  <h3 className="text-lg">Код за отстъпка</h3>
                   <form
                     onSubmit={handleApplyCoupon}
                     className="flex flex-col gap-3 sm:flex-row sm:items-center"
                   >
-                    {" "}
                     <input
                       type="text"
                       value={couponCode}
@@ -568,17 +952,15 @@ const CartPage = () => {
                       className="w-full rounded-2xl border border-[#f4b9c2] bg-white px-4 py-3 text-sm focus:border-[#5f000b] focus:outline-none"
                       disabled={couponLoading}
                       aria-label="Код за отстъпка"
-                    />{" "}
+                    />
                     <div className="flex items-center gap-2">
-                      {" "}
                       <button
                         type="submit"
-                        className="cta rounded-full bg-[#5f000b] px-5 py-3 text-xs font-semibold uppercase  transition hover:bg-[#561c19] disabled:cursor-not-allowed disabled:opacity-60"
+                        className="cta rounded-full bg-[#5f000b] px-5 py-3 text-xs font-semibold uppercase transition hover:bg-[#561c19] disabled:cursor-not-allowed disabled:opacity-60"
                         disabled={couponLoading}
                       >
-                        {" "}
-                        {couponLoading ? "Проверяваме…" : "Приложи"}{" "}
-                      </button>{" "}
+                        {couponLoading ? "Проверяваме…" : "Приложи"}
+                      </button>
                       {couponDetails ? (
                         <button
                           type="button"
@@ -586,72 +968,109 @@ const CartPage = () => {
                           className="rounded-full border border-[#f4b9c2] px-5 py-3 text-xs font-semibold uppercase transition hover: disabled:cursor-not-allowed disabled:opacity-60"
                           disabled={couponLoading}
                         >
-                          {" "}
-                          Премахни{" "}
+                          Премахни
                         </button>
-                      ) : null}{" "}
-                    </div>{" "}
-                  </form>{" "}
-                  {couponError ? <p className="">{couponError}</p> : null}{" "}
-                  {couponStatus ? <p className="">{couponStatus}</p> : null}{" "}
+                      ) : null}
+                    </div>
+                  </form>
+                  {couponError ? <p>{couponError}</p> : null}
+                  {couponStatus ? <p>{couponStatus}</p> : null}
                   {couponStatusMessage ? (
                     <p className={`text-xs ${couponEligible ? "" : ""}`}>
-                      {" "}
-                      {couponStatusMessage}{" "}
+                      {couponStatusMessage}
                     </p>
-                  ) : null}{" "}
-                </div>{" "}
-              </div>{" "}
+                  ) : null}
+                </div>
+              </div>
+
               <div className="flex flex-col gap-6 rounded-3xl bg-white p-6 shadow-card">
-                {" "}
                 <div className="space-y-2 text-l">
-                  {" "}
                   <div className="flex items-center justify-between">
-                    {" "}
-                    <span className="text-xl font-bold">Общо</span>{" "}
-                    <span className="text-xl font-bold">{formatPrice(finalTotal)}</span>{" "}
-                  </div>{" "}
+                    <span className="text-xl font-bold">Общо</span>
+                    <span className="text-xl font-bold">
+                      {formatPrice(finalTotal)}
+                    </span>
+                  </div>
                   {couponDiscountAmount > 0 ? (
-                    <div className="flex items-center justify-between ">
-                      {" "}
-                      <span>Отстъпка ({couponDetails?.code ?? ""})</span>{" "}
-                      <span>-{formatPrice(couponDiscountAmount)}</span>{" "}
+                    <div className="flex items-center justify-between">
+                      <span>Отстъпка ({couponDetails?.code ?? ""})</span>
+                      <span>-{formatPrice(couponDiscountAmount)}</span>
                     </div>
-                  ) : null}{" "}
+                  ) : null}
                   <p className="/text-s">
-                    {" "}
-                    * Цената не включва доставка. Таксата на куриер е
-                    приблизително 8 лв. и се начислява отделно.{" "}
-                  </p>{" "}
-                </div>{" "}
+                    * Цената не включва доставка.
+                  </p>
+                </div>
+
+                <div className="space-y-4 text-sm text-[#5f000b]">
+                  <label className="flex items-start gap-3">
+                    <input
+                      type="checkbox"
+                      checked={termsAccepted}
+                      onChange={(event) => setTermsAccepted(event.target.checked)}
+                      className="mt-1 h-4 w-4 rounded border-[#f4b9c2] text-[#5f000b] focus:ring-[#5f000b]"
+                    />
+                    <span>
+                      Прочетох{" "}
+                      <Link
+                        href="/terms"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="font-semibold link-underline decoration-[#5f000b] underline-offset-2"
+                      >
+                        Общите условия
+                      </Link>{" "}
+                      и се съгласявам.
+                    </span>
+                  </label>
+                  <label className="flex items-start gap-3">
+                    <input
+                      type="checkbox"
+                      checked={marketingConsent}
+                      onChange={(event) =>
+                        setMarketingConsent(event.target.checked)
+                      }
+                      className="mt-1 h-4 w-4 rounded border-[#f4b9c2] text-[#5f000b] focus:ring-[#5f000b]"
+                    />
+                    <span>
+                      Съгласявам се да получавам имейли с нови предложения и промоции.
+                    </span>
+                  </label>
+                </div>
+
                 <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-between">
-                  {" "}
                   <div className="flex flex-col gap-3 sm:flex-row">
-                    {" "}
                     <button
                       type="button"
                       onClick={clearCart}
-                      className="rounded-full border border-[#f4b9c2] px-5 py-3 text-xs font-semibold uppercase transition hover:"
+                      className="rounded-full border border-[#f4b9c2] px-5 py-3 text-l font-semibold uppercase transition hover:"
                     >
-                      {" "}
-                      Изчисти количката{" "}
-                    </button>{" "}
+                      Изчисти количката
+                    </button>
                     <button
                       type="button"
-                      className="cta rounded-full bg-[#5f000b] px-5 py-3 text-xs font-semibold uppercase  transition hover:bg-[#561c19]"
+                      onClick={handleCheckout}
+                      className="cta rounded-full bg-[#5f000b] px-5 py-3 text-l font-semibold uppercase transition hover:bg-[#561c19] disabled:cursor-not-allowed disabled:opacity-60"
+                      disabled={isPreparingOrder || !termsAccepted}
                     >
-                      {" "}
-                      Поръчай{" "}
-                    </button>{" "}
-                  </div>{" "}
-                </div>{" "}
-              </div>{" "}
+                      {isPreparingOrder ? "Моля, изчакайте…" : "Поръчай"}
+                    </button>
+                  </div>
+                  <div className="text-center text-xs text-[#5f000b]">
+                    {orderError ? (
+                      <p className="text-red-600">{orderError}</p>
+                    ) : null}
+                    {orderStatus ? <p>{orderStatus}</p> : null}
+                  </div>
+                </div>
+              </div>
             </div>
-          )}{" "}
-        </div>{" "}
-      </main>{" "}
-      <SiteFooter />{" "}
+          )}
+        </div>
+      </main>
+      <SiteFooter />
     </div>
   );
 };
+
 export default CartPage;

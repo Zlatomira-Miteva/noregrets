@@ -182,7 +182,7 @@ const ensureCakeJarCategoryAndProducts = async () => {
       if (!existingProduct.leadTime && defaults?.leadTime) {
         updateData.leadTime = defaults.leadTime;
       }
-      if (!existingProduct.heroImage && defaults?.heroImage) {
+      if (defaults?.heroImage && existingProduct.heroImage !== defaults.heroImage) {
         updateData.heroImage = defaults.heroImage;
       }
       if (Object.keys(updateData).length) {

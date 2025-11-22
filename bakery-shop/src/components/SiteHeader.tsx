@@ -38,8 +38,10 @@ const SiteHeader = () => {
                 key={item.href + item.label}
                 href={item.href}
                 aria-current={active ? "page" : undefined}
-                className={`transition ${
-                  active ? "text-[#5f000b] underline decoration-4 underline-offset-8" : "text-[#5f000b]/80 hover:text-[#5f000b]"
+                className={`nav-link transition ${
+                  active
+                    ? "text-[#5f000b] underline decoration-4 underline-offset-8"
+                    : "text-[#5f000b]/80 hover:text-[#5f000b] hover:underline hover:decoration-4 hover:underline-offset-8"
                 }`}
               >
                 {item.label}

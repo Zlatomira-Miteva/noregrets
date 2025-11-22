@@ -4,7 +4,7 @@ import { useEffect, useState } from"react";
 import Image, { type StaticImageData } from"next/image";
 
 import CookieBoxPink from"../app/cookie-box-hero.jpg";
-import MochiePink from"../app/mochi-hero.jpg";
+// import MochiePink from"../app/mochi-hero.jpg";
 import CookiesPink from"../app/cookies-hero.jpg";
 import CakeJars from"../app/cake-jars-hero.jpg";
 
@@ -31,13 +31,13 @@ const SLIDES: Slide[] = [
     description:"Ароматни мини кукита и крем от нутела - сладка симфония, която стопля сърцето. Сподели я с любимите си или запази за себе си. Няма грешен избор.",
     ctaLabel:"Избери кутия",
   },
-  {
-    id: 3,
-    image: MochiePink,
-    title:"Меки. Кремообразни. Невъзможни за споделяне.",
-    description:"Фино мочи с ароматен крем, скрит под деликатна обвивка от оризово тесто. Сладък баланс между мекота, вкус и изкушение.",
-    ctaLabel:"Открий десертите",
-  },
+  // {
+  //   id: 3,
+  //   image: MochiePink,
+  //   title:"Меки. Кремообразни. Невъзможни за споделяне.",
+  //   description:"Фино мочи с ароматен крем, скрит под деликатна обвивка от оризово тесто. Сладък баланс между мекота, вкус и изкушение.",
+  //   ctaLabel:"Открий десертите",
+  // },
   {
     id: 4,
     image: CakeJars,

@@ -1,43 +1,39 @@
 "use client";
 
-import Image, { type StaticImageData } from "next/image";
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 import { useCart } from "@/context/CartContext";
 import { formatPrice, parsePrice } from "@/utils/price";
 
-type FeaturedTabsProps = {
-  products: Array<{
-    id: number | string;
-    name: string;
-    price: string;
-    leadTime: string;
-    weight: string;
-    image: string | StaticImageData;
-    category: "cookies" | "cakes" | "mochi";
-    href?: string;
-    slug?: string;
-  }>;
+type FeaturedProduct = {
+  id: string;
+  name: string;
+  price: string;
+  leadTime: string;
+  weight: string;
+  image: string;
+  category: "cookies" | "cakes";
+  href?: string;
+  slug?: string;
 };
 
-const CATEGORIES: Array<{ label: string; value: "cookies" | "cakes" | "mochi" }> = [
+const CATEGORIES: Array<{ label: string; value: "cookies" | "cakes" }> = [
   { label: "Кукита", value: "cookies" },
   { label: "Торти", value: "cakes" },
-  { label: "Мочи", value: "mochi" },
 ];
 
 const HASH_TO_CATEGORY: Record<string, (typeof CATEGORIES)[number]["value"]> = {
   "#cookies": "cookies",
   "#cakes": "cakes",
-  "#mochi": "mochi",
 };
 
-const FeaturedTabs = ({ products }: FeaturedTabsProps) => {
+const FeaturedTabs = () => {
   const [activeCategory, setActiveCategory] = useState<(typeof CATEGORIES)[number]["value"]>(CATEGORIES[0].value);
-  const [backendCakes, setBackendCakes] = useState<FeaturedTabsProps["products"]>([]);
+  const [backendCakes, setBackendCakes] = useState<FeaturedProduct[]>([]);
   const [cakesError, setCakesError] = useState<string | null>(null);
-  const [cookieBoxes, setCookieBoxes] = useState<FeaturedTabsProps["products"]>([]);
+  const [cookieBoxes, setCookieBoxes] = useState<FeaturedProduct[]>([]);
   const [cookiesError, setCookiesError] = useState<string | null>(null);
   const { addItem } = useCart();
 
@@ -75,8 +71,8 @@ const FeaturedTabs = ({ products }: FeaturedTabsProps) => {
           heroImage: string;
         }> = await response.json();
 
-        const mapped: FeaturedTabsProps["products"] = data.map((item) => ({
-          id: item.id,
+        const mapped: FeaturedProduct[] = data.map((item) => ({
+          id: item.id.toString(),
           name: item.name,
           price: formatPrice(item.price ?? 0),
           leadTime: item.leadTime || "Доставка до 3 дни",
@@ -116,8 +112,8 @@ const FeaturedTabs = ({ products }: FeaturedTabsProps) => {
             href?: string;
           }>;
         } = await response.json();
-        const mapped: FeaturedTabsProps["products"] = data.products.map((product) => ({
-          id: product.id,
+        const mapped: FeaturedProduct[] = data.products.map((product) => ({
+          id: product.id.toString(),
           name: product.name,
           price: formatPrice(product.price ?? 0),
           leadTime: product.leadTime || "Доставка до 3 дни",
@@ -138,17 +134,8 @@ const FeaturedTabs = ({ products }: FeaturedTabsProps) => {
   }, []);
 
   const mergedProducts = useMemo(() => {
-    let list = products;
-    if (cookieBoxes.length) {
-      const nonCookies = list.filter((product) => product.category !== "cookies");
-      list = [...nonCookies, ...cookieBoxes];
-    }
-    if (backendCakes.length) {
-      const nonCakes = list.filter((product) => product.category !== "cakes");
-      list = [...nonCakes, ...backendCakes];
-    }
-    return list;
-  }, [products, backendCakes, cookieBoxes]);
+    return [...cookieBoxes, ...backendCakes];
+  }, [backendCakes, cookieBoxes]);
 
   const filteredProducts = useMemo(
     () => mergedProducts.filter((product) => product.category === activeCategory),
@@ -165,11 +152,11 @@ const FeaturedTabs = ({ products }: FeaturedTabsProps) => {
     }
   };
 
-  const handleQuickAdd = (product: FeaturedTabsProps["products"][number]) => {
+  const handleQuickAdd = (product: FeaturedProduct) => {
     if (product.category !== "cakes") return;
     const slug = product.href?.split("/").pop() ?? product.id.toString();
     addItem({
-      productId: typeof product.id === "number" ? product.id.toString() : (product.id ?? slug),
+      productId: slug,
       name: product.name,
       price: parsePrice(product.price),
       quantity: 1,
@@ -181,7 +168,6 @@ const FeaturedTabs = ({ products }: FeaturedTabsProps) => {
     <>
       <span id="cookies" className="relative -top-24 block h-0" aria-hidden />
       <span id="cakes" className="relative -top-24 block h-0" aria-hidden />
-      <span id="mochi" className="relative -top-24 block h-0" aria-hidden />
       <section className="mx-auto w-full px-[clamp(1rem,3vw,3rem)] py-12">
         <div className="flex flex-wrap items-center gap-4 border-b border-[#dcb1b1] pb-4">
           {CATEGORIES.map((category) => {

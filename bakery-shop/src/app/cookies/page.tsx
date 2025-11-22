@@ -29,12 +29,6 @@ export default function CookiesPage() {
             >
               Направи си кутия с 6 кукита
             </Link>
-            <Link
-              href="/cart"
-              className="rounded-full border border-[#5f000b] px-6 py-3 text-sm font-semibold uppercase transition hover:bg-white/60"
-            >
-              Виж количката
-            </Link>
           </div>
         </section>
 

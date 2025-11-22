@@ -99,6 +99,12 @@ model CakeJar {
   updatedAt   DateTime @updatedAt
 }
 
+enum OrderStatus {
+  PENDING
+  PAID
+  FAILED
+}
+
 enum ProductStatus {
   DRAFT
   PUBLISHED
@@ -163,4 +169,28 @@ model ProductCategoryImage {
   alt       String?
   position  Int     @default(0)
   product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+model Order {
+  id            String       @id @default(cuid())
+  reference     String       @unique
+  customerName  String
+  customerEmail String
+  customerPhone String
+  deliveryLabel String
+  items         Json
+  totalAmount   Decimal      @db.Decimal(10, 2)
+  status        OrderStatus  @default(PENDING)
+  paymentUrl    String?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+}
+
+model CookieOption {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  name      String
+  image     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

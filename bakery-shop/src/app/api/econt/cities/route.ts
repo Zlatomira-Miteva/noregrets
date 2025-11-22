@@ -4,6 +4,10 @@ const CITY_ENDPOINTS = [
   "https://ee.econt.com/services/Nomenclatures/NomenclaturesService.getCities.json",
   "https://www.econt.com/services/Nomenclatures/NomenclaturesService.getCities.json",
 ];
+const OFFICE_ENDPOINTS = [
+  "https://ee.econt.com/services/Nomenclatures/NomenclaturesService.getOffices.json",
+  "https://www.econt.com/services/Nomenclatures/NomenclaturesService.getOffices.json",
+];
 
 type EcontCity = {
   countryCode?: string;
@@ -16,11 +20,91 @@ type EcontCity = {
   isActive?: boolean;
 };
 
+type EcontOffice = {
+  cityID?: string | number;
+  city_id?: string | number;
+  name?: string;
+  name_en?: string;
+  isAPS?: boolean;
+  address?: {
+    city?: {
+      id?: string | number;
+      cityID?: string | number;
+      postCode?: string | number;
+      country?: {
+        code2?: string;
+        code3?: string;
+      };
+    };
+  };
+};
+
 const FALLBACK_CITIES = [
   { id: "1000", referenceId: "1000", name: "София" },
   { id: "4000", referenceId: "4000", name: "Пловдив" },
   { id: "9000", referenceId: "9000", name: "Варна" },
 ];
+
+const loadOfficeCityIds = async (): Promise<Set<string>> => {
+  const cityIds = new Set<string>();
+
+  for (const endpoint of OFFICE_ENDPOINTS) {
+    try {
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ countryCode: "BGR", languageCode: "bg" }),
+        next: { revalidate: 60 * 60 * 12 },
+        cache: "no-store",
+      });
+
+      if (!response.ok) {
+        throw new Error(`Econt offices API responded with ${response.status}`);
+      }
+
+      const data = (await response.json()) as { offices?: EcontOffice[] };
+      const offices = Array.isArray(data?.offices) ? data.offices : [];
+
+      for (const office of offices) {
+        if (office.isAPS) {
+          continue;
+        }
+        const name = (office.name ?? office.name_en ?? "").toLowerCase();
+        if (name.includes("еконттомат") || name.includes("econtomat")) {
+          continue;
+        }
+
+        const countryCode =
+          (office.address?.city?.country?.code2 ?? office.address?.city?.country?.code3 ?? "")
+            .toString()
+            .toUpperCase();
+        if (countryCode && countryCode !== "BG" && countryCode !== "BGR") {
+          continue;
+        }
+
+        const cityIdentifier =
+          office.cityID ??
+          office.city_id ??
+          office.address?.city?.id ??
+          office.address?.city?.cityID ??
+          office.address?.city?.postCode ??
+          "";
+        const normalized = String(cityIdentifier);
+        if (normalized) {
+          cityIds.add(normalized);
+        }
+      }
+
+      if (cityIds.size > 0) {
+        return cityIds;
+      }
+    } catch (error) {
+      console.error(`Failed to load offices from ${endpoint}`, error);
+    }
+  }
+
+  return cityIds;
+};
 
 export async function GET() {
   try {
@@ -61,7 +145,7 @@ export async function GET() {
     const cities = rawCities
       .filter((city) => {
         const countryCode = city.countryCode;
-       const isActive = city.isActive ?? true;
+        const isActive = city.isActive ?? true;
         return (countryCode === "BG" || countryCode === "BGR" || !countryCode) && isActive;
       })
       .map((city) => {
@@ -78,7 +162,17 @@ export async function GET() {
       return NextResponse.json({ cities: FALLBACK_CITIES }, { status: 200 });
     }
 
-    return NextResponse.json({ cities }, { status: 200 });
+    const officeCityIds = await loadOfficeCityIds();
+    const filteredCities =
+      officeCityIds.size > 0
+        ? cities.filter((city) => officeCityIds.has(city.referenceId))
+        : cities;
+
+    if (filteredCities.length === 0) {
+      return NextResponse.json({ cities: FALLBACK_CITIES }, { status: 200 });
+    }
+
+    return NextResponse.json({ cities: filteredCities }, { status: 200 });
   } catch (error) {
     console.error("Failed to load Econt cities", error);
     return NextResponse.json(
