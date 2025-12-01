@@ -10,7 +10,7 @@ import { formatPrice, parsePrice } from "@/utils/price";
 type FeaturedProduct = {
   id: string;
   name: string;
-  price: string;
+  price?: string;
   leadTime: string;
   weight: string;
   image: string;
@@ -115,7 +115,7 @@ const FeaturedTabs = () => {
         const mapped: FeaturedProduct[] = data.products.map((product) => ({
           id: product.id.toString(),
           name: product.name,
-          price: formatPrice(product.price ?? 0),
+          price: product.slug.startsWith("custom-box-") ? undefined : formatPrice(product.price ?? 0),
           leadTime: product.leadTime || "Доставка до 3 дни",
           weight: product.weight || "450 гр.",
           image: product.image,
@@ -199,6 +199,7 @@ const FeaturedTabs = () => {
           ) : (
             filteredProducts.map((product) => {
               const isCake = product.category === "cakes";
+              const hasPrice = Boolean(product.price);
               const content = (
                 <>
                   <div className="relative aspect-[1/1]">
@@ -216,7 +217,30 @@ const FeaturedTabs = () => {
                       <span>{product.leadTime}</span>
                       <span>{product.weight}</span>
                     </div>
-                    <div className="mt-auto text-base font-semibold">{product.price}</div>
+                    {hasPrice ? (
+                      <div className="mt-auto text-base font-semibold">{product.price}</div>
+                    ) : (
+                      <div className="mt-auto flex items-center justify-between text-base font-semibold">
+                        <span className="flex h-10 w-10 items-center justify-center rounded-full transition group-hover:bg-[#5f000b] group-hover:text-white">
+                          <svg
+                            aria-hidden="true"
+                            focusable="false"
+                            className="h-4 w-4"
+                            viewBox="0 0 16 16"
+                            fill="none"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <path
+                              d="M5 3l5 5-5 5"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                          </svg>
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </>
               );

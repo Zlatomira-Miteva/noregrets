@@ -75,6 +75,7 @@ const loadHomepageFeaturedCards = async (): Promise<HomepageFeaturedCard[]> => {
     FEATURED_COOKIE_CONFIG.map(async (config) => {
       const product = await getProductBySlug(config.slug);
       if (!product) return null;
+      const isCustomBox = config.slug.startsWith("custom-box");
       return {
         id: product.slug,
         name: product.name,
@@ -82,7 +83,7 @@ const loadHomepageFeaturedCards = async (): Promise<HomepageFeaturedCard[]> => {
         imageSrc: product.heroImage || config.fallbackImage,
         leadTime: product.leadTime || undefined,
         weight: product.weight || undefined,
-        priceLabel: formatPrice(product.price ?? 0),
+        priceLabel: isCustomBox ? undefined : formatPrice(product.price ?? 0),
       };
     })
   );

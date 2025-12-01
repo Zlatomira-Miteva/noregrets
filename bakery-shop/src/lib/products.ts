@@ -16,6 +16,7 @@ export type CookieOptionRecord = {
   slug: string;
   name: string;
   image: string;
+  price: number;
 };
 
 const normalizeImagePath = (value?: string | null) => {
@@ -62,5 +63,6 @@ export const getCookieOptions = async (): Promise<CookieOptionRecord[]> => {
     slug: option.slug,
     name: option.name,
     image: normalizeImagePath(option.image),
+    price: Number(option.price ?? 0),
   }));
 };

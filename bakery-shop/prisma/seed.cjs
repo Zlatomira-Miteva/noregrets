@@ -147,7 +147,7 @@ async function main() {
       ],
       categoryImages: ["cookie-box-hero.jpg"],
       categorySlug: "cookie-boxes",
-      price: 19.50,
+      price: 19.6,
       status: "PUBLISHED",
       variantName: "Best Sellers кутия (3 кукита)",
     },
@@ -170,7 +170,7 @@ async function main() {
       ],
       categoryImages: ["cookie-box-hero.jpg"],
       categorySlug: "cookie-boxes",
-      price: 19.50,
+      price: 19.6,
       status: "PUBLISHED",
       variantName: "Кутия от 3 кукита",
     },
@@ -334,12 +334,12 @@ async function main() {
   }
 
   const cookieOptions = [
-    { slug: "nutella-bueno", name: "Nutella Bueno", image: "nutella-bueno-top.png" },
-    { slug: "red-velvet", name: "Red Velvet Cheesecake", image: "red-velvet-cookie-top.png" },
-    { slug: "biscoff", name: "Biscoff", image: "biscoff-top.png" },
-    { slug: "tripple-choc", name: "Tripple Choc", image: "tripple-choc-top.png" },
-    { slug: "new-york", name: "New York", image: "new-york-top.png" },
-    { slug: "oreo", name: "Oreo & White Choc", image: "oreo-cookie-top.png" },
+    { slug: "nutella-bueno", name: "Nutella Bueno", image: "nutella-bueno-top.png", price: 6.6 },
+    { slug: "red-velvet", name: "Red Velvet Cheesecake", image: "red-velvet-cookie-top.png", price: 6.5 },
+    { slug: "biscoff", name: "Biscoff", image: "biscoff-top.png", price: 6.5 },
+    { slug: "tripple-choc", name: "Tripple Choc", image: "tripple-choc-top.png", price: 6.0 },
+    { slug: "new-york", name: "New York", image: "new-york-top.png", price: 6.0 },
+    { slug: "oreo", name: "Oreo & White Choc", image: "oreo-cookie-top.png", price: 6.5 },
   ];
 
   for (const option of cookieOptions) {
@@ -348,6 +348,7 @@ async function main() {
       update: {
         name: option.name,
         image: option.image,
+        price: option.price,
       },
       create: option,
     });

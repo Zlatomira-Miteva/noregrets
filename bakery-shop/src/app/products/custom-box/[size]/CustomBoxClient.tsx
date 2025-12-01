@@ -105,20 +105,30 @@ type CookieOption = {
   id: string;
   name: string;
   image: string;
+  price: number;
+};
+
+const COOKIE_PRICES: Record<string, number> = {
+  "nutella-bueno": 6.6,
+  biscoff: 6.5,
+  "red-velvet": 6.5,
+  oreo: 6.5,
+  "new-york": 6.0,
+  "tripple-choc": 6.0,
 };
 
 const COOKIE_OPTIONS: CookieOption[] = [
-  { id: "nutella-bueno", name: "Nutella Bueno", image: "/nutella-bueno-top.png" },
-  { id: "red-velvet", name: "Red Velvet Cheesecake", image: "/red-velvet-cookie-top.png" },
-  { id: "biscoff", name: "Biskoff", image: "/biscoff-top.png" },
-  { id: "tripple-choc", name: "Tripple Choc", image: "/tripple-choc-top.png" },
-  { id: "new-york", name: "New York", image: "/new-york-top.png" },
-  { id: "oreo", name: "Oreo & White Choc", image: "/oreo-cookie-top.png" },
+  { id: "nutella-bueno", name: "Nutella Bueno", image: "/nutella-bueno-top.png", price: COOKIE_PRICES["nutella-bueno"] },
+  { id: "red-velvet", name: "Red Velvet Cheesecake", image: "/red-velvet-cookie-top.png", price: COOKIE_PRICES["red-velvet"] },
+  { id: "biscoff", name: "Biskoff", image: "/biscoff-top.png", price: COOKIE_PRICES.biscoff },
+  { id: "tripple-choc", name: "Tripple Choc", image: "/tripple-choc-top.png", price: COOKIE_PRICES["tripple-choc"] },
+  { id: "new-york", name: "New York", image: "/new-york-top.png", price: COOKIE_PRICES["new-york"] },
+  { id: "oreo", name: "Oreo & White Choc", image: "/oreo-cookie-top.png", price: COOKIE_PRICES.oreo },
 ];
 
 const MOCHI_OPTIONS: CookieOption[] = [
-  { id: "white-choc-mochi", name: "Бяло шоколадово мочи", image: "/white-choc-mochi.png" },
-  { id: "dark-choc-mochi", name: "Тъмно шоколадово мочи", image: "/dark-choc-mochi.png" },
+  { id: "white-choc-mochi", name: "Бяло шоколадово мочи", image: "/white-choc-mochi.png", price: 0 },
+  { id: "dark-choc-mochi", name: "Тъмно шоколадово мочи", image: "/dark-choc-mochi.png", price: 0 },
 ];
 
 const MAX_SELECTION = 12;
@@ -141,6 +151,7 @@ export default function CustomBoxClient({ requestedSize, initialProduct, cookieO
           id: option.slug,
           name: option.name,
           image: option.image,
+          price: option.price ?? COOKIE_PRICES[option.slug] ?? 0,
         }))
       : COOKIE_OPTIONS;
   const options = isMochiBox ? MOCHI_OPTIONS : resolvedCookieOptions;
@@ -153,22 +164,26 @@ export default function CustomBoxClient({ requestedSize, initialProduct, cookieO
   }, [initialProduct, fallbackGallery]);
   const [activeIndex, setActiveIndex] = useState(0);
   const basePrice = parsePrice(config.price);
-  const resolvedPrice = initialProduct?.price ?? basePrice;
+  const resolvedPrice = isMochiBox ? initialProduct?.price ?? basePrice : 0;
+  const [selection, setSelection] = useState<Record<string, number>>({});
+  const computedBoxPrice = useMemo(
+    () => options.reduce((sum, cookie) => sum + (selection[cookie.id] ?? 0) * (cookie.price ?? 0), 0),
+    [options, selection],
+  );
+  const priceValue = isMochiBox ? resolvedPrice : computedBoxPrice;
   const productDetails = useMemo(
     () => ({
       name: initialProduct?.name ?? config.name,
       description: initialProduct?.description ?? config.description,
       weight: initialProduct?.weight ?? config.weight,
-      price: formatPrice(resolvedPrice),
+      price: formatPrice(priceValue),
       highlights: config.highlights,
       allergenNote: config.allergenNote,
     }),
-    [initialProduct, config, resolvedPrice],
+    [initialProduct, config, priceValue],
   );
   const totalImages = galleryImages.length;
-  const [selection, setSelection] = useState<Record<string, number>>({});
   const { addItem } = useCart();
-  const priceValue = resolvedPrice;
 
   const wrapIndex = (index: number) => {
     if (totalImages === 0) return 0;
@@ -350,6 +365,7 @@ export default function CustomBoxClient({ requestedSize, initialProduct, cookieO
                           <div className="flex flex-col gap-6 rounded-s border border-[#f4b9c2] bg-white p-6 sm:flex-row sm:items-center sm:justify-between">
                             <div className="space-y-4 sm:max-w-[60%]">
                               <h6 className="text-xl font-semibold text-[#5f000b]">{cookie.name}</h6>
+                              {!isMochiBox ? <p className="text-sm font-semibold text-[#5f000b]">{formatPrice(cookie.price)}</p> : null}
 
                               <div className="flex items-center gap-4 text-[#5f000b]">
                                 <button
@@ -386,6 +402,13 @@ export default function CustomBoxClient({ requestedSize, initialProduct, cookieO
                   </div>
                 ) : null}
 
+                <div className="flex items-center justify-between rounded-s bg-white p-4 text-[#5f000b] shadow-card">
+                  <div>
+                    <p className="text-sm uppercase tracking-wide">Обща цена</p>
+                    <p className="text-xs text-gray-600">Формира се по избраните кукита</p>
+                  </div>
+                  <p className="text-2xl font-semibold">{formatPrice(priceValue)}</p>
+                </div>
 
                 <button
                   type="button"
