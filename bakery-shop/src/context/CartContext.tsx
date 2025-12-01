@@ -2,13 +2,14 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 
-type CartItem = {
+export type CartItem = {
   key: string;
   productId: string;
   name: string;
   price: number;
   quantity: number;
   options?: string[];
+  image?: string;
 };
 
 type AddItemPayload = {
@@ -17,6 +18,7 @@ type AddItemPayload = {
   price: number;
   quantity: number;
   options?: string[];
+  image?: string;
 };
 
 type CartContextValue = {
@@ -87,6 +89,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
         next[existingIndex] = {
           ...next[existingIndex],
           quantity: next[existingIndex].quantity + payload.quantity,
+          image: payload.image ?? next[existingIndex].image,
         };
         return next;
       }
@@ -100,6 +103,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
           price: payload.price,
           quantity: payload.quantity,
           options: payload.options,
+          image: payload.image,
         },
       ];
     });

@@ -116,6 +116,7 @@ function CakeJarContent() {
       price: activeJar.price,
       quantity,
       options: [activeJar.name],
+      image: activeJar.heroImage,
     });
     setQuantity(1);
   };

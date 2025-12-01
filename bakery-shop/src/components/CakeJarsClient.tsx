@@ -40,6 +40,7 @@ export default function CakeJarsClient({ initialJars }: CakeJarsClientProps) {
       price: jar.price ?? 0,
       quantity: 1,
       options: [jar.name],
+      image: jar.heroImage,
     });
   };
 

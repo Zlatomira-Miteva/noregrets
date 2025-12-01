@@ -25,6 +25,7 @@ export default function MochiPage() {
       price: priceValue,
       quantity: 1,
       options: [name],
+      image: MOCHIS.find((entry) => entry.id === mochiId)?.image,
     });
   };
 

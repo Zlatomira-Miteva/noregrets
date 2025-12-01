@@ -83,6 +83,7 @@ export default function BestSellersClient({ initialProduct }: BestSellersClientP
       price: priceValue,
       quantity,
       options: INCLUDED_COOKIES.map((cookie) => cookie.name),
+      image: galleryImages[activeIndex] ?? galleryImages[0],
     });
   };
 

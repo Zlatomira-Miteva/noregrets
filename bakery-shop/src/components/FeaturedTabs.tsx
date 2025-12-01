@@ -161,6 +161,7 @@ const FeaturedTabs = () => {
       price: parsePrice(product.price),
       quantity: 1,
       options: [product.weight],
+      image: product.image,
     });
   };
 

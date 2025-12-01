@@ -32,6 +32,7 @@ const CakeProductDetail = ({ cake }: Props) => {
       price: priceValue,
       quantity,
       options: [cake.weight],
+      image: cake.image,
     });
   };
 

@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build --turbopack",
+    "build": "next build",
+    "build:prod": "NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 NEXT_CPU_COUNT=2 next build",
     "start": "next start",
     "lint": "eslint"
   },

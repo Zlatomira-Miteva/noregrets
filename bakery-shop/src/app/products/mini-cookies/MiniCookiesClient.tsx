@@ -67,6 +67,7 @@ export default function MiniCookiesClient({ initialProduct }: MiniCookiesClientP
       name: productDetails.name,
       price: priceValue,
       quantity,
+      image: galleryImages[activeIndex] ?? galleryImages[0],
     });
   };
 

@@ -1,5 +1,4 @@
 "use client";
-import Image from "next/image";
 import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useCart } from "@/context/CartContext";
@@ -8,7 +7,6 @@ import Marquee from "@/components/Marquee";
 import SearchableSelect from "@/components/SearchableSelect";
 import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
-import CookieBoxHero from "@/app/cookie-box-hero.jpg";
 
 const FREE_SHIPPING_THRESHOLD = 150;
 const PICKUP_TIME_WINDOW = "16:00 - 18:00";
@@ -533,32 +531,22 @@ const CartPage = () => {
                     key={item.key}
                     className="grid gap-6 rounded-s bg-white p-6 text-sm shadow-card sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] sm:items-center"
                   >
-                    <div className="flex items-start gap-4">
-                      <div className="ratio-square relative hidden h-20 w-20 overflow-hidden rounded-s sm:block">
-                        <Image
-                          src={CookieBoxHero}
-                          alt={item.name}
-                          fill
-                          className="object-cover"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <h6 className="text-lg">{item.name}</h6>
-                        {item.options && item.options.length > 0 ? (
-                          <ul className="space-y-1 text-xs">
-                            {item.options.map((option) => (
-                              <li key={`${item.key}-${option}`}>{option}</li>
-                            ))}
-                          </ul>
-                        ) : null}
-                        <button
-                          type="button"
-                          onClick={() => removeItem(item.key)}
-                          className="text-xs font-semibold uppercase underline"
-                        >
-                          Премахни
-                        </button>
-                      </div>
+                    <div className="space-y-2">
+                      <h6 className="text-lg">{item.name}</h6>
+                      {item.options && item.options.length > 0 ? (
+                        <ul className="space-y-1 text-xs">
+                          {item.options.map((option) => (
+                            <li key={`${item.key}-${option}`}>{option}</li>
+                          ))}
+                        </ul>
+                      ) : null}
+                      <button
+                        type="button"
+                        onClick={() => removeItem(item.key)}
+                        className="text-xs font-semibold uppercase underline"
+                      >
+                        Премахни
+                      </button>
                     </div>
 
                     <div className="hidden text-base font-semibold sm:block">

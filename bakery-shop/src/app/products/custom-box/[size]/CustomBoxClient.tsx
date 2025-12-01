@@ -239,6 +239,7 @@ export default function CustomBoxClient({ requestedSize, initialProduct, cookieO
       price: priceValue,
       quantity: 1,
       options: summary,
+      image: galleryImages[activeIndex] ?? galleryImages[0],
     });
 
     setSelection(Object.fromEntries(options.map((cookie) => [cookie.id, 0])));
