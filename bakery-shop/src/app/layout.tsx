@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Script from "next/script";
+import { Montserrat_Alternates } from "next/font/google";
 import "./globals.css";
 import AuthProvider from "@/components/AuthProvider";
 import CartToast from "@/components/CartToast";
@@ -44,7 +45,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="bg">
+    <html lang="bg" className={montserrat.variable}>
       <body className="antialiased">
         {process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID ? (
           <>
@@ -73,3 +74,9 @@ export default function RootLayout({
     </html>
   );
 }
+const montserrat = Montserrat_Alternates({
+  subsets: ["latin", "latin-ext", "cyrillic"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
+  variable: "--font-montserrat",
+});

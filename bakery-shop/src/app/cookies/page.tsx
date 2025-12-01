@@ -4,11 +4,52 @@ import Link from "next/link";
 import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
 import { COOKIES } from "@/data/cookies";
+import { formatPrice } from "@/utils/price";
+import { getProductBySlug } from "@/lib/products";
+
+export const dynamic = "force-dynamic";
 
 const allergenNote =
   "Всички кукита съдържат пшеница, яйца и млечни продукти. Възможни са следи от ядки и фъстъци.";
 
-export default function CookiesPage() {
+const FEATURED_COOKIE_SLUGS = [
+  { slug: "best-sellers", fallback: "/best-sellers-cookie-box.png", href: "/products/best-sellers" },
+  { slug: "custom-box-3", fallback: "/cooke-box-3-open.png", href: "/products/custom-box/3" },
+  { slug: "custom-box-6", fallback: "/box-six-cookies-open.png", href: "/products/custom-box/6" },
+  { slug: "mini-cookies", fallback: "/cookie-box.jpg", href: "/products/mini-cookies" },
+];
+
+async function loadFeaturedCookies() {
+  const cards = await Promise.all(
+    FEATURED_COOKIE_SLUGS.map(async ({ slug, fallback, href }) => {
+      const product = await getProductBySlug(slug);
+      if (!product) return null;
+      return {
+        id: product.slug,
+        name: product.name,
+        priceLabel: formatPrice(product.price ?? 0),
+        leadTime: product.leadTime || "Доставка до 3 дни",
+        weight: product.weight || "450 гр.",
+        imageSrc: product.heroImage || fallback,
+        href,
+      };
+    })
+  );
+
+  return cards.filter(Boolean) as Array<{
+    id: string;
+    name: string;
+    priceLabel: string;
+    leadTime: string;
+    weight: string;
+    imageSrc: string;
+    href: string;
+  }>;
+}
+
+export default async function CookiesPage() {
+  const featuredBoxes = await loadFeaturedCookies();
+
   return (
     <div className="flex min-h-screen flex-col bg-[#ffefed]">
       <SiteHeader />
@@ -31,6 +72,42 @@ export default function CookiesPage() {
             </Link>
           </div>
         </section>
+
+        {featuredBoxes.length > 0 ? (
+          <section className="px-[clamp(1rem,4vw,4rem)] pb-12">
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+              {featuredBoxes.map((product) => (
+                <article
+                  key={product.id}
+                  className="group flex h-full flex-col overflow-hidden rounded-3xl bg-white shadow-card transition hover:-translate-y-1 hover:shadow-xl"
+                >
+                  <Link
+                    href={product.href}
+                    className="flex flex-1 flex-col focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5f000b] focus-visible:ring-offset-2 focus-visible:ring-offset-[#fcd9d9]"
+                  >
+                    <div className="relative aspect-[1/1] bg-[#fff4f1]">
+                      <Image
+                        src={product.imageSrc}
+                        alt={product.name}
+                        fill
+                        sizes="(min-width: 1024px) 20rem, 50vw"
+                        className="object-cover transition duration-500 group-hover:scale-105"
+                      />
+                    </div>
+                    <div className="flex flex-1 flex-col gap-3 px-6 pb-6 pt-5 text-left">
+                      <h3 className="text-lg font-semibold">{product.name}</h3>
+                      <div className="text-sm text-[#5f000b]/80">
+                        <p>{product.leadTime}</p>
+                        <p>{product.weight}</p>
+                      </div>
+                      <div className="mt-auto text-base font-semibold">{product.priceLabel}</div>
+                    </div>
+                  </Link>
+                </article>
+              ))}
+            </div>
+          </section>
+        ) : null}
 
         <section className="space-y-16 px-[clamp(1rem,4vw,4rem)] pb-24">
           {COOKIES.map((cookie, index) => (

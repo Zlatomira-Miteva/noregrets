@@ -1,15 +1,9 @@
-import type { StaticImageData } from "next/image";
-
-import MascarponeRaspberryJar from "@/app/mascarpone-raspberry-cake-jar.png";
-import NutellaBiscoffJar from "@/app/nutella-biscoff-cake-jar.png";
-import RedVelvetJar from "@/app/red-velvet-cake-jar.png";
-
 export type CakeJarInfo = {
   id: string;
   name: string;
   description: string;
   layers: string[];
-  image: StaticImageData;
+  image: string;
 };
 
 export const CAKE_JARS: CakeJarInfo[] = [
@@ -19,22 +13,22 @@ export const CAKE_JARS: CakeJarInfo[] = [
     description:
       "Ред Велвет блатове, напоени с ванилов сироп и покрити с нежен крем сирене с бял шоколад. Всеки буркан е кадифено сладък и изненадващо лек.",
     layers: ["Ред Велвет блат", "Крема сирене", "Швейцарски крем"],
-    image: RedVelvetJar,
+    image: "/red-velvet-cake-jar.png",
   },
   {
     id: "nutella-biscoff",
     name: "Торта Nutella & Biscoff",
     description:
-      "Шоколадов мус с белгийско какао, хрупкави парченца Lotus и сърце от течна Nutella. Комбинация между дълбок шоколад и карамелен хрупкав слой.",
+      "Какаови блатове, крем маскарпоне, хрупкави парченца Lotus, крем Lotus и Nutella. Комбинация между дълбок шоколад и карамелен хрупкав слой.",
     layers: ["Шоколадов блат", "Nutella", "Biscoff крем", "Швейцарски крем"],
-    image: NutellaBiscoffJar,
+    image: "/nutella-biscoff-cake-jar.png",
   },
   {
     id: "mascarpone-raspberry",
     name: "Торта с маскарпоне и малина",
     description:
-      "Въздушен маскарпоне крем, малинов конфитюр и ванилови блатове. Баланс между свежест, леко кисела малина и копринен крем.",
+      "Въздушен маскарпоне крем, малинов конфитюр и ванилови блатове. Баланс между свежест, малина и копринен крем.",
     layers: ["Ванилов блат", "Малиново сладко", "Маскарпоне и сметана"],
-    image: MascarponeRaspberryJar,
+    image: "/mascarpone-raspberry-cake-jar.png",
   },
 ];

@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { getServerSession } from "next-auth";
@@ -35,14 +35,19 @@ const slugify = (value: string) =>
     .replace(/[^a-z0-9а-я]+/gi, "-")
     .replace(/^-+|-+$/g, "");
 
-export async function GET(_: Request, { params }: { params: { productId: string } }) {
+const extractProductId = (request: NextRequest) => {
+  const segments = request.nextUrl.pathname.split("/");
+  return segments.pop() || segments.pop() || "";
+};
+
+export async function GET(request: NextRequest) {
   const session = await getServerSession(authOptions);
   if (session?.user?.role !== "ADMIN") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const product = await prisma.product.findUnique({
-    where: { id: params.productId },
+    where: { id: extractProductId(request) },
     include: {
       category: true,
       images: { orderBy: { position: "asc" } },
@@ -76,11 +81,12 @@ export async function GET(_: Request, { params }: { params: { productId: string 
   });
 }
 
-export async function PATCH(request: Request, { params }: { params: { productId: string } }) {
+export async function PATCH(request: NextRequest) {
   const session = await getServerSession(authOptions);
   if (session?.user?.role !== "ADMIN") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  const productId = extractProductId(request);
 
   const json = await request.json();
   const parsed = updateSchema.safeParse(json);
@@ -89,7 +95,7 @@ export async function PATCH(request: Request, { params }: { params: { productId:
   }
 
   const product = await prisma.product.findUnique({
-    where: { id: params.productId },
+    where: { id: productId },
     include: {
       images: { orderBy: { position: "asc" } },
       categoryImages: { orderBy: { position: "asc" } },
@@ -179,22 +185,23 @@ export async function PATCH(request: Request, { params }: { params: { productId:
   }
 
   const updated = await prisma.product.update({
-    where: { id: params.productId },
+    where: { id: productId },
     data,
   });
 
   return NextResponse.json({ product: updated });
 }
 
-export async function DELETE(_: Request, { params }: { params: { productId: string } }) {
+export async function DELETE(request: NextRequest) {
   const session = await getServerSession(authOptions);
   if (session?.user?.role !== "ADMIN") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
+    const productId = extractProductId(request);
     await prisma.product.delete({
-      where: { id: params.productId },
+      where: { id: productId },
     });
     return NextResponse.json({ success: true });
   } catch (error) {

@@ -20,7 +20,7 @@ export default function CheckoutSuccessPage() {
     } | null = null;
     try {
       parsedOrder = JSON.parse(cached);
-    } catch (_error) {
+    } catch {
       parsedOrder = null;
     }
 
@@ -50,6 +50,16 @@ export default function CheckoutSuccessPage() {
             console.error("Failed to add marketing consent email", newsletterError);
           }
         }
+
+        try {
+          await fetch("/api/orders/notify", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: cached,
+          });
+        } catch (notifyError) {
+          console.error("Order notification failed", notifyError);
+        }
       } catch (error) {
         console.error("Order logging failed", error);
         setSheetStatus("error");
@@ -78,7 +88,7 @@ export default function CheckoutSuccessPage() {
           ) : null}
           <div className="flex justify-center">
             <Link
-              href="/"
+              href="/home"
               className="cta rounded-full bg-[#5f000b] px-6 py-3 text-sm font-semibold uppercase text-white transition hover:bg-[#781e21]"
             >
               Обратно към началото

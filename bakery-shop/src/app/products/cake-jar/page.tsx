@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 import Marquee from "@/components/Marquee";
@@ -24,6 +24,9 @@ type CakeJar = {
   leadTime: string;
 };
 
+const CAKE_ALLERGEN_NOTE =
+  "Всички торти в буркан съдържат пшеница, яйца и млечни продукти. Възможни са следи от ядки и фъстъци.";
+
 const normalizeImage = (value?: string) => {
   if (!value) return "/red-velvet-cake-jar.png";
   if (value.startsWith("http://") || value.startsWith("https://") || value.startsWith("/")) {
@@ -32,7 +35,7 @@ const normalizeImage = (value?: string) => {
   return `/${value.replace(/^\/+/, "")}`;
 };
 
-export default function CakeJarPage() {
+function CakeJarContent() {
   const searchParams = useSearchParams();
   const { addItem } = useCart();
 
@@ -137,6 +140,7 @@ export default function CakeJarPage() {
                       src={galleryImages[activeIndex]}
                       alt={activeJar.name}
                       fill
+                      unoptimized
                       className="object-cover"
                       sizes="(min-width: 1024px) 480px, 100vw"
                     />
@@ -181,7 +185,7 @@ export default function CakeJarPage() {
                         }`}
                         aria-label={`Преглед на изображение ${position + 1}`}
                       >
-                        <Image src={image} alt="" fill className="object-cover" sizes="200px" />
+                        <Image src={image} alt="" fill className="object-cover" sizes="200px" unoptimized />
                       </button>
                     );
                   })}
@@ -199,6 +203,7 @@ export default function CakeJarPage() {
                     <span>{activeJar.leadTime || "Доставка до 3 дни"}</span>
                     <span>{activeJar.weight || "220 гр."}</span>
                   </div>
+                  <p className="text-sm text-[#5f000b]/70">{CAKE_ALLERGEN_NOTE}</p>
                 </header>
 
                 <div className="rounded-[1rem] bg-white p-5 shadow-card">
@@ -259,7 +264,6 @@ export default function CakeJarPage() {
                   >
                     Добави {quantity} в количката
                   </button>
-                  <p className="text-xs text-[#5f000b]/70">Печем в деня на доставка. Ако имате алергии, моля, свържете се с нас.</p>
                 </div>
               </div>
             </div>
@@ -272,5 +276,19 @@ export default function CakeJarPage() {
       </main>
       <SiteFooter />
     </div>
+  );
+}
+
+export default function CakeJarPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center text-[#5f000b]">
+          Зареждаме…
+        </div>
+      }
+    >
+      <CakeJarContent />
+    </Suspense>
   );
 }

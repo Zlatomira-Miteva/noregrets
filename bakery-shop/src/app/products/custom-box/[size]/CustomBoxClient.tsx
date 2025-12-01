@@ -1,6 +1,6 @@
 "use client";
 
-import Image, { type StaticImageData } from "next/image";
+import Image from "next/image";
 import { useMemo, useState } from "react";
 
 import Marquee from "@/components/Marquee";
@@ -10,28 +10,23 @@ import SiteHeader from "@/components/SiteHeader";
 import { useCart } from "@/context/CartContext";
 import { formatPrice, parsePrice } from "@/utils/price";
 import type { CookieOptionRecord, ProductRecord } from "@/lib/products";
-import RedVelvetIg from "@/app/red velvet ig.png";
-import NutellaIg from "@/app/nutella ig.png";
-import BiscoffIg from "@/app/biscoff ig.png";
-import OreoIg from "@/app/oreo ig.png";
-import NewYorkIg from "@/app/new york ig.png";
-import TrippleChocIg from "@/app/tripple choc ig.png";
-import BoxSixCookiesOpen from "@/app/box-six-cookies-open.png";
-import CookieBoxHeroImage from "@/app/cookie-box.jpg";
-import CookieBoxClosedImage from "@/app/cookie-box-closed.png";
-import CookieBoxThreeOpen from "@/app/cooke-box-3-open.png";
 
-type GalleryImage = StaticImageData | string;
+const BASE_GALLERY_IMAGES: string[] = [
+  "/red velvet ig.png",
+  "/nutella ig.png",
+  "/biscoff ig.png",
+  "/oreo ig.png",
+  "/new york ig.png",
+  "/tripple choc ig.png",
+];
 
-const BASE_GALLERY_IMAGES: GalleryImage[] = [RedVelvetIg, NutellaIg, BiscoffIg, OreoIg, NewYorkIg, TrippleChocIg];
-
-const getGalleryImages = (size: string): GalleryImage[] => {
-  const extras: GalleryImage[] = [];
+const getGalleryImages = (size: string): string[] => {
+  const extras: string[] = [];
 
   if (size === "6") {
-    extras.push(BoxSixCookiesOpen, CookieBoxHeroImage, CookieBoxClosedImage);
+    extras.push("/box-six-cookies-open.png", "/cookie-box.jpg", "/cookie-box-closed.png");
   } else if (size === "3") {
-    extras.push(CookieBoxThreeOpen, CookieBoxHeroImage, CookieBoxClosedImage);
+    extras.push("/cooke-box-3-open.png", "/cookie-box.jpg", "/cookie-box-closed.png");
   }
 
   return [...extras, ...BASE_GALLERY_IMAGES];
@@ -109,7 +104,7 @@ const BOX_CONFIG: Record<string, BoxConfig> = {
 type CookieOption = {
   id: string;
   name: string;
-  image: StaticImageData | string;
+  image: string;
 };
 
 const COOKIE_OPTIONS: CookieOption[] = [
@@ -122,8 +117,8 @@ const COOKIE_OPTIONS: CookieOption[] = [
 ];
 
 const MOCHI_OPTIONS: CookieOption[] = [
-  { id: "strawberry-mochi", name: "Ягодово мочи", image: RedVelvetIg },
-  { id: "matcha-mochi", name: "Матча мочи", image: RedVelvetIg },
+  { id: "white-choc-mochi", name: "Бяло шоколадово мочи", image: "/white-choc-mochi.png" },
+  { id: "dark-choc-mochi", name: "Тъмно шоколадово мочи", image: "/dark-choc-mochi.png" },
 ];
 
 const MAX_SELECTION = 12;
@@ -298,7 +293,7 @@ export default function CustomBoxClient({ requestedSize, initialProduct, cookieO
               <div className="grid grid-cols-3 gap-4">
                 {visibleIndices.map((imageIndex, position) => {
                   const image = galleryImages[imageIndex];
-                  const imageKey = typeof image === "string" ? image : image.src;
+                  const imageKey = image;
                   const isActive = imageIndex === activeIndex;
                   return (
                     <button

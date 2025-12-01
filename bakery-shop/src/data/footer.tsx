@@ -16,6 +16,11 @@ export const FOOTER_LINK_GROUPS = [
       { label: "Контакт", href: "/contact" },
       { label: "zlati@noregrets.bg", href: "mailto:zlati@noregrets.bg" },
       { label: "гр. Пловдив, ул. 'Богомил'48", href: "#visit" },
+      { label: "Работно време: Понеделник - Събота: 16:00 - 18:00", href: "#hours" },
+      {
+        label: "Работим само по предварителна поръчка! Посоченото работно време е за взимане на поръчки.",
+        href: "#hours",
+      },
     ],
   },
 ];

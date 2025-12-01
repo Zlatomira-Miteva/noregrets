@@ -1,6 +1,6 @@
 "use client";
 
-import Image, { type StaticImageData } from "next/image";
+import Image from "next/image";
 import { useState } from "react";
 
 import Marquee from "@/components/Marquee";
@@ -11,12 +11,7 @@ import { useCart } from "@/context/CartContext";
 import { formatPrice } from "@/utils/price";
 import type { ProductRecord } from "@/lib/products";
 
-import CookieBoxImage from "@/app/cookie-box.jpg";
-import MiniCookiesFalling from "@/app/mini-cookies-falling.png";
-
-type GalleryImage = StaticImageData | string;
-
-const FALLBACK_GALLERY: GalleryImage[] = [CookieBoxImage, MiniCookiesFalling];
+const FALLBACK_GALLERY: string[] = ["/cookie-box.jpg", "/mini-cookies-falling.png"];
 const FALLBACK_DETAILS = {
   name: "Мини кукита с течен шоколад",
   description:
@@ -120,7 +115,7 @@ export default function MiniCookiesClient({ initialProduct }: MiniCookiesClientP
               <div className="grid grid-cols-3 gap-4">
                 {visibleIndices.map((imageIndex, position) => {
                   const image = galleryImages[imageIndex];
-                  const imageKey = typeof image === "string" ? image : image.src;
+                  const imageKey = image;
                   const isActive = imageIndex === activeIndex;
                   return (
                     <button

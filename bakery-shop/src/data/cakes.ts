@@ -1,8 +1,3 @@
-import type { StaticImageData } from "next/image";
-
-import MascarponeRaspberryPresentCake from "@/app/mascarpone-raspberry-present-cake.png";
-import NutellaBiscoffPresentCake from "@/app/nutella-biscoff-present-cake.png";
-import RedVelvetPresentCake from "@/app/red-velvet-present-cake.png";
 import { formatPrice } from "@/utils/price";
 
 export type CakeProduct = {
@@ -14,7 +9,7 @@ export type CakeProduct = {
   description: string;
   highlights: string[];
   fillings: string[];
-  image: StaticImageData;
+  image: string;
 };
 
 export const CAKES: CakeProduct[] = [
@@ -31,7 +26,7 @@ export const CAKES: CakeProduct[] = [
       "Охлаждане преди сервиране 30 мин",
     ],
     fillings: ["Ред Велвет блат", "Крема сирене", "Швейцарски крем"],
-    image: RedVelvetPresentCake,
+    image: "/red-velvet-present-cake.png",
   },
   {
     slug: "mascarpone-raspberry",
@@ -46,7 +41,7 @@ export const CAKES: CakeProduct[] = [
       "Охлаждане преди сервиране 30 мин",
     ],
     fillings: ["Ванилов блат", "Малиново сладко", "Маскарпоне и сметана"],
-    image: MascarponeRaspberryPresentCake,
+    image: "/mascarpone-raspberry-present-cake.png",
   },
   {
     slug: "nutella-biscoff",
@@ -61,6 +56,6 @@ export const CAKES: CakeProduct[] = [
       "Охлаждане преди сервиране 30 мин",
     ],
     fillings: ["Шоколадов блат", "Nutella", "Biscoff крем", "Kрем маскарпоне"],
-    image: NutellaBiscoffPresentCake,
+    image: "/nutella-biscoff-present-cake.png",
   },
 ];

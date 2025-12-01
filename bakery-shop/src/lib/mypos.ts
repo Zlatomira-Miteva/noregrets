@@ -1,169 +1,103 @@
 import crypto from "node:crypto";
 
-const MY_POS_ENDPOINT = process.env.MY_POS_ENDPOINT ?? "https://www.mypos.eu/vmp/checkout/payment";
-const MY_POS_CLIENT_ID = process.env.MY_POS_CLIENT_ID;
-const MY_POS_CLIENT_CODE = process.env.MY_POS_CLIENT_CODE;
-const MY_POS_SECRET = process.env.MY_POS_SECRET;
-const SUCCESS_URL = process.env.MY_POS_SUCCESS_URL ?? `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/checkout/success`;
-const FAILURE_URL = process.env.MY_POS_FAILURE_URL ?? `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/checkout/failure`;
-const NOTIFY_URL = process.env.MY_POS_NOTIFY_URL ?? SUCCESS_URL;
+const ENDPOINT = process.env.MY_POS_ENDPOINT ?? "https://www.mypos.com/vmp/checkout";
+const SID = process.env.MY_POS_SID ?? "";
+const WALLET = process.env.MY_POS_WALLET_NUMBER ?? "";
+const RAW_PRIVATE_KEY = (process.env.MY_POS_PRIVATE_KEY ?? "").trim();
+const KEY_INDEX = process.env.MY_POS_KEY_INDEX ?? "1";
 
-const IPC_SID = process.env.MY_POS_SID;
-const IPC_WALLET = process.env.MY_POS_WALLET_NUMBER;
-const IPC_PRIVATE_KEY = process.env.MY_POS_PRIVATE_KEY;
-const IPC_KEY_INDEX = process.env.MY_POS_KEY_INDEX ?? "1";
-const IPC_METHOD = process.env.MY_POS_METHOD ?? "IPCPurchase";
-const IPC_VERSION = process.env.MY_POS_VERSION ?? "1.4";
-const IPC_LANGUAGE = process.env.MY_POS_LANGUAGE ?? "BG";
+const normalizePem = (pem: string) => pem.replace(/\r/g, "").replace(/\\n/g, "\n").trim();
+const two = (n: number) => n.toFixed(2).replace(",", ".");
 
-type CheckoutPayload = {
+export type CheckoutPayload = {
   reference: string;
   amount: number;
-  description: string;
+  description?: string;
   customer?: {
-    firstName: string;
-    lastName: string;
-    email: string;
-    phone: string;
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+    phone?: string;
+    country?: string;
+    city?: string;
+    zip?: string;
+    address?: string;
   };
-  deliveryLabel?: string;
+  cart?: { items: Array<{ name: string; qty: number; price: number; currency: string }> };
 };
 
-const buildSignature = (payload: CheckoutPayload) => {
-  if (!MY_POS_CLIENT_ID || !MY_POS_CLIENT_CODE || !MY_POS_SECRET) {
-    return null;
+export function createMyposCheckout(p: CheckoutPayload) {
+  if (!SID) throw new Error("Missing MY_POS_SID");
+  if (!WALLET) throw new Error("Missing MY_POS_WALLET_NUMBER");
+  if (!RAW_PRIVATE_KEY) throw new Error("Missing MY_POS_PRIVATE_KEY");
+
+  const PRIVATE_KEY = normalizePem(RAW_PRIVATE_KEY);
+
+  // 1) СГЛОБИ ПОЛЕТАТА В ТОЧНИЯ РЕД, В КОЙТО ИСКАШ ДА ГИ ПРАЩАШ
+  const entries: Array<[string, string]> = [];
+
+  // Базови
+  entries.push(["IPCmethod", "IPCPurchase"]);
+  entries.push(["IPCVersion", "1.4"]);
+  entries.push(["IPCLanguage", "BG"]); // ако искаш EN, смени и тук
+  entries.push(["SID", SID]);
+  entries.push(["walletnumber", WALLET]);              // lowercase като в Test Data
+  entries.push(["Amount", two(p.amount)]);             // "39.00"
+  entries.push(["Currency", "BGN"]);
+  entries.push(["OrderID", p.reference]);
+  entries.push(["URL_OK", process.env.MY_POS_SUCCESS_URL ?? `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/checkout/success`]);
+  entries.push(["URL_Cancel", process.env.MY_POS_FAILURE_URL ?? `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/checkout/failure`]);
+
+  // >>> ФИКС: абсолютен HTTPS за Notify
+  const notify = process.env.MY_POS_NOTIFY_URL ?? `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/api/mypos/notify`;
+  if (!/^https:\/\//i.test(notify)) {
+    throw new Error("MY_POS_NOTIFY_URL must be absolute HTTPS (e.g. https://your-domain/api/mypos/notify)");
+  }
+  entries.push(["URL_Notify", notify]);
+
+  entries.push(["CardTokenRequest", "0"]);
+  entries.push(["KeyIndex", KEY_INDEX]);
+  entries.push(["PaymentParametersRequired", "1"]);
+
+  // >>> ФИКС: Дръж Note ТАМ, където ще бъде и в POST.
+  if (p.description?.trim()) entries.push(["Note", p.description.trim()]);
+
+  // Клиентски (все lowercase, както в Test Data)
+  const c = p.customer;
+  if (c?.email) entries.push(["customeremail", c.email]);
+  if (c?.firstName) entries.push(["customerfirstnames", c.firstName]);
+  if (c?.lastName) entries.push(["customerfamilyname", c.lastName]);
+  if (c?.phone) entries.push(["customerphone", c.phone]);
+  if (c?.country) entries.push(["customercountry", c.country]);
+  if (c?.city) entries.push(["customercity", c.city]);
+  if (c?.zip) entries.push(["customerzipcode", c.zip]);
+  if (c?.address) entries.push(["customeraddress", c.address]);
+
+  // Количка (ако има)
+  if (p.cart?.items?.length) {
+    entries.push(["CartItems", String(p.cart.items.length)]);
+    p.cart.items.forEach((it, idx) => {
+      const i = idx + 1;
+      entries.push([`Article_${i}`, it.name]);
+      entries.push([`Quantity_${i}`, String(it.qty)]);
+      // >>> ФИКС: 2 десетични за Price_*
+      entries.push([`Price_${i}`, two(Number(it.price))]);
+      entries.push([`Currency_${i}`, it.currency]);
+      entries.push([`Amount_${i}`, two(it.qty * Number(it.price))]);
+    });
   }
 
-  const parts = [
-    MY_POS_CLIENT_ID,
-    MY_POS_CLIENT_CODE,
-    payload.reference,
-    payload.amount.toFixed(2),
-    "BGN",
-    SUCCESS_URL,
-    FAILURE_URL,
-    payload.description,
-    MY_POS_SECRET,
-  ];
+  // 2) ПОДПИС — САМО СТОЙНОСТИТЕ В СЪЩИЯ ТОЗИ РЕД
+  const values = entries.map(([, v]) => v);
+  const joined = values.join("-");
+  const base64Msg = Buffer.from(joined, "utf8").toString("base64");
 
-  return crypto.createHash("sha1").update(parts.join("")).digest("hex");
-};
+  const signer = crypto.createSign("RSA-SHA256");
+  signer.update(base64Msg);
+  signer.end();
+  const signature = signer.sign(PRIVATE_KEY, "base64");
 
-type CheckoutRedirect =
-  | { type: "get"; url: string }
-  | { type: "post"; endpoint: string; fields: Record<string, string> };
-
-const normalizeKey = (value?: string | null) => value?.replace(/\\n/g, "\n").trim();
-
-const createIpcCheckout = (payload: CheckoutPayload): CheckoutRedirect => {
-  if (!IPC_SID || !IPC_WALLET || !IPC_PRIVATE_KEY) {
-    throw new Error("Missing myPOS IPC credentials.");
-  }
-
-  const fields: Record<string, string> = {
-    IPCmethod: IPC_METHOD,
-    IPCVersion: IPC_VERSION,
-    IPCLanguage: IPC_LANGUAGE,
-    SID: IPC_SID,
-    walletnumber: IPC_WALLET,
-    Amount: payload.amount.toFixed(2),
-    Currency: "BGN",
-    OrderID: payload.reference,
-    URL_OK: SUCCESS_URL,
-    URL_Cancel: FAILURE_URL,
-    URL_Notify: NOTIFY_URL,
-    CardTokenRequest: "0",
-    KeyIndex: IPC_KEY_INDEX,
-    PaymentParametersRequired: "1",
-    Note: payload.description,
-  };
-
-  if (payload.customer) {
-    fields.customeremail = payload.customer.email;
-    fields.customerfirstnames = payload.customer.firstName;
-    fields.customerfamilyname = payload.customer.lastName;
-    fields.customerphone = payload.customer.phone;
-  }
-
-  const fieldOrder = [
-    "IPCmethod",
-    "IPCVersion",
-    "IPCLanguage",
-    "SID",
-    "walletnumber",
-    "Amount",
-    "Currency",
-    "OrderID",
-    "URL_OK",
-    "URL_Cancel",
-    "URL_Notify",
-    "CardTokenRequest",
-    "KeyIndex",
-    "PaymentParametersRequired",
-    "customeremail",
-    "customerfirstnames",
-    "customerfamilyname",
-    "customerphone",
-    "customercountry",
-    "customercity",
-    "customerzipcode",
-    "customeraddress",
-    "Note",
-    "CartItems",
-    "Article_1",
-    "Quantity_1",
-    "Price_1",
-    "Currency_1",
-    "Amount_1",
-    "Article_2",
-    "Quantity_2",
-    "Price_2",
-    "Currency_2",
-    "Amount_2",
-  ];
-
-  const signaturePayload = fieldOrder
-    .map((key) => fields[key] ?? "")
-    .join("");
-
-  const signer = crypto.createSign("RSA-SHA1");
-  signer.update(signaturePayload);
-  const normalizedKey = normalizeKey(IPC_PRIVATE_KEY);
-  if (!normalizedKey) {
-    throw new Error("Missing myPOS IPC private key.");
-  }
-
-  const signature = signer.sign(normalizedKey, "base64");
-  fields.Signature = signature;
-
-  return {
-    type: "post",
-    endpoint: MY_POS_ENDPOINT,
-    fields,
-  };
-};
-
-export const createMyposCheckout = async (payload: CheckoutPayload): Promise<CheckoutRedirect> => {
-  if (IPC_SID && IPC_WALLET && IPC_PRIVATE_KEY) {
-    return createIpcCheckout(payload);
-  }
-
-  const signature = buildSignature(payload);
-  if (!signature) {
-    throw new Error("Missing myPOS credentials.");
-  }
-
-  const params = new URLSearchParams({
-    clientId: MY_POS_CLIENT_ID!,
-    clientCode: MY_POS_CLIENT_CODE!,
-    orderReference: payload.reference,
-    amount: payload.amount.toFixed(2),
-    currency: "BGN",
-    successUrl: SUCCESS_URL,
-    failureUrl: FAILURE_URL,
-    description: payload.description,
-    signature,
-  });
-
-  return { type: "get", url: `${MY_POS_ENDPOINT}?${params.toString()}` };
-};
+  // 3) ВРЪЩАМЕ endpoint + полета (Signature е последен)
+  const fields = Object.fromEntries([...entries, ["Signature", signature]]) as Record<string, string>;
+  return { endpoint: ENDPOINT, fields, orderedEntries: entries }; // orderedEntries за рендeр
+}

@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
 
-const AdminLoginPage = () => {
+const AdminLoginContent = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") ?? "/admin/coupons";
@@ -73,4 +73,16 @@ const AdminLoginPage = () => {
   );
 };
 
-export default AdminLoginPage;
+export default function AdminLoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-[#ffefed] text-[#5f000b]">
+          Зареждане…
+        </div>
+      }
+    >
+      <AdminLoginContent />
+    </Suspense>
+  );
+}

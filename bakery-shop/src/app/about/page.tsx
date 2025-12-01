@@ -6,7 +6,7 @@ import Link from "next/link";
 import Marquee from "@/components/Marquee";
 import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
-import CookieBoxImage from "@/app/cookie-box.jpg";
+const ABOUT_US_IMAGE = "/about-us.png";
 
 const SOCIAL_URLS = {
   instagram: "https://www.instagram.com/noregrets.bg/",
@@ -173,8 +173,10 @@ export default function AboutPage() {
 
             <div className="relative overflow-hidden rounded-s shadow-2xl">
               <Image
-                src={CookieBoxImage}
+                src={ABOUT_US_IMAGE}
                 alt="Прясно изпечени сладки в студиото No Regrets"
+                width={1200}
+                height={900}
                 className="h-full w-full object-cover"
                 priority
               />

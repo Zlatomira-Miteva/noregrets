@@ -1,19 +1,21 @@
 "use client";
 
-import { useEffect, useState } from"react";
-import Image, { type StaticImageData } from"next/image";
+import Link from "next/link";
+import { useEffect, useState } from "react";
+import Image, { type StaticImageData } from "next/image";
 
-import CookieBoxPink from"../app/cookie-box-hero.jpg";
-// import MochiePink from"../app/mochi-hero.jpg";
-import CookiesPink from"../app/cookies-hero.jpg";
-import CakeJars from"../app/cake-jars-hero.jpg";
+import CookieBoxPink from "../../public/cookie-box-hero.jpg";
+// import MochiePink from "../../public/mochi-hero.jpg";
+import CookiesPink from "../../public/cookies-hero.jpg";
+import CakeJars from "../../public/cake-jars-hero.jpg";
 
 type Slide = {
   id: number;
-  image: string | StaticImageData;
+  image: StaticImageData;
   title: string;
   description: string;
   ctaLabel: string;
+  href: string;
 };
 
 const SLIDES: Slide[] = [
@@ -21,15 +23,17 @@ const SLIDES: Slide[] = [
     id: 1,
     image: CookiesPink,
     title:"Малки удоволствия. Големи вкусове.",
-    description:"Ръчно изпечени 150 грамови бисквитки с подбрани съставки и дръзки комбинации. Създадени за хора, които ценят вкуса, момента и свободата да се насладиш на всичко истинско.",
-    ctaLabel:"Виж бисквитите",
+    description:"Ръчно изпечени 150 грамови кукита с подбрани съставки и дръзки комбинации. Създадени за хора, които ценят вкуса, момента и свободата да се насладиш на всичко истинско.",
+    ctaLabel:"Виж кукитата",
+    href: "/cookies",
   },
   {
     id: 2,
     image: CookieBoxPink,
     title:"Няма малки изкушения.",
-    description:"Ароматни мини кукита и крем от нутела - сладка симфония, която стопля сърцето. Сподели я с любимите си или запази за себе си. Няма грешен избор.",
-    ctaLabel:"Избери кутия",
+    description:"Ароматни мини кукита и нутела - сладка симфония, която стопля сърцето. Сподели я с любимите си или запази за себе си. Няма грешен избор.",
+    ctaLabel:"Виж мини кукитата",
+    href: "/products/mini-cookies",
   },
   // {
   //   id: 3,
@@ -44,6 +48,7 @@ const SLIDES: Slide[] = [
     title:"Торта в буркан",
     description:"Разнообразие от вкусове, доставени до теб.",
     ctaLabel:"Поръчай торта",
+    href: "/products/cake-jar",
   },
 ];
 
@@ -78,22 +83,22 @@ const HeroCarousel = () => {
             alt={slide.title}
             fill
             priority={index === activeIndex}
-            className="object-cover"
+            className="pointer-events-none object-cover"
           />
           {/* <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/40 to-black/10"></div> */}
-          <div className="relative mx-auto flex h-full w-full flex-col justify-center gap-4 px-[clamp(1rem,3vw,3rem)] text-left">
+          <div className="relative z-10 mx-auto flex h-full w-full flex-col justify-center gap-4 px-[clamp(1rem,3vw,3rem)] text-left">
             <div className="max-w-xl space-y-3">
               <h1 className="text-4xl font-semibold leading-tight md:text-6xl">
                 {slide.title}
               </h1>
               <p className="md:text-lg">{slide.description}</p>
             </div>
-            <button
-              type="button"
-              className="cta inline-flex w-fit items-center justify-center rounded-full px-6 py-2 text-sm font-semibold  shadow-lg transition hover:-translate-y-0.5"
+            <Link
+              href={slide.href}
+              className="cta inline-flex w-fit items-center justify-center rounded-full px-6 py-2 text-sm font-semibold shadow-lg transition hover:-translate-y-0.5"
             >
               {slide.ctaLabel}
-            </button>
+            </Link>
           </div>
         </div>
       ))}

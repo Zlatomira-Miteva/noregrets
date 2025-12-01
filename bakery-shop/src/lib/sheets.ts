@@ -1,16 +1,17 @@
-import { google } from "googleapis";
-
 const sheetId = process.env.GOOGLE_SHEET_ID;
 const clientEmail = process.env.GOOGLE_SHEETS_CLIENT_EMAIL;
 const privateKey = process.env.GOOGLE_SHEETS_PRIVATE_KEY?.replace(/\\n/g, "\n");
 
-let sheetsClient: ReturnType<typeof google.sheets> | null = null;
+type SheetsClient = ReturnType<Awaited<typeof import("googleapis")>["google"]["sheets"]>;
+
+let sheetsClient: SheetsClient | null = null;
 
 const getSheetsClient = async () => {
   if (sheetsClient) return sheetsClient;
   if (!sheetId || !clientEmail || !privateKey) {
     throw new Error("Missing Google Sheets configuration.");
   }
+  const { google } = await import("googleapis");
   console.log("[sheets] creating auth", {
     clientEmail,
     keyPresent: Boolean(privateKey),

@@ -5,9 +5,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import Logo from "@/app/logo.svg";
-import ShoppingCartIcon from "@/app/shopping_cart.png";
 import { NAVIGATION } from "@/data/navigation";
 import { useCart } from "@/context/CartContext";
+import shoppingCart from "@/../public/shopping_cart.png";
 
 const SiteHeader = () => {
   const { totalQuantity } = useCart();
@@ -15,16 +15,13 @@ const SiteHeader = () => {
 
   const isActive = (href: string) => {
     if (href.includes("#")) return false;
-    if (href === "/") {
-      return pathname === "/";
-    }
     return pathname === href;
   };
 
   return (
     <header className="sticky top-0 z-[100] bg-[#ffefed]/90 backdrop-blur">
       <div className="mx-auto flex w-full items-center justify-between px-[clamp(1rem,3vw,3rem)] py-1">
-        <Link href="/" className="block flex-shrink-0">
+        <Link href="/home" className="block flex-shrink-0">
           <span className="relative block h-12 w-[9.5rem] md:w-[12rem]">
             <Image src={Logo} alt="No Regrets" fill priority sizes="(max-width: 768px) 152px, 192px" className="object-contain" />
           </span>
@@ -55,7 +52,7 @@ const SiteHeader = () => {
           aria-label="Преглед на количката"
           className="relative flex h-11 w-11 items-center justify-center rounded-full bg-white/90 shadow-card transition hover:bg-white"
         >
-          <Image src={ShoppingCartIcon} alt="" className="h-5 w-5" />
+          <Image src={shoppingCart} alt="" width={20} height={20} className="h-5 w-5" priority />
           {totalQuantity > 0 ? (
             <span className="absolute -right-1 -top-1 flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-[#5f000b] px-1 text-xs font-semibold text-white">
               {totalQuantity}

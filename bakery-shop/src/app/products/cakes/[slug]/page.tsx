@@ -6,11 +6,12 @@ import SiteHeader from "@/components/SiteHeader";
 import { CAKES } from "@/data/cakes";
 
 type CakePageProps = {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 };
 
-export default function CakePage({ params }: CakePageProps) {
-  const cake = CAKES.find((item) => item.slug === params.slug);
+export default async function CakePage({ params }: CakePageProps) {
+  const { slug } = await params;
+  const cake = CAKES.find((item) => item.slug === slug);
 
   if (!cake) {
     notFound();

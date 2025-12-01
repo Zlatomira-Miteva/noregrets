@@ -327,7 +327,11 @@ const CartPage = () => {
             addressInfo.details ? `, ${addressInfo.details}` : ""
           }`;
 
+    const orderReference = `NR-${Date.now()}`;
     const orderPayload = {
+      reference: orderReference,
+      amount: Number(finalTotal.toFixed(2)),
+      description: `Онлайн поръчка ${orderReference}`,
       customer: customerInfo,
       deliveryLabel,
       items: items.map((item) => ({
@@ -341,6 +345,14 @@ const CartPage = () => {
       consents: {
         termsAccepted,
         marketing: marketingConsent,
+      },
+      cart: {
+        items: items.map((item) => ({
+          name: item.name,
+          qty: item.quantity,
+          price: item.price,
+          currency: "BGN",
+        })),
       },
     };
 
@@ -476,6 +488,9 @@ const CartPage = () => {
             <h1 className="text-4xl font-semibold sm:text-5xl">
               Вашата количка
             </h1>
+            <p className="text-sm text-[#5f000b]/80">
+              5% от печалбата биват дарявани всеки месец.
+            </p>
             {reachMessage ? (
               <div className="mx-auto w-full max-w-xl space-y-3">
                 <p className="/80">{reachMessage}</p>
@@ -497,7 +512,7 @@ const CartPage = () => {
           {items.length === 0 ? (
             <div className="mt-10 flex justify-center">
               <Link
-                href="/"
+                href="/home"
                 className="cta rounded-full bg-[#5f000b] px-6 py-3 text-sm font-semibold uppercase transition hover:bg-[#561c19]"
               >
                 Към продуктите
@@ -724,12 +739,12 @@ const CartPage = () => {
                         readOnly
                         className="h-4 w-4 border-[#f4b9c2] focus:ring-[#5f000b]"
                       />
-                      <span className="text-sm">Онлайн плащане (myPOS)</span>
+                      <span className="text-sm">Онлайн плащане</span>
                     </label>
                   </div>
                 </div>
 
-                <div className="space-y-3">
+                <div className="space-y-4">
                   <h3 className="text-lg">Доставка</h3>
                   <div className="flex flex-col gap-3 sm:flex-row sm:gap-6">
                     <label
@@ -781,15 +796,15 @@ const CartPage = () => {
                         onChange={() => setShippingType("pickup")}
                         className="h-4 w-4 border-[#f4b9c2] focus:ring-[#5f000b]"
                       />
-                      <span className="text-sm">Вземане от магазина</span>
+                      <span className="text-sm">Взимане от ателието</span>
                     </label>
                   </div>
 
                   {shippingType === "office" ? (
-                    <div className="space-y-4">
+                    <div className="mt-8 space-y-4">
                       <SearchableSelect
                         id="econt-city"
-                        label="Град (Econt)"
+                        label="Град"
                         value={selectedCityId}
                         onChange={setSelectedCityId}
                         options={cityOptions}

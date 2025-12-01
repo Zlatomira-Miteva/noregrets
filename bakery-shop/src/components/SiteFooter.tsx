@@ -58,10 +58,10 @@ const SiteFooter = () => {
   return (
     <footer className="bg-[#311E20] text-white">
       <div className="mx-auto flex w-full flex-col gap-12 px-[clamp(1rem,3vw,3rem)] py-16">
-        <div className="grid gap-12 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]">
+        <div className="grid gap-12 md:grid-cols-2 lg:grid-cols-[45%_minmax(0,1fr)_minmax(0,1fr)]">
           <div className="space-y-6">
             <h4 className="text-3xl leading-tight sm:text-4xl">Абонирайте се за новини и отстъпки</h4>
-            <p>Първи научавайте за нови вкусове, специални оферти и дегустации в магазина.</p>
+            <p>Първи научавайте за нови вкусове и специални оферти.</p>
             <form className="space-y-3" onSubmit={handleSubmit} noValidate>
               <div className="flex max-w-xl overflow-hidden rounded-full bg-white/10 shadow-inner backdrop-blur">
                 <input
@@ -120,22 +120,20 @@ const SiteFooter = () => {
             </form>
           </div>
 
-          <div className="grid gap-8 sm:grid-cols-2">
-            {FOOTER_LINK_GROUPS.map((group) => (
-              <div key={group.title} className="space-y-4">
-                <h4 className="text-lg">{group.title}</h4>
-                <ul className="space-y-2 text-sm text-white/80">
-                  {group.links.map((link) => (
-                    <li key={link.label}>
-                      <a href={link.href} className="transition hover:text-white hover:underline">
-                        {link.label}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </div>
+          {FOOTER_LINK_GROUPS.map((group) => (
+            <div key={group.title} className="space-y-4">
+              <h4 className="text-lg">{group.title}</h4>
+              <ul className="space-y-2 text-sm text-white/80">
+                {group.links.map((link) => (
+                  <li key={link.label}>
+                    <a href={link.href} className="transition hover:text-white hover:underline">
+                      {link.label}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
         </div>
 
         <div className="flex flex-col gap-6 border-t border-white/10 pt-8 text-sm text-white/80 md:flex-row md:items-center md:justify-between">

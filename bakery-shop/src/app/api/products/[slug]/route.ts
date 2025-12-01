@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 import { prisma } from "@/lib/db";
 
@@ -10,14 +10,13 @@ const normalizeImagePath = (value: string | null | undefined) => {
   return `/${value.replace(/^\/+/, "")}`;
 };
 
-type RouteContext = {
-  params: {
-    slug?: string;
-  };
+const extractSlug = (request: NextRequest) => {
+  const parts = request.nextUrl.pathname.split("/").filter(Boolean);
+  return parts[parts.length - 1]?.toLowerCase();
 };
 
-export async function GET(_request: Request, context: RouteContext) {
-  const slug = context.params?.slug?.toLowerCase();
+export async function GET(request: NextRequest) {
+  const slug = extractSlug(request);
   if (!slug) {
     return NextResponse.json({ error: "Липсва продукт." }, { status: 400 });
   }

@@ -5,6 +5,18 @@ const OFFICE_ENDPOINTS = [
   "https://www.econt.com/services/Nomenclatures/NomenclaturesService.getOffices.json",
 ];
 
+const CACHE_TTL_MS = 12 * 60 * 60 * 1000; // 12 hours
+const computeSize = (data: unknown) => Buffer.byteLength(JSON.stringify(data ?? {}), "utf8");
+
+type CachedOffices = {
+  payload: { offices: Array<{ id: string; name: string; address: string }> };
+  fetchedAt: number;
+  sizeBytes: number;
+  hits: number;
+};
+
+const officeCache = new Map<string, CachedOffices>();
+
 const trimCityPrefix = (label: string, cityName?: string | null) => {
   if (!label) return label;
   const trimmedCity = (cityName ?? "").trim();
@@ -74,9 +86,24 @@ export async function GET(request: Request) {
     const numericId = Number.parseInt(String(cityId), 10);
     const cityPayload = Number.isFinite(numericId) ? numericId : cityId;
     let data: unknown = null;
+    const now = Date.now();
+    const cached = officeCache.get(String(cityPayload));
+    if (cached && now - cached.fetchedAt < CACHE_TTL_MS) {
+      cached.hits += 1;
+      console.log("[econt:offices] cache hit", {
+        cityId: cityPayload,
+        ageMs: now - cached.fetchedAt,
+        sizeBytes: cached.sizeBytes,
+        hits: cached.hits,
+      });
+      return NextResponse.json(cached.payload, { status: 200 });
+    }
+
+    const requestAttempts = { count: 0 };
 
     for (const endpoint of OFFICE_ENDPOINTS) {
       try {
+        requestAttempts.count += 1;
         const response = await fetch(endpoint, {
           method: "POST",
           headers: {
@@ -92,6 +119,12 @@ export async function GET(request: Request) {
         }
 
         const responsePayload = (await response.json()) as { offices?: EcontOffice[] };
+        console.log("[econt:offices] fetched", {
+          endpoint,
+          cityId: cityPayload,
+          status: response.status,
+          sizeBytes: computeSize(responsePayload),
+        });
         if (Array.isArray(responsePayload?.offices)) {
           data = responsePayload;
           break;
@@ -168,7 +201,12 @@ export async function GET(request: Request) {
       return NextResponse.json({ offices: fallback, fallback: true }, { status: 200 });
     }
 
-    return NextResponse.json({ offices, fallback: false }, { status: 200 });
+    const payload = { offices, fallback: false };
+    const sizeBytes = computeSize(payload);
+    officeCache.set(String(cityPayload), { payload, fetchedAt: now, sizeBytes, hits: 0 });
+    console.log("[econt:offices] cache set", { cityId: cityPayload, sizeBytes, requestAttempts: requestAttempts.count });
+
+    return NextResponse.json(payload, { status: 200 });
   } catch (error) {
     console.error("Failed to load Econt offices", error);
     return NextResponse.json(

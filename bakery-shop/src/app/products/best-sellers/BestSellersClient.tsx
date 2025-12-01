@@ -1,6 +1,6 @@
 "use client";
 
-import Image, { type StaticImageData } from "next/image";
+import Image from "next/image";
 import { useMemo, useState } from "react";
 
 import Marquee from "@/components/Marquee";
@@ -11,23 +11,16 @@ import { useCart } from "@/context/CartContext";
 import { formatPrice } from "@/utils/price";
 import type { ProductRecord } from "@/lib/products";
 
-import BestSellersCookieBox from "@/app/best-sellers-cookie-box.png";
-import CookieBoxHero from "@/app/cookie-box-hero.jpg";
-import SmallBoxCookies from "@/app/small-box-cookies.webp";
-import NutellaCookie from "@/app/nutella-bueno-cookie.png";
-
-type GalleryImage = StaticImageData | string;
-
-const FALLBACK_GALLERY: GalleryImage[] = [
-  BestSellersCookieBox,
-  CookieBoxHero,
-  SmallBoxCookies,
+const FALLBACK_GALLERY: string[] = [
+  "/best-sellers-cookie-box.png",
+  "/cookie-box-hero.jpg",
+  "/small-box-cookies.webp",
 ];
 
-const INCLUDED_COOKIES: Array<{ name: string; image: StaticImageData }> = [
-  { name: "Nutella Bueno", image: NutellaCookie },
-  { name: "Biscoff", image: SmallBoxCookies },
-  { name: "Red Velvet Cheesecake", image: CookieBoxHero },
+const INCLUDED_COOKIES: Array<{ name: string; image: string }> = [
+  { name: "Nutella Bueno", image: "/nutella-bueno-cookie.png" },
+  { name: "Biscoff", image: "/small-box-cookies.webp" },
+  { name: "Red Velvet Cheesecake", image: "/cookie-box-hero.jpg" },
 ];
 
 const FALLBACK_DETAILS = {
@@ -143,11 +136,10 @@ export default function BestSellersClient({ initialProduct }: BestSellersClientP
               <div className="grid grid-cols-3 gap-4">
                 {visibleIndices.map((imageIndex, position) => {
                   const image = galleryImages[imageIndex];
-                  const imageKey = typeof image === "string" ? image : image.src;
                   const isActive = imageIndex === activeIndex;
                   return (
                     <button
-                      key={`${imageKey}-${position}`}
+                      key={`${image}-${position}`}
                       type="button"
                       onClick={() => goToImage(imageIndex)}
                       className={`relative aspect-square overflow-hidden rounded-2xl border transition ${

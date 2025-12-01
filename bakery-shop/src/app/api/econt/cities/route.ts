@@ -45,6 +45,18 @@ const FALLBACK_CITIES = [
   { id: "9000", referenceId: "9000", name: "Варна" },
 ];
 
+const CACHE_TTL_MS = 12 * 60 * 60 * 1000; // 12 hours
+const computeSize = (data: unknown) => Buffer.byteLength(JSON.stringify(data ?? {}), "utf8");
+
+let cachedCities:
+  | {
+      payload: { cities: Array<{ id: string; referenceId: string; name: string; regionName?: string }> };
+      fetchedAt: number;
+      sizeBytes: number;
+      hits: number;
+    }
+  | null = null;
+
 const loadOfficeCityIds = async (): Promise<Set<string>> => {
   const cityIds = new Set<string>();
 
@@ -108,10 +120,23 @@ const loadOfficeCityIds = async (): Promise<Set<string>> => {
 
 export async function GET() {
   try {
+    const now = Date.now();
+    if (cachedCities && now - cachedCities.fetchedAt < CACHE_TTL_MS) {
+      cachedCities.hits += 1;
+      console.log("[econt:cities] cache hit", {
+        ageMs: now - cachedCities.fetchedAt,
+        sizeBytes: cachedCities.sizeBytes,
+        hits: cachedCities.hits,
+      });
+      return NextResponse.json(cachedCities.payload, { status: 200 });
+    }
+
+    const requestCountContext = { attempts: 0 };
     let data: unknown = null;
 
     for (const endpoint of CITY_ENDPOINTS) {
       try {
+        requestCountContext.attempts += 1;
         const response = await fetch(endpoint, {
           method: "POST",
           headers: {
@@ -127,6 +152,8 @@ export async function GET() {
         }
 
         data = await response.json();
+        const rawSize = computeSize(data);
+        console.log("[econt:cities] fetched", { endpoint, status: response.status, sizeBytes: rawSize });
         const parsedAttempt = data as { cities?: EcontCity[] } | undefined;
         if (parsedAttempt?.cities) {
           break;
@@ -172,7 +199,12 @@ export async function GET() {
       return NextResponse.json({ cities: FALLBACK_CITIES }, { status: 200 });
     }
 
-    return NextResponse.json({ cities: filteredCities }, { status: 200 });
+    const payload = { cities: filteredCities };
+    const sizeBytes = computeSize(payload);
+    cachedCities = { payload, fetchedAt: now, sizeBytes, hits: 0 };
+    console.log("[econt:cities] cache set", { sizeBytes, requestAttempts: requestCountContext.attempts });
+
+    return NextResponse.json(payload, { status: 200 });
   } catch (error) {
     console.error("Failed to load Econt cities", error);
     return NextResponse.json(
