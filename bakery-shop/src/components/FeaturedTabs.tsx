@@ -158,7 +158,7 @@ const FeaturedTabs = () => {
     addItem({
       productId: slug,
       name: product.name,
-      price: parsePrice(product.price),
+      price: parsePrice(product.price!),
       quantity: 1,
       options: [product.weight],
       image: product.image,

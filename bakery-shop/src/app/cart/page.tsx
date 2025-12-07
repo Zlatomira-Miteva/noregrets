@@ -140,7 +140,9 @@ const CartPage = () => {
     const emailError = validateEmailValue(customerInfo.email);
     setCustomerErrors({ phone: phoneError, email: emailError });
     if (phoneError || emailError) {
-      setOrderError(phoneError || emailError || "Проверете данните за контакт.");
+      setOrderError(
+        phoneError || emailError || "Проверете данните за контакт."
+      );
       return false;
     }
     return true;
@@ -182,9 +184,9 @@ const CartPage = () => {
         0,
         couponDetails.minimumOrderAmount - totalPrice
       );
-      return `Добавете още ${formatPrice(
-        remaining
-      )} за да активирате код ${couponDetails.code}.`;
+      return `Добавете още ${formatPrice(remaining)} за да активирате код ${
+        couponDetails.code
+      }.`;
     }
 
     if (couponDiscountAmount === 0) return null;
@@ -321,9 +323,7 @@ const CartPage = () => {
         ? `Вземане от магазин – ${pickupDate} ${PICKUP_TIME_WINDOW}`
         : `Адрес: ${addressInfo.city}, ${addressInfo.street} ${
             addressInfo.number
-          }${
-            addressInfo.details ? `, ${addressInfo.details}` : ""
-          }`;
+          }${addressInfo.details ? `, ${addressInfo.details}` : ""}`;
 
     const orderReference = `NR-${Date.now()}`;
     const orderPayload = {
@@ -366,7 +366,6 @@ const CartPage = () => {
 
     try {
       sessionStorage.setItem("pendingOrder", JSON.stringify(orderPayload));
-      setOrderStatus("Данните са запазени. Моля, изчакайте…");
 
       const response = await fetch("/api/checkout", {
         method: "POST",
@@ -902,7 +901,10 @@ const CartPage = () => {
                     <div className="space-y-3">
                       <div className="space-y-4">
                         <p className="rounded-2xl bg-[#b4102b] px-4 py-3 text-sm font-semibold uppercase tracking-wide text-white">
-                          Взимането от магазина е възможно само между 16:00 и 18:00 часа. Невзети поръчки до 18:00 часа могат да се вземат на следващия ден в същия часови диапазон.
+                          Взимането от магазина е възможно само между 16:00 и
+                          18:00 часа в делнични дни и от 12:00 до 17:00 часа в
+                          събота. Невзети поръчки в обявените часове могат да се
+                          вземат на следващия ден в обявените работни часове.
                         </p>
                         <label
                           className="space-y-1 text-xs uppercase"
@@ -919,19 +921,28 @@ const CartPage = () => {
                           >
                             <span className="block text-base">
                               {pickupDate
-                                ? new Date(pickupDate).toLocaleDateString("bg-BG", {
-                                    day: "2-digit",
-                                    month: "2-digit",
-                                    year: "numeric",
-                                  })
+                                ? new Date(pickupDate).toLocaleDateString(
+                                    "bg-BG",
+                                    {
+                                      day: "2-digit",
+                                      month: "2-digit",
+                                      year: "numeric",
+                                    }
+                                  )
                                 : "Изберете дата"}
                             </span>
                             <input
                               ref={pickupDateInputRef}
                               type="date"
-                              min={new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)}
+                              min={new Date(
+                                Date.now() + 2 * 24 * 60 * 60 * 1000
+                              )
+                                .toISOString()
+                                .slice(0, 10)}
                               value={pickupDate}
-                              onChange={(event) => setPickupDate(event.target.value)}
+                              onChange={(event) =>
+                                setPickupDate(event.target.value)
+                              }
                               className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
                             />
                           </div>
@@ -1000,9 +1011,7 @@ const CartPage = () => {
                       <span>-{formatPrice(couponDiscountAmount)}</span>
                     </div>
                   ) : null}
-                  <p className="/text-s">
-                    * Цената не включва доставка.
-                  </p>
+                  <p className="/text-s">* Цената не включва доставка.</p>
                 </div>
 
                 <div className="space-y-4 text-sm text-[#5f000b]">
@@ -1010,7 +1019,9 @@ const CartPage = () => {
                     <input
                       type="checkbox"
                       checked={termsAccepted}
-                      onChange={(event) => setTermsAccepted(event.target.checked)}
+                      onChange={(event) =>
+                        setTermsAccepted(event.target.checked)
+                      }
                       className="mt-1 h-4 w-4 rounded border-[#f4b9c2] text-[#5f000b] focus:ring-[#5f000b]"
                     />
                     <span>
@@ -1036,7 +1047,8 @@ const CartPage = () => {
                       className="mt-1 h-4 w-4 rounded border-[#f4b9c2] text-[#5f000b] focus:ring-[#5f000b]"
                     />
                     <span>
-                      Съгласявам се да получавам имейли с нови предложения и промоции.
+                      Съгласявам се да получавам имейли с нови предложения и
+                      промоции.
                     </span>
                   </label>
                 </div>

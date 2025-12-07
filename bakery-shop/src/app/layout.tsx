@@ -4,6 +4,7 @@ import { Montserrat_Alternates } from "next/font/google";
 import "./globals.css";
 import AuthProvider from "@/components/AuthProvider";
 import CartToast from "@/components/CartToast";
+import CookieConsentToast from "@/components/CookieConsentToast";
 import { CartProvider } from "@/context/CartContext";
 
 const SITE_URL = "https://noregrets.bg";
@@ -26,12 +27,21 @@ export const metadata: Metadata = {
     siteName: "No Regrets",
     locale: "bg_BG",
     type: "website",
+    images: [
+      {
+        url: "/og-default.svg",
+        width: 1200,
+        height: 630,
+        alt: "No Regrets – Сладкарско ателие",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     site: "@noregretsbg",
     title: "No Regrets – Сладкарско ателие",
     description: "Ръчно изработени десерти по поръчка в Пловдив.",
+    images: ["/og-default.svg"],
   },
   robots: {
     index: true,
@@ -67,6 +77,7 @@ export default function RootLayout({
         <AuthProvider>
           <CartProvider>
             <CartToast />
+            <CookieConsentToast />
             {children}
           </CartProvider>
         </AuthProvider>

@@ -372,6 +372,12 @@ export default function AdminProductsPage() {
           <p>Добавяйте нови категории, продукти и варианти директно от това табло.</p>
           <div className="flex flex-wrap items-center justify-center gap-3">
             <Link
+              href="/admin/orders"
+              className="rounded-full border border-[#5f000b] px-4 py-2 text-xs font-semibold uppercase hover:bg-white/40"
+            >
+              Поръчки
+            </Link>
+            <Link
               href="/admin/coupons"
               className="rounded-full border border-[#5f000b] px-4 py-2 text-xs font-semibold uppercase hover:bg-white/40"
             >

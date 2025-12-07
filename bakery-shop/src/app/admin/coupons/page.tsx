@@ -121,6 +121,12 @@ export default function AdminCouponsPage() {
           <p>Добавяйте и следете активните промо кодове за No Regrets.</p>
           <div className="flex flex-wrap items-center justify-center gap-3">
             <Link
+              href="/admin/orders"
+              className="rounded-full border border-[#5f000b] px-4 py-2 text-xs font-semibold uppercase hover:bg-white/40"
+            >
+              Поръчки
+            </Link>
+            <Link
               href="/admin/products"
               className="rounded-full border border-[#5f000b] px-4 py-2 text-xs font-semibold uppercase hover:bg-white/40"
             >

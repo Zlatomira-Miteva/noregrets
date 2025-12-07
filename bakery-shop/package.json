@@ -5,9 +5,10 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "build:prod": "NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 NEXT_CPU_COUNT=2 next build",
-    "start": "next start",
-    "lint": "eslint"
+    "build:prod": "NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 NEXT_CPU_COUNT=1 UV_THREADPOOL_SIZE=1 PRISMA_CLIENT_ENGINE_TYPE=library next build",
+    "start": "NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 NEXT_CPU_COUNT=1 UV_THREADPOOL_SIZE=1 PRISMA_CLIENT_ENGINE_TYPE=library next start",
+    "lint": "eslint",
+    "prisma:migrate": "npx prisma migrate deploy"
   },
   "prisma": {
     "seed": "node prisma/seed.cjs"
@@ -19,13 +20,18 @@
     "next": "15.5.6",
     "next-auth": "^4.24.13",
     "react": "19.1.0",
-    "react-dom": "19.1.0"
+    "react-dom": "19.1.0",
+    "@next-auth/prisma-adapter": "^1.0.7",
+    "zod": "^4.1.12",
+    "react-hook-form": "^7.65.0",
+    "@prisma/client": "^6.17.1",
+    "prisma": "^6.17.1",
+    "tailwindcss": "^4",
+    "@tailwindcss/postcss": "^4"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@hookform/resolvers": "^5.2.2",
-    "@prisma/client": "^6.17.1",
-    "@tailwindcss/postcss": "^4",
     "@tanstack/react-query": "^5.90.5",
     "@types/node": "^20",
     "@types/react": "^19",
@@ -33,11 +39,6 @@
     "@vercel/analytics": "^1.5.0",
     "eslint": "^9",
     "eslint-config-next": "15.5.6",
-    "prisma": "^6.17.1",
-    "react-hook-form": "^7.65.0",
-    "tailwindcss": "^4",
-    "typescript": "^5",
-    "zod": "^4.1.12",
-    "@next-auth/prisma-adapter": "^1.0.7"
+    "typescript": "^5"
   }
 }

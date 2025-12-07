@@ -3,7 +3,7 @@ import { z } from "zod";
 
 const {
   RESEND_API_KEY,
-  CONTACT_FROM = "No Regrets <hello@noregrets.bg>",
+  CONTACT_FROM = "No Regrets <onboarding@resend.dev>",
   ORDER_NOTIFICATION_RECIPIENT = "zlati@noregrets.bg",
 } = process.env;
 
@@ -88,13 +88,20 @@ export async function POST(request: Request) {
 
     if (!response.ok) {
       const errorPayload = await response.json().catch(() => ({}));
-      console.error("[orders.notify] Resend error", errorPayload);
-      throw new Error("Failed to send notification email");
+      console.error("[orders.notify] Resend error", {
+        status: response.status,
+        errorPayload,
+        reference: data.reference,
+      });
+      return NextResponse.json(
+        { error: "Failed to send notification email", status: response.status },
+        { status: 502 },
+      );
     }
 
     return NextResponse.json({ ok: true });
   } catch (error) {
-    console.error("[orders.notify]", error);
+    console.error("[orders.notify] Unexpected error", error);
     return NextResponse.json({ error: "Неуспешно изпращане на уведомлението." }, { status: 500 });
   }
 }
