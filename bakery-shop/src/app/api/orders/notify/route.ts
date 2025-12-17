@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
+import { sendOrderEmail } from "@/lib/notify/email";
+
 const {
   RESEND_API_KEY,
   CONTACT_FROM = "No Regrets <onboarding@resend.dev>",
-  ORDER_NOTIFICATION_RECIPIENT = "zlati@noregrets.bg",
+  ORDER_NOTIFICATION_RECIPIENT = "zlati.noregrets@gmail.com",
 } = process.env;
 
 const orderSchema = z.object({
@@ -26,8 +28,24 @@ const orderSchema = z.object({
         name: z.string(),
         quantity: z.number().optional(),
         price: z.number().optional(),
+        options: z.array(z.string()).optional(),
       })
     )
+    .optional(),
+  cart: z
+    .object({
+      items: z
+        .array(
+          z.object({
+            name: z.string(),
+            qty: z.number().optional(),
+            price: z.number().optional(),
+            currency: z.string().optional(),
+            options: z.array(z.string()).optional(),
+          }),
+        )
+        .optional(),
+    })
     .optional(),
   totalAmount: z.number().optional(),
   totalQuantity: z.number().optional(),
@@ -49,8 +67,52 @@ export async function POST(request: Request) {
 
     const data = parsed.data;
     const customerName = `${data.customer?.firstName ?? ""} ${data.customer?.lastName ?? ""}`.trim();
-    const itemsText = (data.items ?? [])
-      .map((item) => `${item.name}${item.quantity ? ` × ${item.quantity}` : ""}`)
+
+    const normalizeItems = (targetTotal?: number) => {
+      const items = data.cart?.items ?? data.items ?? [];
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const parsedItems = items.map((item: any) => {
+        const qty = Number(item.quantity ?? item.qty ?? 1) || 1;
+        const price = Number(item.price ?? 0) || 0;
+        const options = Array.isArray(item.options)
+          ? (item.options as string[])
+              .map((opt) => (typeof opt === "string" ? opt.trim() : ""))
+              .filter(Boolean)
+          : [];
+        return { name: item.name, qty, price, line: price * qty, options };
+      });
+      const subtotal = parsedItems.reduce((acc, it) => acc + it.line, 0);
+      if (!targetTotal || subtotal <= 0) {
+        return parsedItems.map((it) => ({
+          name: it.name,
+          qty: it.qty,
+          unitPrice: it.price,
+          lineTotal: Number(it.line.toFixed(2)),
+          options: it.options,
+        }));
+      }
+      const factor = targetTotal / subtotal;
+      let remaining = Number(targetTotal.toFixed(2));
+      return parsedItems.map((it, idx) => {
+        const isLast = idx === parsedItems.length - 1;
+        const scaled = Number((it.line * factor).toFixed(2));
+        const lineTotal = isLast ? Number(remaining.toFixed(2)) : scaled;
+        const unitPrice = it.qty ? Number((lineTotal / it.qty).toFixed(2)) : 0;
+        remaining = Number((remaining - lineTotal).toFixed(2));
+        return { name: it.name, qty: it.qty, unitPrice, lineTotal, options: it.options };
+      });
+    };
+
+    const normalizedItems = normalizeItems(data.totalAmount);
+    const itemsText = normalizedItems
+      .map((item) => {
+        const base = `${item.name}: ${item.unitPrice.toFixed(2)} лв x ${item.qty} = ${item.lineTotal.toFixed(2)} лв`;
+        const opts =
+          item.options && item.options.length
+            ? item.options.map((opt) => `  - ${opt}`).join("\n")
+            : "";
+        return opts ? `${base}\n${opts}` : base;
+      })
       .join("\n");
 
     const lines = [
@@ -97,6 +159,28 @@ export async function POST(request: Request) {
         { error: "Failed to send notification email", status: response.status },
         { status: 502 },
       );
+    }
+
+    // Also email the customer, if provided.
+    if (data.customer?.email) {
+      const customerLines = [
+        `Здравейте${customerName ? `, ${customerName}` : ""}!`,
+        `Получихме вашата поръчка ${data.reference ?? ""}.`,
+        data.totalAmount ? `Обща сума: ${data.totalAmount.toFixed(2)} лв.` : null,
+        data.deliveryLabel ? `Доставка: ${data.deliveryLabel}` : null,
+        "",
+        "Продукти:",
+        itemsText || "(няма данни)",
+      ]
+        .filter(Boolean)
+        .join("\n");
+
+      sendOrderEmail({
+        to: data.customer.email,
+        subject: `Потвърждение за поръчка ${data.reference ?? ""}`.trim(),
+        text: customerLines,
+        html: customerLines.replace(/\n/g, "<br />"),
+      }).catch((err) => console.error("[orders.notify.customer-email]", err));
     }
 
     return NextResponse.json({ ok: true });

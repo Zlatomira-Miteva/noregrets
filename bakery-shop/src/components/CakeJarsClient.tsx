@@ -124,7 +124,7 @@ export default function CakeJarsClient({ initialJars }: CakeJarsClientProps) {
                             <p className="text-xs font-semibold uppercase tracking-wide text-[#5f000b]/60">
                               Срок за доставка
                             </p>
-                            <p>{jar.leadTime || "Доставка до 3 дни"}</p>
+                            <p>{jar.leadTime || "Доставка до 3 работни дни"}</p>
                           </div>
 
                           <p className="text-xs text-[#5f000b]/60">{allergenNote}</p>

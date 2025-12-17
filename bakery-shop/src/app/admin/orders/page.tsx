@@ -72,6 +72,8 @@ export default function AdminOrdersPage() {
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [testMailStatus, setTestMailStatus] = useState<string | null>(null);
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
 
   const loadOrders = async () => {
     setLoading(true);
@@ -91,7 +93,7 @@ export default function AdminOrdersPage() {
           customerEmail: order.customerEmail,
           customerPhone: order.customerPhone,
           deliveryLabel: order.deliveryLabel,
-          totalAmount: order.totalAmount.toString(),
+          totalAmount: (order.totalAmount ?? 0).toString(),
           status: order.status,
         };
       });
@@ -144,7 +146,7 @@ export default function AdminOrdersPage() {
     const payload: Record<string, unknown> = {
       ...draft,
       ...overrides,
-      totalAmount: Number((overrides?.totalAmount ?? draft.totalAmount).toString().replace(",", ".")),
+      totalAmount: Number((overrides?.totalAmount ?? draft.totalAmount ?? "0").toString().replace(",", ".")),
     };
 
     setSavingId(orderId);
@@ -170,7 +172,7 @@ export default function AdminOrdersPage() {
           customerEmail: updated.customerEmail,
           customerPhone: updated.customerPhone,
           deliveryLabel: updated.deliveryLabel,
-          totalAmount: updated.totalAmount.toString(),
+          totalAmount: (updated.totalAmount ?? 0).toString(),
           status: updated.status,
         },
       }));
@@ -243,24 +245,72 @@ export default function AdminOrdersPage() {
         </header>
 
         <section className="rounded-3xl bg-white/90 p-6 shadow-card">
-          <div className="mb-4 flex items-center justify-between gap-4">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <h2 className="text-2xl font-semibold">Всички поръчки</h2>
-            <button
-              type="button"
-              onClick={loadOrders}
-              className="rounded-full border border-[#5f000b] px-4 py-2 text-xs font-semibold uppercase hover:bg-[#5f000b] hover:text-white disabled:opacity-60"
-              disabled={loading}
-            >
-              {loading ? "Зареждам..." : "Обнови"}
-            </button>
-            <button
-              type="button"
-              onClick={sendTestNotification}
-              className="rounded-full border border-[#5f000b] px-4 py-2 text-xs font-semibold uppercase hover:bg-white/60 disabled:opacity-60"
-              disabled={loading}
-            >
-              Изпрати тестов имейл
-            </button>
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-2 text-sm">
+                <label className="text-xs uppercase text-[#5f000b]/70">
+                  От
+                  <input
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    className="ml-2 rounded-full border border-[#dcb1b1] bg-white px-3 py-1 text-sm focus:border-[#5f000b] focus:outline-none"
+                  />
+                </label>
+                <label className="text-xs uppercase text-[#5f000b]/70">
+                  До
+                  <input
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    className="ml-2 rounded-full border border-[#dcb1b1] bg-white px-3 py-1 text-sm focus:border-[#5f000b] focus:outline-none"
+                  />
+                </label>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      const params = new URLSearchParams();
+                      if (startDate) params.set("start", startDate);
+                      if (endDate) params.set("end", endDate);
+                      const res = await fetch(`/api/admin/orders/export?${params.toString()}`, {
+                        credentials: "include",
+                      });
+                      if (!res.ok) throw new Error("Грешка при експорта");
+                      const blob = await res.blob();
+                      const url = window.URL.createObjectURL(blob);
+                      const a = document.createElement("a");
+                      a.href = url;
+                      a.download = "orders-paid.csv";
+                      a.click();
+                      window.URL.revokeObjectURL(url);
+                    } catch (err) {
+                      setError(err instanceof Error ? err.message : "Грешка при експорта.");
+                    }
+                  }}
+                  className="rounded-full border border-[#5f000b] px-4 py-2 text-xs font-semibold uppercase hover:bg-white/40"
+                >
+                  Експортирай CSV (платени)
+                </button>
+              </div>
+              <button
+                type="button"
+                onClick={loadOrders}
+                className="rounded-full border border-[#5f000b] px-4 py-2 text-xs font-semibold uppercase hover:bg-[#5f000b] hover:text-white disabled:opacity-60"
+                disabled={loading}
+              >
+                {loading ? "Зареждам..." : "Обнови"}
+              </button>
+              <button
+                type="button"
+                onClick={sendTestNotification}
+                className="rounded-full border border-[#5f000b] px-4 py-2 text-xs font-semibold uppercase hover:bg-white/60 disabled:opacity-60"
+                disabled={loading}
+              >
+                Изпрати тестов имейл
+              </button>
+            </div>
           </div>
           {testMailStatus ? <p className="text-sm text-[#5f000b]">{testMailStatus}</p> : null}
 

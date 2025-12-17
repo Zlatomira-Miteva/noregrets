@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { useMemo, useState } from "react";
 
 import Marquee from "@/components/Marquee";
@@ -28,7 +27,7 @@ const FALLBACK_DETAILS = {
   description:
     "Нашата най-популярна селекция от шест емблематични кукита – внимателно опаковани и готови за подарък или споделяне.",
   highlights: [
-    "Доставка до 3 дни",
+    "Доставка до 3 работни дни",
     "Включени 6 различни вкуса",
     "Подходяща за подарък",
   ],
@@ -41,8 +40,19 @@ type BestSellersClientProps = {
 };
 
 export default function BestSellersClient({ initialProduct }: BestSellersClientProps) {
-  const galleryImages =
-    initialProduct?.galleryImages?.length ? initialProduct.galleryImages : FALLBACK_GALLERY;
+  const absImage = (path?: string) => {
+    if (!path) return "";
+    if (path.startsWith("http://") || path.startsWith("https://")) return path;
+    const normalized = path.startsWith("/") ? path : `/${path}`;
+    const base = (process.env.NEXT_PUBLIC_APP_URL ?? "https://noregrets.bg").replace(/\/+$/, "");
+    return `${base}${normalized}`;
+  };
+
+  const galleryImages = useMemo(() => {
+    const fromProduct = initialProduct?.galleryImages?.filter(Boolean).map(absImage) ?? [];
+    const combined = [...FALLBACK_GALLERY.map(absImage), ...fromProduct].filter(Boolean) as string[];
+    return Array.from(new Set(combined));
+  }, [initialProduct?.galleryImages]);
 
   const [activeIndex, setActiveIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
@@ -100,12 +110,11 @@ export default function BestSellersClient({ initialProduct }: BestSellersClientP
             <div className="space-y-6">
               <div className="overflow-hidden rounded-[1rem] bg-white p-1 shadow-card">
                 <div className="group relative aspect-square overflow-hidden rounded-[0.75rem]">
-                  <Image
+                  <img
                     src={galleryImages[activeIndex]}
                     alt={productDetails.name}
-                    fill
-                    className="object-cover transition duration-500"
-                    sizes="(min-width: 1024px) 512px, 100vw"
+                    className="h-full w-full object-cover transition duration-500"
+                    loading="lazy"
                   />
                   {galleryImages.length > 1 ? (
                     <>
@@ -148,7 +157,7 @@ export default function BestSellersClient({ initialProduct }: BestSellersClientP
                       }`}
                       aria-label={`Преглед на изображение ${position + 1}`}
                     >
-                      <Image src={image} alt="" fill className="object-cover" sizes="200px" />
+                      <img src={image} alt="" className="h-full w-full object-cover" loading="lazy" />
                     </button>
                   );
                 })}
@@ -210,7 +219,7 @@ export default function BestSellersClient({ initialProduct }: BestSellersClientP
                     {INCLUDED_COOKIES.map((cookie) => (
                       <li key={cookie.name} className="flex items-center gap-3">
                         <span className="relative h-12 w-12 overflow-hidden rounded-full border border-[#fbd0d9] bg-white">
-                          <Image src={cookie.image} alt={cookie.name} fill className="object-cover" sizes="64px" />
+                          <img src={cookie.image} alt={cookie.name} className="h-full w-full object-cover" loading="lazy" />
                         </span>
                         <span className="text-sm font-medium ">{cookie.name}</span>
                       </li>

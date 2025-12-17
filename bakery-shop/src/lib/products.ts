@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/db";
+import { pgPool } from "@/lib/pg";
 
 export type ProductRecord = {
   slug: string;
@@ -28,37 +28,44 @@ const normalizeImagePath = (value?: string | null) => {
 };
 
 export const getProductBySlug = async (slug: string): Promise<ProductRecord | null> => {
-  const product = await prisma.product.findUnique({
-    where: { slug },
-    include: {
-      images: { orderBy: { position: "asc" } },
-    },
-  });
+  const client = await pgPool.connect();
+  try {
+    const productRes = await client.query(
+      `SELECT * FROM "Product" WHERE slug = $1 LIMIT 1`,
+      [slug],
+    );
+    const product = productRes.rows[0];
+    if (!product) return null;
 
-  if (!product) {
-    return null;
+    const imagesRes = await client.query(
+      `SELECT url FROM "ProductImage" WHERE "productId" = $1 ORDER BY "position" ASC`,
+      [product.id],
+    );
+    const gallery = imagesRes.rows.map((row) => normalizeImagePath(row.url));
+
+    const hero = normalizeImagePath(product.heroimage ?? imagesRes.rows[0]?.url);
+
+    return {
+      slug: product.slug,
+      name: product.name,
+      description: product.description ?? product.shortdescription ?? "",
+      weight: product.weight ?? "",
+      leadTime: product.leadtime ?? "",
+      price: Number(product.price),
+      heroImage: hero,
+      galleryImages: gallery.length ? gallery : [hero],
+    };
+  } finally {
+    client.release();
   }
-
-  const gallery = product.images.length ? product.images.map((img) => normalizeImagePath(img.url)) : [];
-
-  return {
-    slug: product.slug,
-    name: product.name,
-    description: product.description ?? product.shortDescription ?? "",
-    weight: product.weight ?? "",
-    leadTime: product.leadTime ?? "",
-    price: Number(product.price),
-    heroImage: normalizeImagePath(product.heroImage ?? product.images[0]?.url),
-    galleryImages: gallery.length ? gallery : [normalizeImagePath(product.heroImage ?? product.images[0]?.url)],
-  };
 };
 
 export const getCookieOptions = async (): Promise<CookieOptionRecord[]> => {
-  const options = await prisma.cookieOption.findMany({
-    orderBy: { createdAt: "asc" },
-  });
+  const res = await pgPool.query(
+    `SELECT id, slug, name, image, price FROM "CookieOption" ORDER BY "createdAt" ASC`,
+  );
 
-  return options.map((option) => ({
+  return res.rows.map((option) => ({
     id: option.id,
     slug: option.slug,
     name: option.name,

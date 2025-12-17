@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 
 const {
   RESEND_API_KEY,
-  CONTACT_RECIPIENT = "zlati@noregrets.bg",
-  CONTACT_FROM = "No Regrets <hello@noregrets.bg>",
+  CONTACT_RECIPIENT = "zlati.noregrets@gmail.com",
+  CONTACT_FROM = "No Regrets <zlati.noregrets@gmail.com>",
 } = process.env;
 
 export async function POST(request: Request) {
@@ -26,7 +26,7 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           error:
-            "Услугата за изпращане на имейли не е конфигурирана. Свържете се с нас директно на zlati@noregrets.bg.",
+            "Услугата за изпращане на имейли не е конфигурирана. Свържете се с нас директно на zlati.noregrets@gmail.com.",
         },
         { status: 500 }
       );

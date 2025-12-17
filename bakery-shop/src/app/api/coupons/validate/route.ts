@@ -1,111 +1,89 @@
-"use server";
-
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-import { prisma } from "@/lib/db";
+import { pgPool } from "@/lib/pg";
 
-const requestSchema = z.object({
-  code: z.string().min(1, "Кодът е задължителен."),
-  cartTotal: z.number().min(0, "Стойността на количката трябва да е положителна."),
-});
-
-const normalizeCode = (code: string) => code.trim().toUpperCase();
-
-const decimalToNumber = (value: unknown) => {
-  if (value === null || value === undefined) {
-    return null;
-  }
-  if (typeof value === "number") {
-    return value;
-  }
-  if (typeof value === "string") {
-    const parsed = Number.parseFloat(value);
-    return Number.isFinite(parsed) ? parsed : null;
-  }
-  if (typeof value === "object" && "toString" in value) {
-    const parsed = Number.parseFloat((value as { toString: () => string }).toString());
-    return Number.isFinite(parsed) ? parsed : null;
-  }
-  return null;
-};
+// Accept both the old "total" key and the frontend's "cartTotal"
+const schema = z
+  .object({
+    code: z.string().trim().toUpperCase(),
+    total: z.number().positive().optional(),
+    cartTotal: z.number().positive().optional(),
+  })
+  .refine((data) => typeof data.total === "number" || typeof data.cartTotal === "number", {
+    message: "Missing total amount.",
+  });
 
 export async function POST(request: Request) {
   try {
-    const json = await request.json();
-    const parsed = requestSchema.safeParse(json);
-
+    const body = await request.json();
+    const parsed = schema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Невалидни данни." }, { status: 400 });
+      return NextResponse.json({ error: "Невалиден код." }, { status: 400 });
+    }
+    const { code, total: totalFromBody, cartTotal } = parsed.data;
+    const total = typeof totalFromBody === "number" ? totalFromBody : (cartTotal as number);
+
+    const res = await pgPool.query(`SELECT * FROM "Coupon" WHERE code = $1 LIMIT 1`, [code]);
+    const coupon = res.rows[0];
+    if (!coupon) {
+      return NextResponse.json({ error: "Кодът не е валиден." }, { status: 404 });
     }
 
-    const { code, cartTotal } = parsed.data;
-
-    const normalizedCode = normalizeCode(code);
-    const couponRecord = await prisma.coupon.findUnique({
-      where: { code: normalizedCode },
-    });
-
-    if (!couponRecord) {
-      return NextResponse.json({ error: "Несъществуващ код или вече не е активен." }, { status: 404 });
-    }
-
-    if (!couponRecord.isActive) {
-      return NextResponse.json({ error: "Този код не е активен." }, { status: 400 });
-    }
+    // Normalize DB fields (quoted columns preserve case).
+    const discountType = coupon.discountType ?? coupon.discounttype;
+    const discountValue = Number(coupon.discountValue ?? coupon.discountvalue ?? 0);
+    const minimumOrderAmount = Number(coupon.minimumOrderAmount ?? coupon.minimumorderamount ?? 0);
+    const rawMaximum = coupon.maximumDiscountAmount ?? coupon.maximumdiscountamount;
+    const maximumDiscountAmount = rawMaximum === null || rawMaximum === undefined ? null : Number(rawMaximum);
+    const validFrom = coupon.validFrom ?? coupon.validfrom ?? null;
+    const validUntil = coupon.validUntil ?? coupon.validuntil ?? null;
+    const isActive = coupon.isActive ?? coupon.isactive ?? true;
+    const maxRedemptions = coupon.maxRedemptions ?? coupon.maxredemptions ?? null;
+    const timesRedeemed = coupon.timesRedeemed ?? coupon.timesredeemed ?? 0;
 
     const now = new Date();
-    if (couponRecord.validFrom && couponRecord.validFrom > now) {
-      return NextResponse.json({ error: "Този код все още не е активен." }, { status: 400 });
+    if (validFrom && now < new Date(validFrom)) {
+      return NextResponse.json({ error: "Кодът още не е активен." }, { status: 400 });
+    }
+    if (validUntil && now > new Date(validUntil)) {
+      return NextResponse.json({ error: "Кодът е изтекъл." }, { status: 400 });
+    }
+    if (!isActive) {
+      return NextResponse.json({ error: "Кодът е деактивиран." }, { status: 400 });
+    }
+    if (total < minimumOrderAmount) {
+      return NextResponse.json({ error: "Сумата е под минималната за този код." }, { status: 400 });
+    }
+    if (maxRedemptions && timesRedeemed >= maxRedemptions) {
+      return NextResponse.json({ error: "Кодът е изчерпан." }, { status: 400 });
     }
 
-    if (couponRecord.validUntil && couponRecord.validUntil < now) {
-      return NextResponse.json({ error: "Този код е изтекъл." }, { status: 400 });
+    let discountAmount = 0;
+    if (discountType === "PERCENT") {
+      discountAmount = (discountValue / 100) * total;
+      const max = maximumDiscountAmount ?? null;
+      if (max !== null && discountAmount > max) discountAmount = max;
+    } else {
+      discountAmount = discountValue;
     }
-
-    if (couponRecord.maxRedemptions && couponRecord.timesRedeemed >= couponRecord.maxRedemptions) {
-      return NextResponse.json({ error: "Този код е използван максималния брой пъти." }, { status: 400 });
-    }
-
-    const discountValue = decimalToNumber(couponRecord.discountValue);
-    const minimumOrderAmount = decimalToNumber(couponRecord.minimumOrderAmount) ?? 0;
-    const maximumDiscountAmount = decimalToNumber(couponRecord.maximumDiscountAmount);
-
-    if (discountValue === null) {
-      return NextResponse.json({ error: "Кодът не е конфигуриран правилно." }, { status: 500 });
-    }
-
-    const minAmount = minimumOrderAmount ?? 0;
-    if (cartTotal < minAmount) {
-      return NextResponse.json(
-        { error: `Минималната стойност на поръчката за този код е ${minAmount.toFixed(2)} лв.` },
-        { status: 400 }
-      );
-    }
-
-    let discount = couponRecord.discountType === "PERCENT" ? (cartTotal * discountValue) / 100 : discountValue;
-    if (maximumDiscountAmount !== null) {
-      discount = Math.min(discount, maximumDiscountAmount);
-    }
-    discount = Math.min(discount, cartTotal);
-    const finalTotal = Math.max(0, cartTotal - discount);
 
     return NextResponse.json({
       coupon: {
-        code: couponRecord.code,
-        description: couponRecord.description ?? null,
-        discountType: couponRecord.discountType,
+        id: coupon.id,
+        code: coupon.code,
+        description: coupon.description,
+        discountType,
         discountValue,
+        maximumDiscountAmount: maximumDiscountAmount ?? null,
         minimumOrderAmount,
-        maximumDiscountAmount,
-        maxRedemptions: couponRecord.maxRedemptions,
-        timesRedeemed: couponRecord.timesRedeemed,
+        validFrom,
+        validUntil,
       },
-      discountAmount: Number(discount.toFixed(2)),
-      finalTotal: Number(finalTotal.toFixed(2)),
+      discountAmount,
     });
   } catch (error) {
-    console.error("Failed to validate coupon", error);
-    return NextResponse.json({ error: "Възникна проблем при валидирането на кода." }, { status: 500 });
+    console.error("Coupon validate failed", error);
+    return NextResponse.json({ error: "Неуспешно валидиране на кода." }, { status: 500 });
   }
 }

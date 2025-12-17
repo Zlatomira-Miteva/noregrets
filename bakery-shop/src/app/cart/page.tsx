@@ -1,6 +1,8 @@
 "use client";
 import Link from "next/link";
-import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
+import { DayPicker } from "react-day-picker";
+import "react-day-picker/dist/style.css";
 import { useCart } from "@/context/CartContext";
 import { formatPrice } from "@/utils/price";
 import Marquee from "@/components/Marquee";
@@ -8,7 +10,7 @@ import SearchableSelect from "@/components/SearchableSelect";
 import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
 
-const FREE_SHIPPING_THRESHOLD = 150;
+const FREE_SHIPPING_THRESHOLD = 90;
 const PICKUP_TIME_WINDOW = "16:00 - 18:00";
 
 type AppliedCoupon = {
@@ -40,6 +42,7 @@ const CartPage = () => {
   });
 
   const [pickupDate, setPickupDate] = useState("");
+  const [pickupError, setPickupError] = useState<string | null>(null);
 
   const [customerInfo, setCustomerInfo] = useState({
     firstName: "",
@@ -78,18 +81,6 @@ const CartPage = () => {
   const [isPreparingOrder, setIsPreparingOrder] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [marketingConsent, setMarketingConsent] = useState(false);
-
-  const pickupDateInputRef = useRef<HTMLInputElement | null>(null);
-
-  const openPickupDatePicker = () => {
-    const input = pickupDateInputRef.current;
-    if (!input) return;
-    if (typeof input.showPicker === "function") {
-      input.showPicker();
-    } else {
-      input.click();
-    }
-  };
 
   const cityOptions = useMemo(() => {
     const unique: typeof cities = [];
@@ -172,6 +163,53 @@ const CartPage = () => {
     () => Math.max(0, totalPrice - couponDiscountAmount),
     [couponDiscountAmount, totalPrice]
   );
+
+  const normalizeItemsForTotal = (
+    source: typeof items,
+    targetTotal: number
+  ): typeof items => {
+    if (!source.length || targetTotal <= 0) return source;
+    const sum = source.reduce((acc, item) => acc + item.price * item.quantity, 0);
+    if (sum <= 0) return source;
+    if (Math.abs(sum - targetTotal) < 0.01) {
+      return source.map((item) => ({
+        ...item,
+        price: Number(item.price.toFixed(2)),
+      }));
+    }
+
+    const factor = targetTotal / sum;
+    let remaining = targetTotal;
+
+    return source.map((item, idx) => {
+      const baseTotal = item.price * item.quantity;
+      const isLast = idx === source.length - 1;
+      const lineTotal = isLast
+        ? Number(remaining.toFixed(2))
+        : Number((baseTotal * factor).toFixed(2));
+      const unitPrice = item.quantity
+        ? Number((lineTotal / item.quantity).toFixed(2))
+        : 0;
+      remaining = Number(
+        (remaining - unitPrice * item.quantity).toFixed(2)
+      );
+      return { ...item, price: unitPrice };
+    });
+  };
+
+  const minPickupDate = useMemo(() => {
+    const date = new Date();
+    date.setDate(date.getDate() + 2);
+    return new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  }, []);
+
+  const isSunday = (value: string) => {
+    if (!value) return false;
+    const [y, m, d] = value.split("-").map(Number);
+    if (!y || !m || !d) return false;
+    const utc = new Date(Date.UTC(y, m - 1, d));
+    return utc.getUTCDay() === 0;
+  };
 
   const couponStatusMessage = useMemo(() => {
     if (!couponDetails) return null;
@@ -302,6 +340,11 @@ const CartPage = () => {
         setOrderError("Моля, изберете дата за взимане от магазина.");
         return null;
       }
+
+      if (isSunday(pickupDate)) {
+        setOrderError("В неделя не се приемат взимания от ателието.");
+        return null;
+      }
     }
 
     if (!termsAccepted) {
@@ -326,30 +369,37 @@ const CartPage = () => {
           }${addressInfo.details ? `, ${addressInfo.details}` : ""}`;
 
     const orderReference = `NR-${Date.now()}`;
+    const roundedTotal = Number(finalTotal.toFixed(2));
+    const normalizedItems = normalizeItemsForTotal(items, roundedTotal);
     const orderPayload = {
       reference: orderReference,
-      amount: Number(finalTotal.toFixed(2)),
+      amount: roundedTotal,
       description: `Онлайн поръчка ${orderReference}`,
       customer: customerInfo,
       deliveryLabel,
-      items: items.map((item) => ({
+      items: normalizedItems.map((item) => ({
         name: item.name,
         price: item.price,
         quantity: item.quantity,
+        options: item.options,
       })),
-      totalQuantity: items.reduce((sum, item) => sum + item.quantity, 0),
-      totalAmount: finalTotal,
+      totalQuantity: normalizedItems.reduce(
+        (sum, item) => sum + item.quantity,
+        0
+      ),
+      totalAmount: roundedTotal,
       createdAt: new Date().toISOString(),
       consents: {
         termsAccepted,
         marketing: marketingConsent,
       },
       cart: {
-        items: items.map((item) => ({
+        items: normalizedItems.map((item) => ({
           name: item.name,
           qty: item.quantity,
           price: item.price,
           currency: "BGN",
+          options: item.options,
         })),
       },
     };
@@ -899,55 +949,65 @@ const CartPage = () => {
 
                   {shippingType === "pickup" ? (
                     <div className="space-y-3">
-                      <div className="space-y-4">
-                        <p className="rounded-2xl bg-[#b4102b] px-4 py-3 text-sm font-semibold uppercase tracking-wide text-white">
+                      <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
+                        <div className="space-y-2 flex-1">
+                          <span className="text-xs uppercase">Дата за взимане</span>
+                          <div className="rounded-2xl border border-[#f4b9c2] bg-white p-3">
+                            <DayPicker
+                              mode="single"
+                              weekStartsOn={1}
+                              fromDate={minPickupDate}
+                              disabled={[{ dayOfWeek: [0] }, { before: minPickupDate }]}
+                              selected={pickupDate ? new Date(pickupDate) : undefined}
+                              onSelect={(date) => {
+                                if (!date) {
+                                  setPickupDate("");
+                                  setPickupError(null);
+                                  return;
+                                }
+                                const normalized = new Date(
+                                  Date.UTC(
+                                    date.getFullYear(),
+                                    date.getMonth(),
+                                    date.getDate()
+                                  )
+                                );
+                                if (normalized < minPickupDate) {
+                                  setPickupError("Изберете дата след минималния срок за подготовка.");
+                                  setPickupDate("");
+                                  return;
+                                }
+                                if (normalized.getUTCDay() === 0) {
+                                  setPickupError(
+                                    "В неделя не се приемат взимания от ателието."
+                                  );
+                                  setPickupDate("");
+                                  return;
+                                }
+                                const iso = normalized.toISOString().slice(0, 10);
+                                setPickupError(null);
+                                setPickupDate(iso);
+                              }}
+                              styles={{
+                                caption: { color: "#5f000b" },
+                                head_cell: { color: "#5f000b", fontWeight: 600 },
+                                day: { borderRadius: "12px" },
+                                day_selected: { backgroundColor: "#5f000b", color: "#fff" },
+                                day_disabled: { color: "#c4c4c4" },
+                              }}
+                            />
+                          </div>
+                        </div>
+                        <p className="rounded-2xl bg-[#b4102b] px-4 py-3 text-sm font-semibold uppercase tracking-wide text-white lg:w-2/5">
                           Взимането от магазина е възможно само между 16:00 и
                           18:00 часа в делнични дни и от 12:00 до 17:00 часа в
                           събота. Невзети поръчки в обявените часове могат да се
                           вземат на следващия ден в обявените работни часове.
                         </p>
-                        <label
-                          className="space-y-1 text-xs uppercase"
-                          onClick={openPickupDatePicker}
-                        >
-                          Дата за взимане
-                          <div
-                            role="presentation"
-                            className="relative w-full cursor-pointer rounded-2xl border border-[#f4b9c2] px-4 py-3 text-sm focus-within:border-[#5f000b]"
-                            onClick={(event) => {
-                              event.preventDefault();
-                              openPickupDatePicker();
-                            }}
-                          >
-                            <span className="block text-base">
-                              {pickupDate
-                                ? new Date(pickupDate).toLocaleDateString(
-                                    "bg-BG",
-                                    {
-                                      day: "2-digit",
-                                      month: "2-digit",
-                                      year: "numeric",
-                                    }
-                                  )
-                                : "Изберете дата"}
-                            </span>
-                            <input
-                              ref={pickupDateInputRef}
-                              type="date"
-                              min={new Date(
-                                Date.now() + 2 * 24 * 60 * 60 * 1000
-                              )
-                                .toISOString()
-                                .slice(0, 10)}
-                              value={pickupDate}
-                              onChange={(event) =>
-                                setPickupDate(event.target.value)
-                              }
-                              className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-                            />
-                          </div>
-                        </label>
                       </div>
+                      {pickupError ? (
+                        <p className="text-xs text-red-600">{pickupError}</p>
+                      ) : null}
                     </div>
                   ) : null}
                 </div>

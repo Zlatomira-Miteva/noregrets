@@ -18,7 +18,7 @@ export const CAKES: CakeProduct[] = [
     name: "Червено Кадифе",
     price: formatPrice(10),
     weight: "220 гр.",
-    leadTime: "Доставка до 3 дни",
+    leadTime: "Доставка до 3 работни дни",
     description:
       "Нежни червени блатове, напоени с ванилов сироп, и богат крем.",
     highlights: [
@@ -33,7 +33,7 @@ export const CAKES: CakeProduct[] = [
     name: "Маскарпоне и малина",
     price: formatPrice(10),
     weight: "240 гр.",
-    leadTime: "Доставка до 3 дни",
+    leadTime: "Доставка до 3 работни дни",
     description:
       "Въздушен ванилов блат, маскарпоне и малиново сладко.",
     highlights: [
@@ -48,7 +48,7 @@ export const CAKES: CakeProduct[] = [
     name: "Nutella Biscoff",
     price: formatPrice(12),
     weight: "220 гр.",
-    leadTime: "Доставка до 3 дни",
+    leadTime: "Доставка до 3 работни дни",
     description:
       "Шоколадови блатове, пълни с крем Nutella и карамелен Lotus слой. Декорирана с мини бисквитки и глазура от млечен шоколад.",
     highlights: [

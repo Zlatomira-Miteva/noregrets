@@ -1,4 +1,4 @@
-import { OrderStatus } from "@prisma/client";
+import { ORDER_STATUS, type OrderStatus } from "@/lib/orders";
 
 type OrderEmailPayload = {
   to: string;
@@ -14,6 +14,7 @@ type StatusEmailPayload = {
   previousStatus?: OrderStatus;
   totalAmount?: number;
   deliveryLabel?: string;
+  items?: unknown;
 };
 
 const STATUS_LABELS: Record<OrderStatus, string> = {
@@ -28,7 +29,7 @@ const STATUS_LABELS: Record<OrderStatus, string> = {
 const {
   RESEND_API_KEY,
   CONTACT_FROM = "No Regrets <onboarding@resend.dev>",
-  ORDER_NOTIFICATION_RECIPIENT = "zlati@noregrets.bg",
+  ORDER_NOTIFICATION_RECIPIENT = "zlati.noregrets@gmail.com",
 } = process.env;
 
 const sendEmailViaResend = async ({ to, subject, html, text }: OrderEmailPayload): Promise<void> => {
@@ -80,11 +81,60 @@ export async function sendOrderStatusChangeEmail({
   previousStatus,
   totalAmount,
   deliveryLabel,
+  items,
 }: StatusEmailPayload) {
   if (!to) return;
-  if (newStatus === OrderStatus.PENDING) return;
+  if (newStatus === ORDER_STATUS.PENDING) return;
   const statusLabel = STATUS_LABELS[newStatus] ?? newStatus;
   const previousLabel = previousStatus ? STATUS_LABELS[previousStatus] ?? previousStatus : null;
+
+  const normalizeItems = (raw: unknown, targetTotal?: number) => {
+    const arr = Array.isArray(raw) ? raw : [];
+    const parsed = arr
+      .map((it) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const item = it as any;
+        const name = typeof item?.name === "string" ? item.name : "(артикул)";
+        const qty = Number(item?.quantity ?? item?.qty ?? 1) || 1;
+        const price = Number(item?.price ?? 0) || 0;
+        return { name, qty, price, line: price * qty };
+      })
+      .filter((it) => it.name);
+
+    if (!parsed.length) return [];
+
+    const subtotal = parsed.reduce((acc, it) => acc + it.line, 0);
+    if (!targetTotal || subtotal <= 0) {
+      return parsed.map((it) => ({
+        name: it.name,
+        qty: it.qty,
+        unitPrice: it.price,
+        lineTotal: Number(it.line.toFixed(2)),
+      }));
+    }
+
+    const factor = targetTotal / subtotal;
+    let remaining = Number(targetTotal.toFixed(2));
+
+    const adjusted = parsed.map((it, idx) => {
+      const isLast = idx === parsed.length - 1;
+      const scaledLine = Number((it.line * factor).toFixed(2));
+      const lineTotal = isLast ? Number(remaining.toFixed(2)) : scaledLine;
+      const unitPrice = it.qty ? Number((lineTotal / it.qty).toFixed(2)) : 0;
+      remaining = Number((remaining - lineTotal).toFixed(2));
+      return { name: it.name, qty: it.qty, unitPrice, lineTotal };
+    });
+
+    return adjusted;
+  };
+
+  const normalizedItems = normalizeItems(items, totalAmount);
+  const itemsLines =
+    normalizedItems.length > 0
+      ? normalizedItems.map(
+          (it) => `${it.name}: ${it.unitPrice.toFixed(2)} лв x ${it.qty} = ${it.lineTotal.toFixed(2)} лв`,
+        )
+      : [];
 
   const lines = [
     `Здравейте,`,
@@ -92,13 +142,17 @@ export async function sendOrderStatusChangeEmail({
     previousLabel ? `Предишен статус: ${previousLabel}.` : null,
     typeof totalAmount === "number" ? `Обща сума: ${totalAmount.toFixed(2)} лв.` : null,
     deliveryLabel ? `Доставка: ${deliveryLabel}` : null,
+    normalizedItems.length ? "" : null,
+    ...itemsLines,
     "",
     `Ако имате въпроси, отговорете на този имейл или ни пишете на ${ORDER_NOTIFICATION_RECIPIENT}.`,
     "Поздрави,",
     "Злати от No Regrets",
   ].filter(Boolean);
 
-  const text = lines.join("\n");
+  const contentLines = lines.filter((line): line is string => typeof line === "string");
+
+  const text = contentLines.join("\n");
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://www.noregrets.bg";
   const logoUrl = `${appUrl.replace(/\/+$/, "")}/logo.svg`;
   const html = `
@@ -106,7 +160,13 @@ export async function sendOrderStatusChangeEmail({
       <div style="margin-bottom: 12px;">
         <img src="${logoUrl}" alt="No Regrets" style="height: 48px;" />
       </div>
-      ${lines.map((line) => `<p style="margin: 4px 0;">${line}</p>`).join("")}
+      ${contentLines
+        .map((line) =>
+          line === ""
+            ? `<p style="margin: 8px 0;"></p>`
+            : `<p style="margin: 4px 0;">${line.replace(/\n/g, "<br/>")}</p>`,
+        )
+        .join("")}
     </div>
   `;
 

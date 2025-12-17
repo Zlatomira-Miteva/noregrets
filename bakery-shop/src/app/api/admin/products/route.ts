@@ -1,20 +1,20 @@
+import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
-import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { getServerSession } from "next-auth";
 
-import { prisma } from "@/lib/db";
 import { authOptions } from "@/auth";
+import { pgPool } from "@/lib/pg";
 
 const productSchema = z.object({
   name: z.string().min(2, "Въведете име."),
   slug: z.string().min(2).optional(),
   shortDescription: z.string().optional(),
   description: z.string().optional(),
-  weight: z.string().min(1, "Въведете тегло."),
-  leadTime: z.string().min(1, "Въведете време за доставка."),
-  heroImage: z.string().min(1, "Въведете hero изображение."),
-  galleryImages: z.array(z.string().min(1)).min(1, "Добавете поне едно изображение в галерията."),
+  weight: z.string().optional(),
+  leadTime: z.string().optional(),
+  heroImage: z.string().optional(),
+  galleryImages: z.array(z.string().min(1)).optional(),
   categoryImages: z.array(z.string().min(1)).optional(),
   price: z.number().positive("Цената трябва да е положително число."),
   categoryId: z.string().min(1, "Изберете категория."),
@@ -30,212 +30,6 @@ const slugify = (value: string) =>
     .replace(/[^a-z0-9а-я]+/gi, "-")
     .replace(/^-+|-+$/g, "");
 
-const defaultCakeJarData = [
-  {
-    slug: "red-velvet",
-    name: "Торта червено кадифе",
-    description:
-      "Ред Велвет блатове, напоени с ванилов сироп и покрити с нежен крем сирене с бял шоколад. Всеки буркан е кадифено сладък и изненадващо лек.",
-    layers: ["Ред Велвет блат", "Крема сирене", "Швейцарски крем"],
-    image: "red-velvet-cake-jar.png",
-    price: 20,
-    weight: "220 гр.",
-    leadTime: "Доставка до 3 дни",
-    heroImage: "red-velvet-cake-jar.png",
-    galleryImages: ["red-velvet-cake-jar.png"],
-    categoryImages: ["red-velvet-cake-jar.png"],
-  },
-  {
-    slug: "nutella-biscoff",
-    name: "Торта Nutella & Biscoff",
-    description:
-     "Какаови блатове, крем маскарпоне, хрупкави парченца Lotus, крем Lotus и Nutella. Комбинация между дълбок шоколад и карамелен хрупкав слой.",
-    layers: ["Шоколадов блат", "Nutella", "Biscoff крем", "Швейцарски крем"],
-    image: "nutella-biscoff-cake-jar.png",
-    price: 20,
-    weight: "220 гр.",
-    leadTime: "Доставка до 3 дни",
-    heroImage: "nutella-biscoff-cake-jar.png",
-    galleryImages: ["nutella-biscoff-cake-jar.png"],
-    categoryImages: ["nutella-biscoff-cake-jar.png"],
-  },
-  {
-    slug: "mascarpone-raspberry",
-    name: "Торта с маскарпоне и малина",
-    description:
-      "Въздушен маскарпоне крем, малинов конфитюр и ванилови блатове. Баланс между свежест, малина и копринен крем.",
-    layers: ["Ванилов блат", "Малиново сладко", "Маскарпоне и сметана"],
-    image: "mascarpone-raspberry-cake-jar.png",
-    price: 20,
-    weight: "240 гр.",
-    leadTime: "Доставка до 3 дни",
-    heroImage: "mascarpone-raspberry-cake-jar.png",
-    galleryImages: ["mascarpone-raspberry-cake-jar.png"],
-    categoryImages: ["mascarpone-raspberry-cake-jar.png"],
-  },
-];
-
-const ensureProductMetaColumns = async () => {
-  await prisma.$executeRaw`ALTER TABLE "Product" ADD COLUMN IF NOT EXISTS "weight" TEXT`;
-  await prisma.$executeRaw`ALTER TABLE "Product" ADD COLUMN IF NOT EXISTS "leadTime" TEXT`;
-  await prisma.$executeRaw`ALTER TABLE "Product" ADD COLUMN IF NOT EXISTS "heroImage" TEXT`;
-  const categoryTableExists = await prisma.$queryRaw<Array<{ exists: boolean }>>`
-    SELECT EXISTS (
-      SELECT 1
-      FROM information_schema.tables
-      WHERE table_name = 'ProductCategoryImage'
-    ) as "exists";
-  `;
-  if (!categoryTableExists[0]?.exists) {
-    await prisma.$executeRawUnsafe(`
-      CREATE TABLE "ProductCategoryImage" (
-        "id" TEXT NOT NULL,
-        "productId" TEXT NOT NULL,
-        "url" TEXT NOT NULL,
-        "alt" TEXT,
-        "position" INTEGER NOT NULL DEFAULT 0,
-        CONSTRAINT "ProductCategoryImage_pkey" PRIMARY KEY ("id"),
-        CONSTRAINT "ProductCategoryImage_productId_fkey" FOREIGN KEY ("productId") REFERENCES "Product"("id") ON DELETE CASCADE ON UPDATE CASCADE
-      )
-    `);
-  }
-};
-
-const ensureCakeJarEntries = async () => {
-  await Promise.all(
-    defaultCakeJarData.map((jar) =>
-      prisma.cakeJar.upsert({
-        where: { slug: jar.slug },
-        update: {
-          name: jar.name,
-          description: jar.description,
-          layers: jar.layers,
-          image: jar.image,
-          price: new Prisma.Decimal(jar.price),
-        },
-        create: {
-          slug: jar.slug,
-          name: jar.name,
-          description: jar.description,
-          layers: jar.layers,
-          image: jar.image,
-          price: new Prisma.Decimal(jar.price),
-        },
-      })
-    )
-  );
-
-  return prisma.cakeJar.findMany();
-};
-
-const ensureCakeJarCategoryAndProducts = async () => {
-  await ensureProductMetaColumns();
-
-  const cakeJars = await ensureCakeJarEntries();
-  if (!cakeJars.length) {
-    return;
-  }
-
-  const defaultJarMeta = new Map(
-    defaultCakeJarData.map((jar) => [
-      jar.slug,
-      {
-        weight: jar.weight,
-        leadTime: jar.leadTime,
-        heroImage: jar.heroImage,
-        galleryImages: jar.galleryImages,
-        categoryImages: jar.categoryImages,
-      },
-    ])
-  );
-
-  const category = await prisma.productCategory.upsert({
-    where: { slug: "cake-jars" },
-    update: {
-      name: "Торти в буркан",
-      description: "Ръчно подредени торти в буркан с най-популярните вкусове на No Regrets.",
-      heroImage: "cake-jars-hero.jpg",
-    },
-    create: {
-      slug: "cake-jars",
-      name: "Торти в буркан",
-      description: "Ръчно подредени торти в буркан с най-популярните вкусове на No Regrets.",
-      heroImage: "cake-jars-hero.jpg",
-    },
-  });
-
-  for (const jar of cakeJars) {
-    const slug = `cake-jar-${jar.slug}`;
-    const priceDecimal =
-      jar.price instanceof Prisma.Decimal ? jar.price : new Prisma.Decimal(jar.price ?? 0);
-    const defaults = defaultJarMeta.get(jar.slug);
-
-    const existingProduct = await prisma.product.findUnique({ where: { slug } });
-    if (existingProduct) {
-      const updateData: Prisma.ProductUpdateInput = {};
-      if (existingProduct.categoryId !== category.id) {
-        updateData.category = { connect: { id: category.id } };
-      }
-      if (!existingProduct.weight && defaults?.weight) {
-        updateData.weight = defaults.weight;
-      }
-      if (!existingProduct.leadTime && defaults?.leadTime) {
-        updateData.leadTime = defaults.leadTime;
-      }
-      if (defaults?.heroImage && existingProduct.heroImage !== defaults.heroImage) {
-        updateData.heroImage = defaults.heroImage;
-      }
-      if (Object.keys(updateData).length) {
-        await prisma.product.update({
-          where: { slug },
-          data: updateData,
-        });
-      }
-      continue;
-    }
-
-    await prisma.product.create({
-      data: {
-        slug,
-        name: jar.name,
-        shortDescription: jar.description,
-        description: jar.description,
-        weight: defaults?.weight,
-        leadTime: defaults?.leadTime ?? "Доставка до 3 дни",
-        heroImage: defaults?.heroImage ?? jar.image,
-        price: priceDecimal,
-        status: "PUBLISHED",
-        categoryId: category.id,
-        images: {
-          create: (defaults?.galleryImages ?? [jar.image]).map((url, index) => ({
-            url,
-            alt: jar.name,
-            position: index,
-          })),
-        },
-        categoryImages: defaults?.categoryImages
-          ? {
-              create: defaults.categoryImages.map((url, index) => ({
-                url,
-                alt: jar.name,
-                position: index,
-              })),
-            }
-          : undefined,
-        variants: {
-          create: [
-            {
-              name: `Торта в буркан – ${jar.name}`,
-              price: priceDecimal,
-              isDefault: true,
-            },
-          ],
-        },
-      },
-    });
-  }
-};
-
 export async function GET() {
   const session = await getServerSession(authOptions);
   if (session?.user?.role !== "ADMIN") {
@@ -243,48 +37,55 @@ export async function GET() {
   }
 
   try {
-    await ensureCakeJarCategoryAndProducts();
-
-    const products = await prisma.product.findMany({
-      include: {
-        category: true,
-        images: {
-          orderBy: { position: "asc" },
-        },
-        categoryImages: {
-          orderBy: { position: "asc" },
-        },
-        variants: {
-          orderBy: [{ isDefault: "desc" }, { name: "asc" }],
-        },
-      },
-      orderBy: { createdAt: "desc" },
-    });
+    const productsRes = await pgPool.query(
+      `SELECT p.*, c.name as category_name FROM "Product" p
+       LEFT JOIN "ProductCategory" c ON p."categoryId" = c.id
+       ORDER BY p."createdAt" DESC`,
+    );
+    const ids = productsRes.rows.map((p) => p.id);
+    const imagesRes = ids.length
+      ? await pgPool.query(
+          `SELECT * FROM "ProductImage" WHERE "productId" = ANY($1::text[]) ORDER BY "position" ASC`,
+          [ids],
+        )
+      : { rows: [] };
+    const catImagesRes = ids.length
+      ? await pgPool.query(
+          `SELECT * FROM "ProductCategoryImage" WHERE "productId" = ANY($1::text[]) ORDER BY "position" ASC`,
+          [ids],
+        )
+      : { rows: [] };
+    const variantsRes = ids.length
+      ? await pgPool.query(
+          `SELECT * FROM "ProductVariant" WHERE "productId" = ANY($1::text[]) ORDER BY "isDefault" DESC, name ASC`,
+          [ids],
+        )
+      : { rows: [] };
 
     return NextResponse.json({
-      products: products.map((product) => ({
+      products: productsRes.rows.map((product) => ({
         id: product.id,
         name: product.name,
         slug: product.slug,
         price: Number(product.price),
         status: product.status,
-        categoryName: product.category.name,
+        categoryName: product.category_name,
         categoryId: product.categoryId,
-        shortDescription: product.shortDescription,
+        shortDescription: product.shortdescription,
         description: product.description,
         weight: product.weight,
-        leadTime: product.leadTime,
-        heroImage: product.heroImage,
-        galleryImages: product.images.map((img) => img.url),
-        categoryImages: product.categoryImages.map((img) => img.url),
-        variantName: product.variants[0]?.name ?? "",
+        leadTime: product.leadtime,
+        heroImage: product.heroimage,
+        galleryImages: imagesRes.rows.filter((img) => img.productid === product.id).map((img) => img.url),
+        categoryImages: catImagesRes.rows.filter((img) => img.productid === product.id).map((img) => img.url),
+        variantName: variantsRes.rows.find((v) => v.productid === product.id)?.name ?? "",
       })),
     });
   } catch (error) {
     console.error("Failed to load products", error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Неуспешно зареждане на продуктите." },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -317,55 +118,72 @@ export async function POST(request: Request) {
     variantName,
   } = parsed.data;
   const finalSlug = slug?.trim() || slugify(name);
-  const decimalPrice = new Prisma.Decimal(price);
 
+  const client = await pgPool.connect();
   try {
-    const product = await prisma.product.create({
-      data: {
+    await client.query("BEGIN");
+    const productId = randomUUID();
+    const productInsert = await client.query(
+      `INSERT INTO "Product" (id, slug, name, "shortDescription", description, weight, "leadTime", "heroImage", price, status, "categoryId", "updatedAt")
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11, NOW())
+       RETURNING *`,
+      [
+        productId,
+        finalSlug,
         name,
-        slug: finalSlug,
-        shortDescription,
-        description,
-        weight,
-        leadTime,
-        heroImage,
-        price: decimalPrice,
-        status: status ?? "PUBLISHED",
+        shortDescription ?? null,
+        description ?? null,
+        weight ?? null,
+        leadTime ?? null,
+        heroImage ?? null,
+        price,
+        status ?? "PUBLISHED",
         categoryId,
-        images: {
-          create: galleryImages.map((url, index) => ({
-            url,
-            alt: name,
-            position: index,
-          })),
-        },
-        categoryImages: categoryImages
-          ? {
-              create: categoryImages.map((url, index) => ({
-                url,
-                alt: name,
-                position: index,
-              })),
-            }
-          : undefined,
-        variants: {
-          create: [
-            {
-              name: variantName || name,
-              price: decimalPrice,
-              isDefault: true,
-            },
-          ],
-        },
-      },
-    });
+      ],
+    );
+    const product = productInsert.rows[0];
 
+    if (galleryImages?.length) {
+      const galleryIds = galleryImages.map(() => randomUUID());
+      const galleryProductIds = galleryImages.map(() => product.id);
+      const galleryAlt = galleryImages.map(() => name);
+      const galleryPositions = galleryImages.map((_, idx) => idx);
+      await client.query(
+        `INSERT INTO "ProductImage" (id,"productId",url,alt,"position")
+         SELECT * FROM unnest($1::text[], $2::text[], $3::text[], $4::text[], $5::int[]) AS t(id, "productId", url, alt, "position")`,
+        [galleryIds, galleryProductIds, galleryImages, galleryAlt, galleryPositions],
+      );
+    }
+
+    if (categoryImages?.length) {
+      const categoryImageIds = categoryImages.map(() => randomUUID());
+      const categoryProductIds = categoryImages.map(() => product.id);
+      const categoryAlts = categoryImages.map(() => name);
+      const categoryPositions = categoryImages.map((_, idx) => idx);
+      await client.query(
+        `INSERT INTO "ProductCategoryImage" (id,"productId",url,alt,"position")
+         SELECT * FROM unnest($1::text[], $2::text[], $3::text[], $4::text[], $5::int[]) AS t(id, "productId", url, alt, "position")`,
+        [categoryImageIds, categoryProductIds, categoryImages, categoryAlts, categoryPositions],
+      );
+    }
+
+    await client.query(
+      `INSERT INTO "ProductVariant" (id,"productId",name,price,"isDefault")
+       VALUES ($1, $2, $3, $4, true)`,
+      [randomUUID(), product.id, variantName || name, price],
+    );
+
+    await client.query("COMMIT");
     return NextResponse.json({ product }, { status: 201 });
-  } catch (error) {
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } catch (error: any) {
+    await client.query("ROLLBACK");
+    if (error?.code === "23505") {
       return NextResponse.json({ error: "Продукт със същия slug вече съществува." }, { status: 409 });
     }
     console.error("Failed to create product", error);
     return NextResponse.json({ error: "Неуспешно създаване на продукт." }, { status: 500 });
+  } finally {
+    client.release();
   }
 }

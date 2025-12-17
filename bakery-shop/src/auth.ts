@@ -1,12 +1,9 @@
 import NextAuth, { type NextAuthOptions } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
-import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import bcrypt from "bcryptjs";
-
-import { prisma } from "@/lib/db";
+import { pgPool } from "@/lib/pg";
 
 export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(prisma),
   session: { strategy: "jwt" },
   pages: {
     signIn: "/admin/login",
@@ -22,24 +19,21 @@ export const authOptions: NextAuthOptions = {
         if (!credentials?.email || !credentials.password) {
           return null;
         }
-
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email },
-        });
-        if (!user?.password) {
-          return null;
-        }
+        const res = await pgPool.query(
+          `SELECT id, email, name, password, role FROM "User" WHERE email = $1 LIMIT 1`,
+          [credentials.email],
+        );
+        const user = res.rows[0];
+        if (!user?.password) return null;
 
         const isValid = await bcrypt.compare(credentials.password, user.password);
-        if (!isValid) {
-          return null;
-        }
+        if (!isValid) return null;
 
         return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          role: user.role,
+          id: user.id as string,
+          email: user.email as string,
+          name: user.name as string | null,
+          role: (user.role as string) ?? "ADMIN",
         };
       },
     }),

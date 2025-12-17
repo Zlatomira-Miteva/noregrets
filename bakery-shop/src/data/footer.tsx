@@ -14,7 +14,7 @@ export const FOOTER_LINK_GROUPS = [
     title: "Обслужване на клиенти",
     links: [
       { label: "Контакт", href: "/contact" },
-      { label: "zlati@noregrets.bg", href: "mailto:zlati@noregrets.bg" },
+      { label: "zlati.noregrets@gmail.com", href: "mailto:zlati.noregrets@gmail.com" },
       { label: "гр. Пловдив, ул. 'Богомил'48", href: "#visit" },
       { label: "Работно време:", href: "#hours" },
       { label: "Понеделник - Петък: 16:00 - 18:00" },

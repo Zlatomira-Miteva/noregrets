@@ -1,92 +1,73 @@
-import { NextRequest, NextResponse } from "next/server";
-import { Prisma } from "@prisma/client";
+import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getServerSession } from "next-auth";
 
-import { prisma } from "@/lib/db";
 import { authOptions } from "@/auth";
+import { pgPool } from "@/lib/pg";
 
-const updateSchema = z
-  .object({
-    name: z.string().min(2).optional(),
-    slug: z.string().min(2).optional(),
-    shortDescription: z.string().optional(),
-    description: z.string().optional(),
-    weight: z.string().optional(),
-    leadTime: z.string().optional(),
-    heroImage: z.string().optional(),
-    galleryImages: z.array(z.string().min(1)).optional(),
-    categoryImages: z.array(z.string().min(1)).optional(),
-    price: z.number().positive().optional(),
-    categoryId: z.string().min(1).optional(),
-    image: z.string().min(1).optional(),
-    status: z.enum(["PUBLISHED", "DRAFT", "ARCHIVED"]).optional(),
-    variantName: z.string().optional(),
-  })
-  .refine((data) => Object.keys(data).length > 0, {
-    message: "Няма подадени полета за промяна.",
-  });
+const updateSchema = z.object({
+  name: z.string().optional(),
+  slug: z.string().optional(),
+  shortDescription: z.string().optional(),
+  description: z.string().optional(),
+  weight: z.string().optional(),
+  leadTime: z.string().optional(),
+  heroImage: z.string().optional(),
+  price: z.number().optional(),
+  status: z.enum(["PUBLISHED", "DRAFT", "ARCHIVED"]).optional(),
+});
 
-const slugify = (value: string) =>
-  value
-    .toString()
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9а-я]+/gi, "-")
-    .replace(/^-+|-+$/g, "");
-
-const extractProductId = (request: NextRequest) => {
-  const segments = request.nextUrl.pathname.split("/");
-  return segments.pop() || segments.pop() || "";
-};
-
-export async function GET(request: NextRequest) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function GET(_: Request, { params }: { params: any }) {
   const session = await getServerSession(authOptions);
   if (session?.user?.role !== "ADMIN") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const product = await prisma.product.findUnique({
-    where: { id: extractProductId(request) },
-    include: {
-      category: true,
-      images: { orderBy: { position: "asc" } },
-      categoryImages: { orderBy: { position: "asc" } },
-      variants: { orderBy: [{ isDefault: "desc" }, { name: "asc" }] },
-    },
-  });
+  const client = await pgPool.connect();
+  try {
+    const productRes = await client.query(`SELECT * FROM "Product" WHERE id=$1 LIMIT 1`, [params.productId]);
+    if (!productRes.rows.length) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+    const product = productRes.rows[0];
 
-  if (!product) {
-    return NextResponse.json({ error: "Продуктът не е намерен." }, { status: 404 });
+    const images = await client.query(
+      `SELECT * FROM "ProductImage" WHERE "productId"=$1 ORDER BY "position" ASC`,
+      [product.id],
+    );
+    const categoryImages = await client.query(
+      `SELECT * FROM "ProductCategoryImage" WHERE "productId"=$1 ORDER BY "position" ASC`,
+      [product.id],
+    );
+    const variants = await client.query(
+      `SELECT * FROM "ProductVariant" WHERE "productId"=$1 ORDER BY "isDefault" DESC, name ASC`,
+      [product.id],
+    );
+
+    return NextResponse.json({
+      product: {
+        ...product,
+        price: Number(product.price),
+        images: images.rows,
+        categoryImages: categoryImages.rows,
+        variants: variants.rows.map((v) => ({ ...v, price: Number(v.price) })),
+      },
+    });
+  } catch (error) {
+    console.error("Failed to load product", error);
+    return NextResponse.json({ error: "Неуспешно зареждане." }, { status: 500 });
+  } finally {
+    client.release();
   }
-
-  return NextResponse.json({
-    product: {
-      id: product.id,
-      name: product.name,
-      slug: product.slug,
-      shortDescription: product.shortDescription,
-      description: product.description,
-      weight: product.weight,
-      leadTime: product.leadTime,
-      heroImage: product.heroImage,
-      galleryImages: product.images.map((img) => img.url),
-      categoryImages: product.categoryImages.map((img) => img.url),
-      price: Number(product.price),
-      status: product.status,
-      categoryId: product.categoryId,
-      categoryName: product.category.name,
-      variantName: product.variants[0]?.name ?? "",
-    },
-  });
 }
 
-export async function PATCH(request: NextRequest) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function PATCH(request: Request, { params }: { params: any }) {
   const session = await getServerSession(authOptions);
   if (session?.user?.role !== "ADMIN") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  const productId = extractProductId(request);
 
   const json = await request.json();
   const parsed = updateSchema.safeParse(json);
@@ -94,118 +75,42 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Невалидни данни." }, { status: 400 });
   }
 
-  const product = await prisma.product.findUnique({
-    where: { id: productId },
-    include: {
-      images: { orderBy: { position: "asc" } },
-      categoryImages: { orderBy: { position: "asc" } },
-      variants: { orderBy: [{ isDefault: "desc" }, { name: "asc" }] },
-    },
-  });
-
-  if (!product) {
-    return NextResponse.json({ error: "Продуктът не е намерен." }, { status: 404 });
-  }
-
-  const {
-    name,
-    slug,
-    shortDescription,
-    description,
-    weight,
-    leadTime,
-    heroImage,
-    galleryImages,
-    categoryImages,
-    price,
-    categoryId,
-    status,
-    variantName,
-  } = parsed.data;
-  const finalSlug = slug ? slugify(slug) : undefined;
-  const data: Prisma.ProductUpdateInput = {};
-
-  if (name) data.name = name;
-  if (finalSlug) data.slug = finalSlug;
-  if (shortDescription !== undefined) data.shortDescription = shortDescription;
-  if (description !== undefined) data.description = description;
-  if (weight !== undefined) data.weight = weight;
-  if (leadTime !== undefined) data.leadTime = leadTime;
-  if (heroImage !== undefined) data.heroImage = heroImage;
-  if (categoryId) data.category = { connect: { id: categoryId } };
-  if (status) data.status = status;
-  if (price !== undefined) {
-    data.price = new Prisma.Decimal(price);
-  }
-
-  if (galleryImages) {
-    data.images = {
-      deleteMany: {},
-      create: galleryImages.map((url, index) => ({
-        url,
-        alt: name ?? product.name,
-        position: index,
-      })),
-    };
-  }
-
-  if (categoryImages) {
-    data.categoryImages = {
-      deleteMany: {},
-      create: categoryImages.map((url, index) => ({
-        url,
-        alt: name ?? product.name,
-        position: index,
-      })),
-    };
-  }
-
-  if (variantName || price !== undefined) {
-    if (product.variants[0]) {
-      data.variants = {
-        update: {
-          where: { id: product.variants[0].id },
-          data: {
-            name: variantName ?? product.variants[0].name,
-            ...(price !== undefined ? { price: new Prisma.Decimal(price) } : {}),
-          },
-        },
-      };
-    } else if (variantName || price !== undefined) {
-      data.variants = {
-        create: [
-          {
-            name: variantName || product.name,
-            price: new Prisma.Decimal(price ?? Number(product.price)),
-            isDefault: true,
-          },
-        ],
-      };
+  const fields: string[] = [];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const values: any[] = [];
+  let idx = 1;
+  Object.entries(parsed.data).forEach(([key, value]) => {
+    if (value !== undefined) {
+      if (key === "price") {
+        fields.push(`${key}=$${++idx}`);
+        values.push(Number(value));
+      } else {
+        fields.push(`"${key}"=$${++idx}`);
+        values.push(value);
+      }
     }
-  }
-
-  const updated = await prisma.product.update({
-    where: { id: productId },
-    data,
   });
 
-  return NextResponse.json({ product: updated });
+  if (!fields.length) {
+    return NextResponse.json({ error: "Няма промени." }, { status: 400 });
+  }
+
+  const query = `UPDATE "Product" SET ${fields.join(",")}, "updatedAt"=NOW() WHERE id=$1 RETURNING *`;
+  const res = await pgPool.query(query, [params.productId, ...values]);
+  if (!res.rows.length) {
+    return NextResponse.json({ error: "Поръчката не е намерена." }, { status: 404 });
+  }
+
+  return NextResponse.json({ product: res.rows[0] });
 }
 
-export async function DELETE(request: NextRequest) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function DELETE(_: Request, { params }: { params: any }) {
   const session = await getServerSession(authOptions);
   if (session?.user?.role !== "ADMIN") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  try {
-    const productId = extractProductId(request);
-    await prisma.product.delete({
-      where: { id: productId },
-    });
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error("Failed to delete product", error);
-    return NextResponse.json({ error: "Неуспешно изтриване на продукта." }, { status: 500 });
-  }
+  await pgPool.query(`DELETE FROM "Product" WHERE id=$1`, [params.productId]);
+  return NextResponse.json({ ok: true });
 }

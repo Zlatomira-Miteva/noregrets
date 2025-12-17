@@ -12,8 +12,8 @@ type ContactStatus = "idle" | "sending" | "success" | "error";
 const CONTACT_CHANNELS = [
   {
     label: "Имейл",
-    value: "zlati@noregrets.bg",
-    href: "mailto:zlati@noregrets.bg",
+    value: "zlati.noregrets@gmail.com",
+    href: "mailto:zlati.noregrets@gmail.com",
   },
   {
     label: "Адрес",
@@ -147,7 +147,7 @@ const ContactPage = () => {
                 <h2 className="text-2xl font-semibold">Данни за контакт</h2>
                 <p className="mt-2 text-sm text-[#5f000b]/70">
                   В работни дни отговаряме между 10:00 и 18:00 ч. Взимането от магазина става между
-                  16:00 и 18:00 ч.
+                  16:00 и 18:00 ч. В събота работим от 12:00 до 17:00 ч.
                 </p>
               </div>
 

@@ -1,50 +1,100 @@
-import { OrderStatus } from "@prisma/client";
-import { NextResponse } from "next/server";
-
-import { updateOrderStatusWithAudit } from "@/lib/orders";
+import { ORDER_STATUS, deleteOrderByReference, updateOrderStatusWithAudit } from "@/lib/orders";
+import { createSalesDocumentByReference, recordPaymentByReference } from "@/lib/n18";
 import { sendOrderStatusChangeEmail, sendOrderEmail } from "@/lib/notify/email";
+
+const okResponse = () =>
+  new Response("OK", {
+    status: 200,
+    headers: { "Content-Type": "text/plain; charset=utf-8" },
+  });
 
 export async function POST(request: Request) {
   try {
     const formData = await request.formData();
-    const reference = formData.get("orderReference")?.toString();
-    const status = formData.get("status")?.toString()?.toUpperCase();
+    const entries = Object.fromEntries(
+      Array.from(formData.entries()).map(([key, value]) => [key.toString(), typeof value === "string" ? value : String(value)]),
+    );
 
-    if (!reference) {
-      return NextResponse.json({ error: "Missing reference." }, { status: 400 });
+    // Temp debug to inspect gateway payload in prod.
+    console.log("[mypos.result] entries", entries);
+
+    const reference =
+      entries.orderReference ||
+      entries.OrderReference ||
+      entries.orderID ||
+      entries.OrderID ||
+      entries.orderid ||
+      entries.OrderId ||
+      null;
+
+    const statusRaw =
+      entries.status ??
+      entries.Status ??
+      entries.STATUS ??
+      entries.paymentStatus ??
+      entries.PaymentStatus ??
+      entries.result ??
+      entries.Result ??
+      entries.RESULT ??
+      (entries.IPCmethod === "IPCPurchaseNotify" ? "SUCCESS" : null);
+    const status = statusRaw?.toString().toUpperCase();
+
+    if (!reference || !status) {
+      console.warn("[mypos.result] missing reference or status", { reference, status, ipcMethod: entries.IPCmethod, entries });
+      // Still acknowledge to myPOS to avoid retries.
+      return okResponse();
     }
 
-    if (!status) {
-      return NextResponse.json({ error: "Missing status." }, { status: 400 });
-    }
+    const successStatuses = new Set(["SUCCESS", "SUCCESSFUL", "OK", "APPROVED", "AUTHORISED", "AUTHORIZED", "PAID"]);
+    const failedStatuses = new Set(["FAILED", "FAIL", "DECLINED", "ERROR"]);
+    const cancelledStatuses = new Set(["CANCELED", "CANCELLED", "CANCEL", "VOID", "EXPIRED"]);
 
-    const nextStatus =
-      status === "SUCCESS"
-        ? OrderStatus.PAID
-        : status === "FAILED"
-          ? OrderStatus.FAILED
-          : status === "CANCELED"
-            ? OrderStatus.CANCELLED
-            : null;
+    const nextStatus = (() => {
+      if (successStatuses.has(status)) return ORDER_STATUS.PAID;
+      if (failedStatuses.has(status)) return ORDER_STATUS.FAILED;
+      if (cancelledStatuses.has(status)) return ORDER_STATUS.CANCELLED;
+      return null; // Unknown status: acknowledge but do not change.
+    })();
+
+    const rawPayload = entries;
+
+    if (nextStatus === ORDER_STATUS.FAILED || nextStatus === ORDER_STATUS.CANCELLED) {
+      await deleteOrderByReference(reference, "mypos-callback", `gateway-status:${status}`).catch((err) =>
+        console.error("[mypos.result.delete]", err),
+      );
+      return okResponse();
+    }
 
     if (!nextStatus) {
-      return NextResponse.json({ error: "Unsupported status." }, { status: 400 });
+      return okResponse();
     }
-
-    const rawPayload = Object.fromEntries(
-      Array.from(formData.entries()).map(([key, value]) => [key, typeof value === "string" ? value : String(value)]),
-    );
 
     const result = await updateOrderStatusWithAudit(reference, nextStatus, "mypos-callback", {
       statusFromGateway: status,
       payload: rawPayload,
     });
 
-    if (!result) {
-      return NextResponse.json({ error: "Order not found." }, { status: 404 });
+    // Mirror payment into N18 tables
+    if (nextStatus === ORDER_STATUS.PAID) {
+      const transactionId =
+        entries.IPC_Trnref || entries.ipc_trnref || entries.Trnref || entries.trnref || entries.TransactionID || reference;
+      const amount = Number(entries.Amount ?? entries.amount ?? 0) || (result?.order?.totalAmount ?? 0);
+      await recordPaymentByReference({
+        reference,
+        transactionId: String(transactionId ?? reference),
+        amount,
+        status: "paid",
+        paidAt: new Date(),
+      }).catch((err) => console.error("[mypos.result.payment-mirror]", err));
+
+      // Generate sales document (чл.52о)
+      await createSalesDocumentByReference({
+        reference,
+        documentType: "N18_CH52O",
+      }).catch((err) => console.error("[mypos.result.sales-doc]", err));
     }
 
-    if (result.changed && result.order.customerEmail && result.order.status !== OrderStatus.PENDING) {
+    if (result && result.order.customerEmail && result.order.status === ORDER_STATUS.PAID) {
       sendOrderStatusChangeEmail({
         to: result.order.customerEmail,
         reference: result.order.reference,
@@ -52,11 +102,15 @@ export async function POST(request: Request) {
         previousStatus: result.previousStatus,
         totalAmount: Number(result.order.totalAmount),
         deliveryLabel: result.order.deliveryLabel,
+        items: result.order.items,
       }).catch((err) => console.error("[mypos.result.email]", err));
     }
 
     // Notify admin on failed/cancelled payments to spot issues quickly.
-    if (result.changed && (result.order.status === OrderStatus.FAILED || result.order.status === OrderStatus.CANCELLED)) {
+    if (
+      result?.changed &&
+      (result.order.status === ORDER_STATUS.FAILED || result.order.status === ORDER_STATUS.CANCELLED)
+    ) {
       const subject = `myPOS плащане неуспешно: ${result.order.reference}`;
       const lines = [
         `Поръчка: ${result.order.reference}`,
@@ -70,16 +124,16 @@ export async function POST(request: Request) {
         .join("\n");
 
       sendOrderEmail({
-        to: process.env.ORDER_NOTIFICATION_RECIPIENT ?? "zlati@noregrets.bg",
+        to: process.env.ORDER_NOTIFICATION_RECIPIENT ?? "zlati.noregrets@gmail.com",
         subject,
         html: lines.replace(/\n/g, "<br>"),
         text: lines,
       }).catch((err) => console.error("[mypos.result.admin-email]", err));
     }
 
-    return NextResponse.json({ ok: true });
+    return okResponse();
   } catch (error) {
     console.error("myPOS callback failed", error);
-    return NextResponse.json({ error: "Callback error." }, { status: 500 });
+    return okResponse();
   }
 }

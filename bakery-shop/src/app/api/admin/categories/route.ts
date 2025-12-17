@@ -1,10 +1,10 @@
+import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { Prisma } from "@prisma/client";
 import { getServerSession } from "next-auth";
 
-import { prisma } from "@/lib/db";
 import { authOptions } from "@/auth";
+import { pgPool } from "@/lib/pg";
 
 const categorySchema = z.object({
   name: z.string().min(2, "Въведете име."),
@@ -27,8 +27,8 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const categories = await prisma.productCategory.findMany({ orderBy: { createdAt: "desc" } });
-  return NextResponse.json({ categories });
+  const res = await pgPool.query(`SELECT * FROM "ProductCategory" ORDER BY "createdAt" DESC`);
+  return NextResponse.json({ categories: res.rows });
 }
 
 export async function POST(request: Request) {
@@ -47,18 +47,18 @@ export async function POST(request: Request) {
   const finalSlug = slug?.trim() || slugify(name);
 
   try {
-    const category = await prisma.productCategory.create({
-      data: {
-        name,
-        slug: finalSlug,
-        description,
-        heroImage,
-      },
-    });
+    const categoryId = randomUUID();
+    const insert = await pgPool.query(
+      `INSERT INTO "ProductCategory" (id, slug, name, description, "heroImage", "updatedAt")
+       VALUES ($1,$2,$3,$4,$5, NOW())
+       RETURNING *`,
+      [categoryId, finalSlug, name, description ?? null, heroImage ?? null],
+    );
 
-    return NextResponse.json({ category }, { status: 201 });
-  } catch (error) {
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+    return NextResponse.json({ category: insert.rows[0] }, { status: 201 });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } catch (error: any) {
+    if (error?.code === "23505") {
       return NextResponse.json({ error: "Категорията вече съществува." }, { status: 409 });
     }
     console.error("Failed to create category", error);

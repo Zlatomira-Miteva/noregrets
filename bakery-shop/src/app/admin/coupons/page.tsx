@@ -25,6 +25,8 @@ const defaultCouponForm = {
   discountValue: "10",
   minimumOrderAmount: "0",
   maximumDiscountAmount: "",
+  validFrom: "",
+  validUntil: "",
 };
 
 export default function AdminCouponsPage() {
@@ -81,6 +83,8 @@ export default function AdminCouponsPage() {
     const discountValue = Number(couponForm.discountValue);
     const minimumAmount = Number(couponForm.minimumOrderAmount);
     const maximumAmount = couponForm.maximumDiscountAmount ? Number(couponForm.maximumDiscountAmount) : null;
+    const validFrom = couponForm.validFrom || undefined;
+    const validUntil = couponForm.validUntil || undefined;
 
     if (Number.isNaN(discountValue) || Number.isNaN(minimumAmount) || (maximumAmount !== null && Number.isNaN(maximumAmount))) {
       setCouponError("Моля, въведете валидни числа.");
@@ -97,6 +101,8 @@ export default function AdminCouponsPage() {
         discountValue,
         minimumOrderAmount: minimumAmount,
         maximumDiscountAmount: maximumAmount,
+        validFrom,
+        validUntil,
       }),
     })
       .then(async (res) => {
@@ -203,6 +209,26 @@ export default function AdminCouponsPage() {
                 onChange={(event) => setCouponForm((prev) => ({ ...prev, maximumDiscountAmount: event.target.value }))}
                 className="mt-1 w-full rounded-2xl border border-[#dcb1b1] bg-white px-4 py-3 text-sm focus:border-[#5f000b] focus:outline-none"
                 placeholder="По избор"
+              />
+            </label>
+
+            <label className="text-sm uppercase">
+              Валиден от
+              <input
+                type="date"
+                value={couponForm.validFrom}
+                onChange={(event) => setCouponForm((prev) => ({ ...prev, validFrom: event.target.value }))}
+                className="mt-1 w-full rounded-2xl border border-[#dcb1b1] bg-white px-4 py-3 text-sm focus:border-[#5f000b] focus:outline-none"
+              />
+            </label>
+
+            <label className="text-sm uppercase">
+              Валиден до
+              <input
+                type="date"
+                value={couponForm.validUntil}
+                onChange={(event) => setCouponForm((prev) => ({ ...prev, validUntil: event.target.value }))}
+                className="mt-1 w-full rounded-2xl border border-[#dcb1b1] bg-white px-4 py-3 text-sm focus:border-[#5f000b] focus:outline-none"
               />
             </label>
 

@@ -19,19 +19,29 @@ const FEATURED_COOKIE_SLUGS = [
   { slug: "mini-cookies", fallback: "/cookie-box.jpg", href: "/products/mini-cookies" },
 ];
 
+const absImage = (path: string) => {
+  if (!path) return "";
+  if (path.startsWith("http://") || path.startsWith("https://")) return path;
+  const normalized = path.startsWith("/") ? path : `/${path}`;
+  const base = (process.env.NEXT_PUBLIC_APP_URL ?? "https://noregrets.bg").replace(/\/+$/, "");
+  return `${base}${normalized}`;
+};
+
 async function loadFeaturedCookies() {
   const cards = await Promise.all(
     FEATURED_COOKIE_SLUGS.map(async ({ slug, fallback, href }) => {
       const product = await getProductBySlug(slug);
       if (!product) return null;
       const isCustomBox = slug.startsWith("custom-box");
+      // Prefer the known-good local fallback image to avoid broken remote assets.
+      const imageSrc = absImage(fallback);
       return {
         id: product.slug,
         name: product.name,
         priceLabel: isCustomBox ? undefined : formatPrice(product.price ?? 0),
-        leadTime: product.leadTime || "Доставка до 3 дни",
+        leadTime: product.leadTime || "Доставка до 3 работни дни",
         weight: product.weight || "450 гр.",
-        imageSrc: product.heroImage || fallback,
+        imageSrc,
         href,
       };
     })
@@ -86,13 +96,12 @@ export default async function CookiesPage() {
                     href={product.href}
                     className="flex flex-1 flex-col focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5f000b] focus-visible:ring-offset-2 focus-visible:ring-offset-[#fcd9d9]"
                   >
-                    <div className="relative aspect-[1/1] bg-[#fff4f1]">
-                      <Image
+                    <div className="relative aspect-[1/1] bg-[#fff4f1] overflow-hidden">
+                      <img
                         src={product.imageSrc}
                         alt={product.name}
-                        fill
-                        sizes="(min-width: 1024px) 20rem, 50vw"
-                        className="object-cover transition duration-500 group-hover:scale-105"
+                        className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                        loading="lazy"
                       />
                     </div>
                     <div className="flex flex-1 flex-col gap-3 px-6 pb-6 pt-5 text-left">

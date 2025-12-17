@@ -17,7 +17,7 @@ const FALLBACK_DETAILS = {
   description:
     "Най-обичаните ни мини кукита, сервирани с кутийка с Nutella. Перфектни за споделяне, подарък или сладко изкушение у дома.",
   highlights: [
-    "Доставка до 3 дни",
+    "Доставка до 3 работни дни",
     "Включена кутийка с Nutella за топене",
   ],
   weight: "Нетно тегло: 240 гр.",
@@ -177,7 +177,6 @@ export default function MiniCookiesClient({ initialProduct }: MiniCookiesClientP
                       +
                     </button>
                   </div>
-                  <p>Добавете повече кутии за партита и подаръци.</p>
                 </div>
                 <button
                   type="button"

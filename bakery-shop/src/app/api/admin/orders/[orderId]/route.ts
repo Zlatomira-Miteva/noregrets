@@ -1,10 +1,9 @@
-import { OrderStatus } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getServerSession } from "next-auth";
 
 import { authOptions } from "@/auth";
-import { updateOrderWithAudit } from "@/lib/orders";
+import { type OrderStatus, updateOrderWithAudit } from "@/lib/orders";
 import { sendOrderStatusChangeEmail } from "@/lib/notify/email";
 
 const updateSchema = z.object({
@@ -13,13 +12,17 @@ const updateSchema = z.object({
   customerPhone: z.string().optional(),
   deliveryLabel: z.string().optional(),
   totalAmount: z.coerce.number().positive().optional(),
-  status: z.nativeEnum(OrderStatus).optional(),
+  status: z
+    .enum(["PENDING", "IN_PROGRESS", "COMPLETED", "PAID", "FAILED", "CANCELLED"])
+    .optional(),
 });
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function PATCH(request: NextRequest, context: any) {
-  const params = context?.params ?? {};
-  const orderId = params?.orderId as string | undefined;
+export async function PATCH(
+  request: NextRequest,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  { params }: { params: any },
+) {
+  const orderId = params?.orderId;
   const session = await getServerSession(authOptions);
   if (!session?.user) {
     return NextResponse.json({ error: "Неупълномощен достъп." }, { status: 401 });
@@ -38,7 +41,7 @@ export async function PATCH(request: NextRequest, context: any) {
       return NextResponse.json({ error: "Поръчката не е намерена." }, { status: 404 });
     }
 
-    if (updated.changed && updates.status && updates.status !== OrderStatus.PENDING && updated.order.customerEmail) {
+    if (updated.changed && updates.status && updates.status !== "PENDING" && updated.order.customerEmail) {
       sendOrderStatusChangeEmail({
         to: updated.order.customerEmail,
         reference: updated.order.reference,
@@ -46,6 +49,7 @@ export async function PATCH(request: NextRequest, context: any) {
         previousStatus: updated.previousStatus,
         totalAmount: Number(updated.order.totalAmount),
         deliveryLabel: updated.order.deliveryLabel,
+        items: updated.order.items,
       }).catch((err) => console.error("[admin.orders.patch.email]", err));
     }
 
@@ -58,11 +62,11 @@ export async function PATCH(request: NextRequest, context: any) {
         customerPhone: updated.order.customerPhone,
         deliveryLabel: updated.order.deliveryLabel,
         items: updated.order.items,
-        totalAmount: updated.order.totalAmount.toNumber(),
+        totalAmount: Number(updated.order.totalAmount),
         status: updated.order.status,
         metadata: updated.order.metadata,
-        createdAt: updated.order.createdAt.toISOString(),
-        updatedAt: updated.order.updatedAt.toISOString(),
+        createdAt: updated.order.createdAt,
+        updatedAt: updated.order.updatedAt,
       },
     });
   } catch (error) {

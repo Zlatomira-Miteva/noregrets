@@ -201,7 +201,7 @@ function CakeJarContent() {
                   </div>
                   <p className="text-[#5f000b]/80">{activeJar.description}</p>
                   <div className="flex flex-wrap gap-4 text-sm text-[#5f000b]/80">
-                    <span>{activeJar.leadTime || "Доставка до 3 дни"}</span>
+                    <span>{activeJar.leadTime || "Доставка до 3 работни дни"}</span>
                     <span>{activeJar.weight || "220 гр."}</span>
                   </div>
                   <p className="text-sm text-[#5f000b]/70">{CAKE_ALLERGEN_NOTE}</p>
