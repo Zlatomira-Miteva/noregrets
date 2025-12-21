@@ -4,7 +4,6 @@ import Image from "next/image";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
-import Marquee from "@/components/Marquee";
 import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
 import { useCart } from "@/context/CartContext";
@@ -123,7 +122,7 @@ function CakeJarContent() {
 
   return (
     <div className="flex min-h-screen flex-col">
-      <Marquee />
+      
       <SiteHeader />
       <main className="flex-1">
         <div className="mx-auto w-full px-[clamp(1rem,4vw,4rem)] py-16">
@@ -201,7 +200,7 @@ function CakeJarContent() {
                   </div>
                   <p className="text-[#5f000b]/80">{activeJar.description}</p>
                   <div className="flex flex-wrap gap-4 text-sm text-[#5f000b]/80">
-                    <span>{activeJar.leadTime || "Доставка до 3 работни дни"}</span>
+                  <span>{activeJar.leadTime || "Доставка до 4 работни дни"}</span>
                     <span>{activeJar.weight || "220 гр."}</span>
                   </div>
                   <p className="text-sm text-[#5f000b]/70">{CAKE_ALLERGEN_NOTE}</p>

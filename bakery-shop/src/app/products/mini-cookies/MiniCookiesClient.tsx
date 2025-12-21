@@ -3,7 +3,6 @@
 import Image from "next/image";
 import { useState } from "react";
 
-import Marquee from "@/components/Marquee";
 import CookieShowcase from "@/components/CookieShowcase";
 import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
@@ -17,7 +16,7 @@ const FALLBACK_DETAILS = {
   description:
     "Най-обичаните ни мини кукита, сервирани с кутийка с Nutella. Перфектни за споделяне, подарък или сладко изкушение у дома.",
   highlights: [
-    "Доставка до 3 работни дни",
+    "Доставка до 4 работни дни",
     "Включена кутийка с Nutella за топене",
   ],
   weight: "Нетно тегло: 240 гр.",
@@ -73,7 +72,7 @@ export default function MiniCookiesClient({ initialProduct }: MiniCookiesClientP
 
   return (
     <div className="flex min-h-screen flex-col ">
-      <Marquee /> <SiteHeader />
+       <SiteHeader />
       <main className="flex-1">
         <div className="mx-auto w-full px-[clamp(1rem,4vw,4rem)] py-16">
           <div className="grid gap-12 xl:grid-cols-[40%_minmax(0,1fr)]">

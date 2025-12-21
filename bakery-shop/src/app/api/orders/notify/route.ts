@@ -2,9 +2,11 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { sendOrderEmail } from "@/lib/notify/email";
+import { formatPrice } from "@/utils/price";
+import { formatPrice } from "@/utils/price";
 
 const {
-  RESEND_API_KEY,
+  RESEND_API_KEY,info@noregrets.bg
   CONTACT_FROM = "No Regrets <onboarding@resend.dev>",
   ORDER_NOTIFICATION_RECIPIENT = "zlati.noregrets@gmail.com",
 } = process.env;
@@ -106,7 +108,7 @@ export async function POST(request: Request) {
     const normalizedItems = normalizeItems(data.totalAmount);
     const itemsText = normalizedItems
       .map((item) => {
-        const base = `${item.name}: ${item.unitPrice.toFixed(2)} лв x ${item.qty} = ${item.lineTotal.toFixed(2)} лв`;
+        const base = `${item.name}: ${formatPrice(item.unitPrice)} x ${item.qty} = ${formatPrice(item.lineTotal)}`;
         const opts =
           item.options && item.options.length
             ? item.options.map((opt) => `  - ${opt}`).join("\n")
@@ -119,7 +121,7 @@ export async function POST(request: Request) {
       `Поръчка: ${data.reference ?? "(без номер)"}`,
       data.createdAt ? `Дата: ${new Date(data.createdAt).toLocaleString("bg-BG")}` : null,
       data.deliveryLabel ? `Доставка: ${data.deliveryLabel}` : null,
-      data.totalAmount ? `Общо: ${data.totalAmount.toFixed(2)} лв.` : null,
+      data.totalAmount ? `Общо: ${formatPrice(data.totalAmount)}` : null,
       data.totalQuantity ? `Брой артикули: ${data.totalQuantity}` : null,
       "",
       "Клиент:",
@@ -166,7 +168,7 @@ export async function POST(request: Request) {
       const customerLines = [
         `Здравейте${customerName ? `, ${customerName}` : ""}!`,
         `Получихме вашата поръчка ${data.reference ?? ""}.`,
-        data.totalAmount ? `Обща сума: ${data.totalAmount.toFixed(2)} лв.` : null,
+        data.totalAmount ? `Обща сума: ${formatPrice(data.totalAmount)}` : null,
         data.deliveryLabel ? `Доставка: ${data.deliveryLabel}` : null,
         "",
         "Продукти:",

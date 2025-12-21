@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from "react";
 
-import Marquee from "@/components/Marquee";
 import CookieShowcase from "@/components/CookieShowcase";
 import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
@@ -27,7 +26,7 @@ const FALLBACK_DETAILS = {
   description:
     "Нашата най-популярна селекция от шест емблематични кукита – внимателно опаковани и готови за подарък или споделяне.",
   highlights: [
-    "Доставка до 3 работни дни",
+    "Доставка до 4 работни дни",
     "Включени 6 различни вкуса",
     "Подходяща за подарък",
   ],
@@ -101,7 +100,7 @@ export default function BestSellersClient({ initialProduct }: BestSellersClientP
 
   return (
     <div className="flex min-h-screen flex-col ">
-      <Marquee />
+      
       <SiteHeader />
 
       <main className="flex-1">
@@ -252,7 +251,7 @@ export default function BestSellersClient({ initialProduct }: BestSellersClientP
                 <div className="space-y-3">
                   <strong className="text-base font-semibold ">Информация за доставка</strong>
                   <p>
-                    Моля, предвидете 3 работни дни за доставка. Изпращаме от понеделник до четвъртък. Ако поръчката ви е направена след 16:30
+                  Моля, предвидете 4 работни дни за доставка. Изпращаме от понеделник до четвъртък. Ако поръчката ви е направена след 16:30
                     ч. в четвъртък, тя ще бъде изпратена следващия понеделник.
                   </p>
                 </div>

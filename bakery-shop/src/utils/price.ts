@@ -12,8 +12,8 @@ export const formatPrice = (value: number | string | null | undefined): string =
   const numericValue =
     typeof value === "number" ? value : value !== null && value !== undefined ? parsePrice(String(value)) : 0;
   if (!Number.isFinite(numericValue)) {
-    return "0.00 лв / 0.00 €";
+    return "0.00 € / 0.00 лв";
   }
   const eurValue = numericValue / EUR_CONVERSION_RATE;
-  return `${numericValue.toFixed(2)} лв / ${eurValue.toFixed(2)} €`;
+  return `${eurValue.toFixed(2)} € / ${numericValue.toFixed(2)} лв`;
 };

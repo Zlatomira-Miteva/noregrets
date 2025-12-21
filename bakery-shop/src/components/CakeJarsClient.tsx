@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useMemo } from "react";
 
-import Marquee from "@/components/Marquee";
 import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
 import { useCart } from "@/context/CartContext";
@@ -49,7 +48,6 @@ export default function CakeJarsClient({ initialJars }: CakeJarsClientProps) {
 
   return (
     <div className="flex min-h-screen flex-col bg-[#fff6f1]">
-      <Marquee />
       <SiteHeader />
 
       <main className="flex-1">
@@ -124,7 +122,7 @@ export default function CakeJarsClient({ initialJars }: CakeJarsClientProps) {
                             <p className="text-xs font-semibold uppercase tracking-wide text-[#5f000b]/60">
                               Срок за доставка
                             </p>
-                            <p>{jar.leadTime || "Доставка до 3 работни дни"}</p>
+                            <p>{jar.leadTime || "Доставка до 4 работни дни"}</p>
                           </div>
 
                           <p className="text-xs text-[#5f000b]/60">{allergenNote}</p>

@@ -2,6 +2,7 @@
 
 import { ORDER_STATUS, updateOrderStatusWithAudit } from "@/lib/orders";
 import { sendOrderStatusChangeEmail, sendOrderEmail } from "@/lib/notify/email";
+import { formatPrice } from "@/utils/price";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -113,13 +114,13 @@ const updateStatusAndEmail = async (reference: string) => {
       `Поръчка: ${result.order.reference}`,
       `Статус: ${result.order.status}`,
       `Клиент: ${result.order.customerName} (${result.order.customerEmail})`,
-      `Сума: ${result.order.totalAmount.toFixed(2)} лв.`,
+      `Сума: ${formatPrice(result.order.totalAmount)}`,
       result.order.deliveryLabel ? `Доставка: ${result.order.deliveryLabel}` : null,
     ]
       .filter(Boolean)
       .join("\n");
 
-    sendOrderEmail({
+    sendOrderEmail({info@noregrets.bg
       to: process.env.ORDER_NOTIFICATION_RECIPIENT ?? "zlati.noregrets@gmail.com",
       subject,
       html: lines.replace(/\n/g, "<br>"),

@@ -3,7 +3,6 @@
 import Image from "next/image";
 import { useMemo, useState } from "react";
 
-import Marquee from "@/components/Marquee";
 import CookieShowcase from "@/components/CookieShowcase";
 import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
@@ -49,7 +48,7 @@ const BOX_CONFIG: Record<string, BoxConfig> = {
     price: formatPrice(21),
     description: "Създайте персонална селекция от три любими вкуса – перфектни за подарък или дегустация.",
     highlights: [
-      "Доставка до 3 работни дни",
+      "Доставка до 4 работни дни",
       "Всяко кукито е опаковано индивидуално за максимална свежест",
     ],
     weight: "Нетно тегло: 450 гр.",
@@ -60,7 +59,7 @@ const BOX_CONFIG: Record<string, BoxConfig> = {
     name: "Направи сам кутия с 6 кукита",
     price: formatPrice(50),
     description: "Създайте своята мечтана селекция с шест любими вкуса, изпечени по ваша поръчка и доставени до дома ви.",
-    highlights: ["Доставка до 3 работни дни", "Всяко кукито е опаковано индивидуално за максимална свежест"],
+    highlights: ["Доставка до 4 работни дни", "Всяко кукито е опаковано индивидуално за максимална свежест"],
     weight: "Нетно тегло: 900 гр.",
     allergenNote: "Всички кукита съдържат глутен, яйца и млечни продукти. Възможни са следи от ядки и фъстъци.",
   },
@@ -70,7 +69,7 @@ const BOX_CONFIG: Record<string, BoxConfig> = {
     price: formatPrice(20),
     description: "Селекция от четири ръчно приготвени мочита – идеални за подарък или следобеден десерт.",
     highlights: [
-      "Доставка до 3 работни дни",
+      "Доставка до 4 работни дни",
       "Свежо приготвени и шоково замразени за транспорт",
       "Включена картичка с инструкции за сервиране",
     ],
@@ -83,7 +82,7 @@ const BOX_CONFIG: Record<string, BoxConfig> = {
     price: formatPrice(20),
     description: "Селекция от четири ръчно приготвени мочита – идеални за подарък или следобеден десерт.",
     highlights: [
-      "Доставка до 3 работни дни",
+      "Доставка до 4 работни дни",
       "Свежо приготвени и шоково замразени за транспорт",
       "Включена картичка с инструкции за сервиране",
     ],
@@ -95,7 +94,7 @@ const BOX_CONFIG: Record<string, BoxConfig> = {
     name: "Направи сам кутия от 9 мочи",
     price: formatPrice(45),
     description: "Максимум удоволствие – девет любими вкуса, комбинирани в голяма кутия за споделяне.",
-    highlights: ["Доставка до 3 работни дни", "Възможност за комбиниране на до девет вкуса", "Сладко изживяване за парти или офис"],
+    highlights: ["Доставка до 4 работни дни", "Възможност за комбиниране на до девет вкуса", "Сладко изживяване за парти или офис"],
     weight: "Нетно тегло: 540 гр.",
     allergenNote: "Съдържа глутен, млечни продукти и следи от ядки.",
   },
@@ -107,24 +106,6 @@ type CookieOption = {
   image: string;
   price: number;
 };
-
-const COOKIE_PRICES: Record<string, number> = {
-  "nutella-bueno": 6.6,
-  biscoff: 6.5,
-  "red-velvet": 6.5,
-  oreo: 6.5,
-  "new-york": 6.0,
-  "tripple-choc": 6.0,
-};
-
-const COOKIE_OPTIONS: CookieOption[] = [
-  { id: "nutella-bueno", name: "Nutella Bueno", image: "/nutella-bueno-top.png", price: COOKIE_PRICES["nutella-bueno"] },
-  { id: "red-velvet", name: "Red Velvet Cheesecake", image: "/red-velvet-cookie-top.png", price: COOKIE_PRICES["red-velvet"] },
-  { id: "biscoff", name: "Biskoff", image: "/biscoff-top.png", price: COOKIE_PRICES.biscoff },
-  { id: "tripple-choc", name: "Tripple Choc", image: "/tripple-choc-top.png", price: COOKIE_PRICES["tripple-choc"] },
-  { id: "new-york", name: "New York", image: "/new-york-top.png", price: COOKIE_PRICES["new-york"] },
-  { id: "oreo", name: "Oreo & White Choc", image: "/oreo-cookie-top.png", price: COOKIE_PRICES.oreo },
-];
 
 const MOCHI_OPTIONS: CookieOption[] = [
   { id: "white-choc-mochi", name: "Бяло шоколадово мочи", image: "/white-choc-mochi.png", price: 0 },
@@ -146,14 +127,12 @@ export default function CustomBoxClient({ requestedSize, initialProduct, cookieO
   const config = BOX_CONFIG[normalizedSize];
   const isMochiBox = normalizedSize.startsWith("mochi");
   const resolvedCookieOptions =
-    cookieOptions && cookieOptions.length
-      ? cookieOptions.map((option) => ({
-          id: option.slug,
-          name: option.name,
-          image: option.image,
-          price: option.price ?? COOKIE_PRICES[option.slug] ?? 0,
-        }))
-      : COOKIE_OPTIONS;
+    cookieOptions?.map((option) => ({
+      id: option.slug,
+      name: option.name,
+      image: option.image,
+      price: option.price ?? 0,
+    })) ?? [];
   const options = isMochiBox ? MOCHI_OPTIONS : resolvedCookieOptions;
   const fallbackGallery = useMemo(() => getGalleryImages(normalizedSize), [normalizedSize]);
   const galleryImages = useMemo(() => {
@@ -248,7 +227,7 @@ export default function CustomBoxClient({ requestedSize, initialProduct, cookieO
   if (!hasConfig) {
     return (
       <div className="flex min-h-screen flex-col">
-        <Marquee />
+        
         <SiteHeader />
         <main className="flex flex-1 items-center justify-center px-6 py-20 text-center">
           <div className="space-y-4">
@@ -263,7 +242,7 @@ export default function CustomBoxClient({ requestedSize, initialProduct, cookieO
 
   return (
     <div className="flex min-h-screen flex-col ">
-      <Marquee />
+      
       <SiteHeader />
 
       <main className="flex-1">
@@ -439,7 +418,7 @@ export default function CustomBoxClient({ requestedSize, initialProduct, cookieO
                 <div className="space-y-3">
                   <strong className="text-base font-semibold ">Информация за доставка</strong>
                   <p>
-                    Моля, предвидете 3 работни дни за доставка. Изпращаме от понеделник до четвъртък. Ако поръчката ви е направена
+                    Моля, предвидете 4 работни дни за доставка. Изпращаме от понеделник до четвъртък. Ако поръчката ви е направена
                     след 16:30 ч. в четвъртък, тя ще бъде изпратена следващия понеделник.
                   </p>
                 </div>

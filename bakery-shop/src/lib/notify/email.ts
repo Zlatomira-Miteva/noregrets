@@ -1,4 +1,5 @@
 import { ORDER_STATUS, type OrderStatus } from "@/lib/orders";
+import { formatPrice } from "@/utils/price";
 
 type OrderEmailPayload = {
   to: string;
@@ -29,7 +30,7 @@ const STATUS_LABELS: Record<OrderStatus, string> = {
 const {
   RESEND_API_KEY,
   CONTACT_FROM = "No Regrets <onboarding@resend.dev>",
-  ORDER_NOTIFICATION_RECIPIENT = "zlati.noregrets@gmail.com",
+  ORDER_NOTIFICATION_RECIPIENT = "info@noregrets.bg",
 } = process.env;
 
 const sendEmailViaResend = async ({ to, subject, html, text }: OrderEmailPayload): Promise<void> => {
@@ -131,16 +132,14 @@ export async function sendOrderStatusChangeEmail({
   const normalizedItems = normalizeItems(items, totalAmount);
   const itemsLines =
     normalizedItems.length > 0
-      ? normalizedItems.map(
-          (it) => `${it.name}: ${it.unitPrice.toFixed(2)} лв x ${it.qty} = ${it.lineTotal.toFixed(2)} лв`,
-        )
+      ? normalizedItems.map((it) => `${it.name}: ${formatPrice(it.unitPrice)} x ${it.qty} = ${formatPrice(it.lineTotal)}`)
       : [];
 
   const lines = [
     `Здравейте,`,
     `Статусът на вашата поръчка ${reference} е променен: ${statusLabel}.`,
     previousLabel ? `Предишен статус: ${previousLabel}.` : null,
-    typeof totalAmount === "number" ? `Обща сума: ${totalAmount.toFixed(2)} лв.` : null,
+    typeof totalAmount === "number" ? `Обща сума: ${formatPrice(totalAmount)}` : null,
     deliveryLabel ? `Доставка: ${deliveryLabel}` : null,
     normalizedItems.length ? "" : null,
     ...itemsLines,

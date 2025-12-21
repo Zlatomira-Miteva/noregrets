@@ -1,6 +1,5 @@
 "use client";
 import { useState } from "react";
-import Marquee from "@/components/Marquee";
 import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
 type ShippingSection = {
@@ -11,7 +10,7 @@ const SHIPPING_SECTIONS: ShippingSection[] = [
   {
     title: "Кога ще получа поръчката си?",
     body: [
-      "Време за доставка в България: 3 работни дни.",
+      "Време за доставка в България: 4 работни дни.",
       "*Изпращаме поръчки от понеделник до четвъртък. Не изпращаме в петък, за да пристигнат продуктите максимално свежи. Поръчки, направени след 15:00 ч. в четвъртък, се изпращат в следващия понеделник.",
     ],
   },
@@ -35,7 +34,6 @@ export default function ShippingPolicyPage() {
   );
   return (
     <div className="flex min-h-screen flex-col">
-      <Marquee />
       <SiteHeader />
 
       <main className="flex-1">

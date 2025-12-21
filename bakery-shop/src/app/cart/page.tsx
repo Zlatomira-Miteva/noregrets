@@ -5,7 +5,6 @@ import { DayPicker } from "react-day-picker";
 import "react-day-picker/dist/style.css";
 import { useCart } from "@/context/CartContext";
 import { formatPrice } from "@/utils/price";
-import Marquee from "@/components/Marquee";
 import SearchableSelect from "@/components/SearchableSelect";
 import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
@@ -27,12 +26,17 @@ const CartPage = () => {
     useCart();
 
   const [reachMessage, setReachMessage] = useState<string | null>(null);
-  const [shippingType, setShippingType] = useState<
+  const [shippingMethod, setShippingMethod] = useState<
     "office" | "address" | "pickup"
   >("office");
+  const [officeCarrier, setOfficeCarrier] = useState<"econt" | "speedy">(
+    "econt"
+  );
 
   const [selectedCityId, setSelectedCityId] = useState<string>("");
   const [selectedOffice, setSelectedOffice] = useState<string>("");
+  const [selectedSpeedyCityId, setSelectedSpeedyCityId] = useState<string>("");
+  const [selectedSpeedyOffice, setSelectedSpeedyOffice] = useState<string>("");
 
   const [addressInfo, setAddressInfo] = useState({
     city: "",
@@ -61,12 +65,29 @@ const CartPage = () => {
   const [offices, setOffices] = useState<
     Array<{ id: string; name: string; address?: string }>
   >([]);
+  const [speedyCities, setSpeedyCities] = useState<
+    Array<{ id: string; referenceId: string; name: string; postCode?: string }>
+  >([]);
+  const [speedyOffices, setSpeedyOffices] = useState<
+    Array<{ id: string; name: string; address?: string }>
+  >([]);
 
   const [citiesLoading, setCitiesLoading] = useState(false);
   const [officesLoading, setOfficesLoading] = useState(false);
   const [citiesError, setCitiesError] = useState<string | null>(null);
   const [officesError, setOfficesError] = useState<string | null>(null);
   const [noOfficesMessage, setNoOfficesMessage] = useState<string | null>(null);
+  const [speedyCitiesLoading, setSpeedyCitiesLoading] = useState(false);
+  const [speedyOfficesLoading, setSpeedyOfficesLoading] = useState(false);
+  const [speedyCitiesError, setSpeedyCitiesError] = useState<string | null>(
+    null
+  );
+  const [speedyOfficesError, setSpeedyOfficesError] = useState<string | null>(
+    null
+  );
+  const [speedyNoOfficesMessage, setSpeedyNoOfficesMessage] = useState<
+    string | null
+  >(null);
 
   const [couponCode, setCouponCode] = useState("");
   const [couponDetails, setCouponDetails] = useState<AppliedCoupon | null>(
@@ -97,6 +118,27 @@ const CartPage = () => {
       description: city.id ? `Пощенски код: ${city.id}` : undefined,
     }));
   }, [cities]);
+
+  const speedyCityOptions = useMemo(() => {
+    const unique: typeof speedyCities = [];
+    const seen = new Set<string>();
+    for (const city of speedyCities) {
+      if (!city.referenceId) continue;
+      if (seen.has(city.referenceId)) continue;
+      seen.add(city.referenceId);
+      unique.push(city);
+    }
+    return unique.map((city) => ({
+      value: city.referenceId,
+      label: city.name,
+      description: city.postCode ? `Пощенски код: ${city.postCode}` : undefined,
+    }));
+  }, [speedyCities]);
+
+  const hasCakes = useMemo(
+    () => items.some((item) => item.productId.startsWith("cake-")),
+    [items]
+  );
 
   const couponEligible = useMemo(() => {
     if (!couponDetails) return false;
@@ -322,20 +364,31 @@ const CartPage = () => {
       return null;
     }
 
-    if (shippingType === "office" && (!selectedCityId || !selectedOffice)) {
+    if (shippingMethod === "office" && officeCarrier === "econt" && (!selectedCityId || !selectedOffice)) {
       setOrderError("Моля, изберете град и офис на Еконт.");
       return null;
     }
 
+    if (shippingMethod === "office" && officeCarrier === "speedy") {
+      if (hasCakes) {
+        setOrderError("Доставка със Speedy не е налична за поръчки с торти.");
+        return null;
+      }
+      if (!selectedSpeedyCityId || !selectedSpeedyOffice) {
+        setOrderError("Моля, изберете град и офис на Speedy.");
+        return null;
+      }
+    }
+
     if (
-      shippingType === "address" &&
+      shippingMethod === "address" &&
       (!addressInfo.city || !addressInfo.street || !addressInfo.number)
     ) {
       setOrderError("Моля, попълнете адрес за доставка.");
       return null;
     }
 
-    if (shippingType === "pickup") {
+    if (shippingMethod === "pickup") {
       if (!pickupDate) {
         setOrderError("Моля, изберете дата за взимане от магазина.");
         return null;
@@ -356,17 +409,23 @@ const CartPage = () => {
       (entry) => entry.referenceId === selectedCityId
     );
     const office = offices.find((entry) => entry.id === selectedOffice);
+    const speedyCity = speedyCities.find(
+      (entry) => entry.referenceId === selectedSpeedyCityId
+    );
+    const speedyOffice = speedyOffices.find(
+      (entry) => entry.id === selectedSpeedyOffice
+    );
 
     const deliveryLabel =
-      shippingType === "office"
-        ? `Офис Econt – ${econtCity?.name ?? ""}${
-            office ? `, ${office.name}` : ""
-          }`
-        : shippingType === "pickup"
+      shippingMethod === "office" && officeCarrier === "econt"
+        ? `Офис Econt – ${econtCity?.name ?? ""}${office ? `, ${office.name}` : ""}`
+        : shippingMethod === "office" && officeCarrier === "speedy"
+        ? `Офис Speedy – ${speedyCity?.name ?? ""}${speedyOffice ? `, ${speedyOffice.name}` : ""}`
+        : shippingMethod === "pickup"
         ? `Вземане от магазин – ${pickupDate} ${PICKUP_TIME_WINDOW}`
-        : `Адрес: ${addressInfo.city}, ${addressInfo.street} ${
-            addressInfo.number
-          }${addressInfo.details ? `, ${addressInfo.details}` : ""}`;
+        : `Адрес: ${addressInfo.city}, ${addressInfo.street} ${addressInfo.number}${
+            addressInfo.details ? `, ${addressInfo.details}` : ""
+          }`;
 
     const orderReference = `NR-${Date.now()}`;
     const roundedTotal = Number(finalTotal.toFixed(2));
@@ -378,6 +437,7 @@ const CartPage = () => {
       customer: customerInfo,
       deliveryLabel,
       items: normalizedItems.map((item) => ({
+        productId: item.productId,
         name: item.name,
         price: item.price,
         quantity: item.quantity,
@@ -395,6 +455,7 @@ const CartPage = () => {
       },
       cart: {
         items: normalizedItems.map((item) => ({
+          productId: item.productId,
           name: item.name,
           qty: item.quantity,
           price: item.price,
@@ -475,6 +536,12 @@ const CartPage = () => {
   }, [totalPrice]);
 
   useEffect(() => {
+    if (hasCakes && officeCarrier === "speedy") {
+      setOfficeCarrier("econt");
+    }
+  }, [hasCakes, officeCarrier]);
+
+  useEffect(() => {
     setCitiesLoading(true);
     fetch("/api/econt/cities")
       .then((response) => response.json())
@@ -487,7 +554,7 @@ const CartPage = () => {
   }, []);
 
   useEffect(() => {
-    if (shippingType !== "office") {
+    if (shippingMethod !== "office" || officeCarrier !== "econt") {
       setSelectedCityId("");
       setSelectedOffice("");
       setOffices([]);
@@ -523,11 +590,74 @@ const CartPage = () => {
         setNoOfficesMessage(null);
       })
       .finally(() => setOfficesLoading(false));
-  }, [shippingType, selectedCityId]);
+  }, [shippingMethod, officeCarrier, selectedCityId]);
+
+  useEffect(() => {
+    if (shippingMethod !== "office" || officeCarrier !== "speedy") {
+      setSelectedSpeedyCityId("");
+      setSelectedSpeedyOffice("");
+      setSpeedyOffices([]);
+      setSpeedyNoOfficesMessage(null);
+      setSpeedyCitiesError(null);
+      setSpeedyOfficesError(null);
+      return;
+    }
+
+    if (!selectedSpeedyCityId) {
+      setSpeedyOffices([]);
+      setSelectedSpeedyOffice("");
+      setSpeedyNoOfficesMessage(null);
+      return;
+    }
+
+    setSpeedyOfficesLoading(true);
+    const query = new URLSearchParams({ cityId: selectedSpeedyCityId }).toString();
+
+    fetch(`/api/speedy/offices?${query}`)
+      .then((response) => response.json())
+      .then((data) => {
+        const nextOffices = Array.isArray(data.offices) ? data.offices : [];
+        setSpeedyOffices(nextOffices);
+        setSpeedyOfficesError(data.fallback ? data.message ?? null : null);
+        setSelectedSpeedyOffice("");
+        setSpeedyNoOfficesMessage(
+          nextOffices.length === 0
+            ? "Няма офис на Speedy в този град. Моля, изберете друг метод."
+            : null
+        );
+      })
+      .catch(() => {
+        setSpeedyOfficesError("Неуспешно зареждане на офисите на Speedy.");
+        setSpeedyNoOfficesMessage(null);
+      })
+      .finally(() => setSpeedyOfficesLoading(false));
+  }, [selectedSpeedyCityId, shippingMethod, officeCarrier]);
+
+  useEffect(() => {
+    if (shippingMethod !== "office" || officeCarrier !== "speedy") return;
+    if (speedyCitiesLoading || speedyCities.length > 0 || speedyCitiesError) return;
+
+    setSpeedyCitiesLoading(true);
+    fetch("/api/speedy/cities")
+      .then((response) => response.json())
+      .then((data) => {
+        setSpeedyCities(Array.isArray(data.cities) ? data.cities : []);
+        setSpeedyCitiesError(data.fallback ? data.message ?? null : null);
+      })
+      .catch(() =>
+        setSpeedyCitiesError("Неуспешно зареждане на градовете на Speedy.")
+      )
+      .finally(() => setSpeedyCitiesLoading(false));
+  }, [
+    shippingMethod,
+    officeCarrier,
+    speedyCities.length,
+    speedyCitiesLoading,
+    speedyCitiesError,
+  ]);
 
   return (
     <div className="flex min-h-screen flex-col">
-      <Marquee />
       <SiteHeader />
       <main className="flex-1 py-16">
         <div className="mx-auto w-full max-w-5xl px-[clamp(1rem,4vw,4rem)]">
@@ -759,7 +889,7 @@ const CartPage = () => {
                   </div>
                 </div>
 
-                <div className="space-y-3">
+                <div className="space-y-3 border-t border-[#f4b9c2] pt-8">
                   <h3 className="text-lg">Метод на плащане</h3>
                   <p>Плащанията се извършват единствено с карта.</p>
                   <p>
@@ -781,12 +911,12 @@ const CartPage = () => {
                   </div>
                 </div>
 
-                <div className="space-y-4">
+                <div className="space-y-4 border-t border-[#f4b9c2] pt-8">
                   <h3 className="text-lg">Доставка</h3>
                   <div className="flex flex-col gap-3 sm:flex-row sm:gap-6">
                     <label
                       className={`flex cursor-pointer items-center gap-3 rounded-2xl border px-4 py-3 transition ${
-                        shippingType === "office"
+                        shippingMethod === "office"
                           ? "border-[#5f000b] ring-2 ring-[#5f000b]"
                           : "border-[#f4b9c2]"
                       }`}
@@ -795,15 +925,15 @@ const CartPage = () => {
                         type="radio"
                         name="shipping"
                         value="office"
-                        checked={shippingType === "office"}
-                        onChange={() => setShippingType("office")}
+                        checked={shippingMethod === "office"}
+                        onChange={() => setShippingMethod("office")}
                         className="h-4 w-4 border-[#f4b9c2] focus:ring-[#5f000b]"
                       />
-                      <span className="text-sm">Доставка до офис на Econt</span>
+                      <span className="text-sm">Доставка до офис</span>
                     </label>
                     <label
                       className={`flex cursor-pointer items-center gap-3 rounded-2xl border px-4 py-3 transition ${
-                        shippingType === "address"
+                        shippingMethod === "address"
                           ? "border-[#5f000b] ring-2 ring-[#5f000b]"
                           : "border-[#f4b9c2]"
                       }`}
@@ -812,15 +942,15 @@ const CartPage = () => {
                         type="radio"
                         name="shipping"
                         value="address"
-                        checked={shippingType === "address"}
-                        onChange={() => setShippingType("address")}
+                        checked={shippingMethod === "address"}
+                        onChange={() => setShippingMethod("address")}
                         className="h-4 w-4 border-[#f4b9c2] focus:ring-[#5f000b]"
                       />
                       <span className="text-sm">Доставка до адрес</span>
                     </label>
                     <label
                       className={`flex cursor-pointer items-center gap-3 rounded-2xl border px-4 py-3 transition ${
-                        shippingType === "pickup"
+                        shippingMethod === "pickup"
                           ? "border-[#5f000b] ring-2 ring-[#5f000b]"
                           : "border-[#f4b9c2]"
                       }`}
@@ -829,60 +959,157 @@ const CartPage = () => {
                         type="radio"
                         name="shipping"
                         value="pickup"
-                        checked={shippingType === "pickup"}
-                        onChange={() => setShippingType("pickup")}
+                        checked={shippingMethod === "pickup"}
+                        onChange={() => setShippingMethod("pickup")}
                         className="h-4 w-4 border-[#f4b9c2] focus:ring-[#5f000b]"
                       />
                       <span className="text-sm">Взимане от ателието</span>
                     </label>
                   </div>
-
-                  {shippingType === "office" ? (
-                    <div className="mt-8 space-y-4">
-                      <SearchableSelect
-                        id="econt-city"
-                        label="Град"
-                        value={selectedCityId}
-                        onChange={setSelectedCityId}
-                        options={cityOptions}
-                        disabled={citiesLoading}
-                        placeholder="Изберете град…"
-                        noResultsText="Няма град с това име"
-                      />
-                      {citiesLoading ? (
-                        <p className="/70"> Зареждаме списък с градове… </p>
-                      ) : citiesError ? (
-                        <p>{citiesError}</p>
-                      ) : null}
-                      {selectedCityId && !noOfficesMessage ? (
-                        <label className="block text-l uppercase">
-                          Изберете офис на Econt
-                          <select
-                            className="mt-1 w-full rounded-2xl border border-[#f4b9c2] bg-white px-4 py-3 text-sm focus:border-[#5f000b] focus:outline-none"
-                            value={selectedOffice}
-                            onChange={(event) =>
-                              setSelectedOffice(event.target.value)
-                            }
-                            disabled={officesLoading}
+                  {shippingMethod === "office" ? (
+                    <>
+                      <div className="mt-4 flex flex-col gap-3">
+                        <span className="text-sm font-semibold text-[#5f000b]">Куриер:</span>
+                        <div className="flex flex-wrap gap-4">
+                          <label
+                            className={`flex cursor-pointer items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition ${
+                              officeCarrier === "econt"
+                                ? "border-[#5f000b] ring-2 ring-[#5f000b]"
+                                : "border-[#f4b9c2]"
+                            }`}
                           >
-                            <option value="">Изберете офис…</option>
-                            {offices.map((office) => (
-                              <option key={office.id} value={office.id}>
-                                {office.name}
-                                {office.address ? ` — ${office.address}` : ""}
-                              </option>
-                            ))}
-                          </select>
-                        </label>
-                      ) : null}
-                      {noOfficesMessage ? <p>{noOfficesMessage}</p> : null}
-                      {officesLoading ? (
-                        <p className="/70"> Зареждаме офисите… </p>
-                      ) : officesError ? (
-                        <p>{officesError}</p>
-                      ) : null}
-                    </div>
-                  ) : shippingType === "address" ? (
+                            <input
+                              type="radio"
+                              name="office-carrier"
+                              value="econt"
+                              checked={officeCarrier === "econt"}
+                              onChange={() => setOfficeCarrier("econt")}
+                              className="h-4 w-4 border-[#f4b9c2] focus:ring-[#5f000b]"
+                            />
+                            <span>Econt</span>
+                          </label>
+                          <label
+                            className={`flex cursor-pointer items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition ${
+                              officeCarrier === "speedy"
+                                ? "border-[#5f000b] ring-2 ring-[#5f000b]"
+                                : "border-[#f4b9c2]"
+                            } ${hasCakes ? "cursor-not-allowed opacity-60" : ""}`}
+                          >
+                            <input
+                              type="radio"
+                              name="office-carrier"
+                              value="speedy"
+                              checked={officeCarrier === "speedy"}
+                              onChange={() => setOfficeCarrier("speedy")}
+                              disabled={hasCakes}
+                              className="h-4 w-4 border-[#f4b9c2] focus:ring-[#5f000b]"
+                            />
+                            <span>Speedy</span>
+                          </label>
+                        </div>
+                        {hasCakes ? (
+                          <p className="text-xs text-[#5f000b]/80">
+                            Speedy е достъпен само за поръчки без торти.
+                          </p>
+                        ) : null}
+                      </div>
+                      <div className="mt-8 space-y-4">
+                        {officeCarrier === "econt" ? (
+                          <>
+                            <SearchableSelect
+                              id="econt-city"
+                              label="Град"
+                              value={selectedCityId}
+                              onChange={setSelectedCityId}
+                              options={cityOptions}
+                              disabled={citiesLoading}
+                              placeholder="Изберете град…"
+                              noResultsText="Няма град с това име"
+                            />
+                            {citiesLoading ? (
+                              <p className="/70"> Зареждаме списък с градове… </p>
+                            ) : citiesError ? (
+                              <p>{citiesError}</p>
+                            ) : null}
+                            {selectedCityId && !noOfficesMessage ? (
+                              <label className="block text-l uppercase">
+                                Изберете офис на Econt
+                                <select
+                                  className="mt-1 w-full rounded-2xl border border-[#f4b9c2] bg-white px-4 py-3 text-sm focus:border-[#5f000b] focus:outline-none"
+                                  value={selectedOffice}
+                                  onChange={(event) =>
+                                    setSelectedOffice(event.target.value)
+                                  }
+                                  disabled={officesLoading}
+                                >
+                                  <option value="">Изберете офис…</option>
+                                  {offices.map((office) => (
+                                    <option key={office.id} value={office.id}>
+                                      {office.name}
+                                      {office.address ? ` — ${office.address}` : ""}
+                                    </option>
+                                  ))}
+                                </select>
+                              </label>
+                            ) : null}
+                            {noOfficesMessage ? <p>{noOfficesMessage}</p> : null}
+                            {officesLoading ? (
+                              <p className="/70"> Зареждаме офисите… </p>
+                            ) : officesError ? (
+                              <p>{officesError}</p>
+                            ) : null}
+                          </>
+                        ) : (
+                          <>
+                            <SearchableSelect
+                              id="speedy-city"
+                              label="Град"
+                              value={selectedSpeedyCityId}
+                              onChange={setSelectedSpeedyCityId}
+                              options={speedyCityOptions}
+                              disabled={speedyCitiesLoading}
+                              placeholder="Изберете град…"
+                              noResultsText="Няма град с това име"
+                            />
+                            {speedyCitiesLoading ? (
+                              <p className="/70"> Зареждаме списък с градове… </p>
+                            ) : speedyCitiesError ? (
+                              <p>{speedyCitiesError}</p>
+                            ) : null}
+                            {selectedSpeedyCityId && !speedyNoOfficesMessage ? (
+                              <label className="block text-l uppercase">
+                                Изберете офис на Speedy
+                                <select
+                                  className="mt-1 w-full rounded-2xl border border-[#f4b9c2] bg-white px-4 py-3 text-sm focus:border-[#5f000b] focus:outline-none"
+                                  value={selectedSpeedyOffice}
+                                  onChange={(event) =>
+                                    setSelectedSpeedyOffice(event.target.value)
+                                  }
+                                  disabled={speedyOfficesLoading}
+                                >
+                                  <option value="">Изберете офис…</option>
+                                  {speedyOffices.map((office) => (
+                                    <option key={office.id} value={office.id}>
+                                      {office.name}
+                                      {office.address ? ` — ${office.address}` : ""}
+                                    </option>
+                                  ))}
+                                </select>
+                              </label>
+                            ) : null}
+                            {speedyNoOfficesMessage ? (
+                              <p>{speedyNoOfficesMessage}</p>
+                            ) : null}
+                            {speedyOfficesLoading ? (
+                              <p className="/70"> Зареждаме офисите… </p>
+                            ) : speedyOfficesError ? (
+                              <p>{speedyOfficesError}</p>
+                            ) : null}
+                          </>
+                        )}
+                      </div>
+                    </>
+                  ) : shippingMethod === "address" ? (
                     <div className="grid gap-3 sm:grid-cols-2">
                       <label className="space-y-1 text-xs uppercase">
                         Град
@@ -947,7 +1174,7 @@ const CartPage = () => {
                     </div>
                   ) : null}
 
-                  {shippingType === "pickup" ? (
+                  {shippingMethod === "pickup" ? (
                     <div className="space-y-3">
                       <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
                         <div className="space-y-2 flex-1">

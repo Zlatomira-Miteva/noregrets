@@ -3,7 +3,6 @@
 import Image from "next/image";
 import Link from "next/link";
 
-import Marquee from "@/components/Marquee";
 import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
 const ABOUT_US_IMAGE = "/about-us.png";
@@ -136,7 +135,7 @@ const SOCIAL_NOTES = [
 export default function AboutPage() {
   return (
     <div className="flex min-h-screen flex-col bg-[#fff7f4] text-[#3a1114]">
-      <Marquee />
+      
       <SiteHeader />
 
       <main className="flex-1">
@@ -326,7 +325,7 @@ export default function AboutPage() {
               </p>
               <div className="mt-6 flex flex-wrap items-center justify-center gap-4">
                 <Link
-                  href="mailto:zlati.noregrets@gmail.com"
+                  href="mailto:info@noregrets.bg"
                   className="cta inline-flex items-center justify-center rounded-full bg-[#5f000b] px-6 py-3 text-sm font-semibold uppercase transition hover:-translate-y-0.5"
                 >
                   Свържи се с мен

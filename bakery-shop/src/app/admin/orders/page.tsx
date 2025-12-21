@@ -345,7 +345,7 @@ export default function AdminOrdersPage() {
                                 <span>{item.name ?? "Артикул"}</span>
                                 <span className="text-[#5f000b]/80">
                                   {item.quantity ? `${item.quantity} бр.` : null}{" "}
-                                  {typeof item.price === "number" ? `× ${item.price.toFixed(2)} лв.` : ""}
+                                  {typeof item.price === "number" ? `× ${formatPrice(item.price)}` : ""}
                                 </span>
                               </li>
                             ))

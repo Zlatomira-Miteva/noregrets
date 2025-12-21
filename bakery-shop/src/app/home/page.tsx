@@ -1,6 +1,5 @@
 import Image from "next/image";
 import Link from "next/link";
-import Marquee from "@/components/Marquee";
 import HeroCarousel from "@/components/HeroCarousel";
 import CookieShowcase from "@/components/CookieShowcase";
 import FeaturedTabs from "@/components/FeaturedTabs";
@@ -166,7 +165,7 @@ export default async function Home() {
 
   return (
     <div className="min-h-screen ">
-      <Marquee />
+      
       <SiteHeader />
       <main>
         <HeroCarousel />
@@ -346,7 +345,7 @@ export default async function Home() {
                 </p>
                 <div className="text-sm text-[#5f000b]">
                   <p>ул. „Богомил“ 48, Пловдив</p>
-                  <p>Имейл: zlati.noregrets@gmail.com</p>
+                  <p>Имейл: info@noregrets.bg</p>
                 </div>
                 <Link
                   href="/about"

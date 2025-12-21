@@ -268,7 +268,7 @@ export default function AdminCouponsPage() {
                   coupons.map((coupon) => (
                     <tr key={coupon.id} className="border-t border-[#f5d5d6]">
                       <td className="py-2 font-semibold">{coupon.code}</td>
-                      <td className="py-2">{coupon.discountType === "PERCENT" ? "%" : "лв"}</td>
+                      <td className="py-2">{coupon.discountType === "PERCENT" ? "%" : "€ / лв"}</td>
                       <td className="py-2">
                         {coupon.discountType === "PERCENT"
                           ? `${coupon.discountValue}%`

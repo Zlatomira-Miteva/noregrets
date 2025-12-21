@@ -3,7 +3,6 @@
 import { FormEvent, useState } from "react";
 import Link from "next/link";
 
-import Marquee from "@/components/Marquee";
 import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
 
@@ -12,8 +11,8 @@ type ContactStatus = "idle" | "sending" | "success" | "error";
 const CONTACT_CHANNELS = [
   {
     label: "Имейл",
-    value: "zlati.noregrets@gmail.com",
-    href: "mailto:zlati.noregrets@gmail.com",
+    value: "info@noregrets.bg",
+    href: "mailto:info@noregrets.bg",
   },
   {
     label: "Адрес",
@@ -124,7 +123,7 @@ const ContactPage = () => {
 
   return (
     <div className="flex min-h-screen flex-col bg-[#fff7f4] text-[#3a1114]">
-      <Marquee />
+      
       <SiteHeader />
       <main className="flex-1">
         <section className="bg-[#fbe7e0] py-16">

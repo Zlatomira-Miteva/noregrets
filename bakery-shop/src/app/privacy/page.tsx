@@ -1,6 +1,5 @@
 "use client";
 
-import Marquee from "@/components/Marquee";
 import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
 
@@ -88,7 +87,7 @@ const PRIVACY_SECTIONS = [
   {
     title: "10. Контакт",
     content: [
-      "При въпроси или коментари пишете на No Regrets, zlati.noregrets@gmail.com .",
+      "При въпроси или коментари пишете на No Regrets, info@noregrets.bg .",
     ],
   },
 ];
@@ -96,7 +95,6 @@ const PRIVACY_SECTIONS = [
 export default function PrivacyPage() {
   return (
     <div className="flex min-h-screen flex-col text-[#5f000b]">
-      <Marquee />
       <SiteHeader />
 
       <main className="flex-1">

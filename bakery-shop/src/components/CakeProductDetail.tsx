@@ -3,7 +3,6 @@
 import Image from "next/image";
 import { useMemo, useState } from "react";
 
-import { CakeProduct } from "@/data/cakes";
 import { useCart } from "@/context/CartContext";
 import { parsePrice } from "@/utils/price";
 
@@ -14,10 +13,21 @@ const ALLERGEN_TEXT =
   "Всички торти съдържат глутен, млечни продукти и яйца. Някои варианти включват ядки или следи от тях.";
 
 type Props = {
-  cake: CakeProduct;
+  cake: {
+    slug: string;
+    name: string;
+    price: string;
+    weight?: string;
+    leadTime?: string;
+    description?: string;
+    highlights?: string[];
+    fillings?: string[];
+    image: string;
+  };
+  productPrefix?: string;
 };
 
-const CakeProductDetail = ({ cake }: Props) => {
+const CakeProductDetail = ({ cake, productPrefix = "cake" }: Props) => {
   const { addItem } = useCart();
   const [quantity, setQuantity] = useState(1);
   const priceValue = useMemo(() => parsePrice(cake.price), [cake.price]);
@@ -27,7 +37,7 @@ const CakeProductDetail = ({ cake }: Props) => {
 
   const handleAddToCart = () => {
     addItem({
-      productId: `cake-${cake.slug}`,
+      productId: `${productPrefix}-${cake.slug}`,
       name: cake.name,
       price: priceValue,
       quantity,
@@ -69,10 +79,10 @@ const CakeProductDetail = ({ cake }: Props) => {
                 {cake.price}
               </span>
             </div>
-            <p className="text-[#3d1b20]">{cake.description}</p>
+              {cake.description ? <p className="text-[#3d1b20]">{cake.description}</p> : null}
             <ul className="space-y-1 text-sm">
-              <li>{cake.weight}</li>
-              {cake.highlights.map((highlight) => (
+              {cake.weight ? <li>{cake.weight}</li> : null}
+              {(cake.highlights ?? []).map((highlight) => (
                 <li key={highlight}>• {highlight}</li>
               ))}
             </ul>
@@ -134,19 +144,23 @@ const CakeProductDetail = ({ cake }: Props) => {
           </section>
 
           <section className="space-y-3 rounded-2xl bg-white/90 p-6 shadow-card">
-            <strong className="text-base font-semibold text-[#5f000b]">
-              Какво има вътре
-            </strong>
-            <div className="flex flex-wrap gap-2">
-              {cake.fillings.map((item) => (
-                <span
-                  key={item}
-                  className="rounded-full bg-[#ffeef3] px-4 py-1 text-xs font-semibold uppercase tracking-wide text-[#7c1a6a]"
-                >
-                  {item}
-                </span>
-              ))}
-            </div>
+            {(cake.fillings ?? []).length ? (
+              <>
+                <strong className="text-base font-semibold text-[#5f000b]">
+                  Какво има вътре
+                </strong>
+                <div className="flex flex-wrap gap-2">
+                  {(cake.fillings ?? []).map((item) => (
+                    <span
+                      key={item}
+                      className="rounded-full bg-[#ffeef3] px-4 py-1 text-xs font-semibold uppercase tracking-wide text-[#7c1a6a]"
+                    >
+                      {item}
+                    </span>
+                  ))}
+                </div>
+              </>
+            ) : null}
           </section>
         </div>
       </div>

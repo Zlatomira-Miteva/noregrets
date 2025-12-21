@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import Marquee from "@/components/Marquee";
 import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
 
@@ -85,7 +84,7 @@ const TERMS_SECTIONS = [
   {
     title: "11. Контакт",
     content: [
-      "Въпроси относно условията може да изпращате на: zlati.noregrets@gmail.com.",
+      "Въпроси относно условията може да изпращате на: info@noregrets.bg.",
       "Последна актуализация: Ноември 2025 г.",
     ],
   },
@@ -94,7 +93,6 @@ const TERMS_SECTIONS = [
 export default function TermsPage() {
   return (
     <div className="flex min-h-screen flex-col text-[#5f000b]">
-      <Marquee />
       <SiteHeader />
 
       <main className="flex-1">

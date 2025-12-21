@@ -1,6 +1,7 @@
 import { ORDER_STATUS, deleteOrderByReference, updateOrderStatusWithAudit } from "@/lib/orders";
 import { createSalesDocumentByReference, recordPaymentByReference } from "@/lib/n18";
 import { sendOrderStatusChangeEmail, sendOrderEmail } from "@/lib/notify/email";
+import { formatPrice } from "@/utils/price";
 
 const okResponse = () =>
   new Response("OK", {
@@ -116,14 +117,14 @@ export async function POST(request: Request) {
         `Поръчка: ${result.order.reference}`,
         `Статус: ${result.order.status}`,
         `Клиент: ${result.order.customerName} (${result.order.customerEmail})`,
-        `Сума: ${result.order.totalAmount.toFixed(2)} лв.`,
+        `Сума: ${formatPrice(result.order.totalAmount)}`,
         result.order.deliveryLabel ? `Доставка: ${result.order.deliveryLabel}` : null,
         `Gateway status: ${status}`,
       ]
         .filter(Boolean)
         .join("\n");
 
-      sendOrderEmail({
+      sendOrderEmail({info@noregrets.bg
         to: process.env.ORDER_NOTIFICATION_RECIPIENT ?? "zlati.noregrets@gmail.com",
         subject,
         html: lines.replace(/\n/g, "<br>"),

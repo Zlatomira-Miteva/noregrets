@@ -14,19 +14,21 @@ type FeaturedProduct = {
   leadTime: string;
   weight: string;
   image: string;
-  category: "cookies" | "cakes";
+  category: "cookies" | "cakes" | "tiramisu";
   href?: string;
   slug?: string;
 };
 
-const CATEGORIES: Array<{ label: string; value: "cookies" | "cakes" }> = [
+const CATEGORIES: Array<{ label: string; value: FeaturedProduct["category"] }> = [
   { label: "Кукита", value: "cookies" },
   { label: "Торти", value: "cakes" },
+  { label: "Тирамису", value: "tiramisu" },
 ];
 
 const HASH_TO_CATEGORY: Record<string, (typeof CATEGORIES)[number]["value"]> = {
   "#cookies": "cookies",
   "#cakes": "cakes",
+  "#tiramisu": "tiramisu",
 };
 
 const FeaturedTabs = () => {
@@ -35,6 +37,8 @@ const FeaturedTabs = () => {
   const [cakesError, setCakesError] = useState<string | null>(null);
   const [cookieBoxes, setCookieBoxes] = useState<FeaturedProduct[]>([]);
   const [cookiesError, setCookiesError] = useState<string | null>(null);
+  const [tiramisuItems, setTiramisuItems] = useState<FeaturedProduct[]>([]);
+  const [tiramisuError, setTiramisuError] = useState<string | null>(null);
   const { addItem } = useCart();
 
   useEffect(() => {
@@ -75,7 +79,7 @@ const FeaturedTabs = () => {
           id: item.id.toString(),
           name: item.name,
           price: formatPrice(item.price ?? 0),
-          leadTime: item.leadTime || "Доставка до 3 работни дни",
+          leadTime: item.leadTime || "Доставка до 4 работни дни",
           weight: item.weight || "220 гр.",
           image: item.heroImage || "",
           category: "cakes",
@@ -109,6 +113,7 @@ const FeaturedTabs = () => {
             weight: string;
             leadTime: string;
             image: string;
+            heroImage?: string;
             href?: string;
           }>;
         } = await response.json();
@@ -116,9 +121,9 @@ const FeaturedTabs = () => {
           id: product.id.toString(),
           name: product.name,
           price: product.slug.startsWith("custom-box-") ? undefined : formatPrice(product.price ?? 0),
-          leadTime: product.leadTime || "Доставка до 3 работни дни",
+          leadTime: product.leadTime || "Доставка до 4 работни дни",
           weight: product.weight || "450 гр.",
-          image: product.image,
+          image: product.image || product.heroImage || "",
           category: "cookies",
           href: product.href || `/products/${product.slug}`,
         }));
@@ -133,9 +138,51 @@ const FeaturedTabs = () => {
     loadCookieBoxes();
   }, []);
 
+  useEffect(() => {
+    const loadTiramisu = async () => {
+      try {
+        const response = await fetch("/api/products/category/tiramisu");
+        if (!response.ok) {
+          throw new Error("Неуспешно зареждане на тирамису.");
+        }
+        const data: {
+          products: Array<{
+            id: string;
+            slug: string;
+            name: string;
+            price: number;
+            weight: string;
+            leadTime: string;
+            image: string;
+            heroImage?: string;
+            href?: string;
+          }>;
+        } = await response.json();
+        const mapped: FeaturedProduct[] = data.products.map((product) => ({
+          id: product.id.toString(),
+          name: product.name,
+          price: formatPrice(product.price ?? 0),
+          leadTime: product.leadTime || "Доставка до 4 работни дни",
+          weight: product.weight || "220 гр.",
+          image: product.image || product.heroImage || "",
+          category: "tiramisu",
+          href: product.href || `/products/tiramisu/${product.slug}`,
+          slug: product.slug,
+        }));
+        setTiramisuItems(mapped);
+        setTiramisuError(null);
+      } catch (error) {
+        console.error(error);
+        setTiramisuError(error instanceof Error ? error.message : "Неуспешно зареждане на тирамису.");
+      }
+    };
+
+    loadTiramisu();
+  }, []);
+
   const mergedProducts = useMemo(() => {
-    return [...cookieBoxes, ...backendCakes];
-  }, [backendCakes, cookieBoxes]);
+    return [...cookieBoxes, ...backendCakes, ...tiramisuItems];
+  }, [backendCakes, cookieBoxes, tiramisuItems]);
 
   const filteredProducts = useMemo(
     () => mergedProducts.filter((product) => product.category === activeCategory),
@@ -153,8 +200,8 @@ const FeaturedTabs = () => {
   };
 
   const handleQuickAdd = (product: FeaturedProduct) => {
-    if (product.category !== "cakes") return;
-    const slug = product.href?.split("/").pop() ?? product.id.toString();
+    if (product.category !== "cakes" && product.category !== "tiramisu") return;
+    const slug = product.slug ?? product.href?.split("/").pop() ?? product.id.toString();
     addItem({
       productId: slug,
       name: product.name,
@@ -169,6 +216,7 @@ const FeaturedTabs = () => {
     <>
       <span id="cookies" className="relative -top-24 block h-0" aria-hidden />
       <span id="cakes" className="relative -top-24 block h-0" aria-hidden />
+      <span id="tiramisu" className="relative -top-24 block h-0" aria-hidden />
       <section className="mx-auto w-full px-[clamp(1rem,3vw,3rem)] py-12">
         <div className="flex flex-wrap items-center gap-4 border-b border-[#dcb1b1] pb-4">
           {CATEGORIES.map((category) => {
@@ -195,11 +243,13 @@ const FeaturedTabs = () => {
                 ? "Не успяхме да заредим продуктите. Моля, опитайте отново."
                 : activeCategory === "cookies" && cookiesError
                   ? "Не успяхме да заредим кутиите с кукита. Моля, опитайте пак."
-                  : "Скоро ще добавим продукти в тази категория. Следете ни за новости!"}
+                  : activeCategory === "tiramisu" && tiramisuError
+                    ? "Не успяхме да заредим тирамису. Моля, опитайте пак."
+                    : "Скоро ще добавим продукти в тази категория. Следете ни за новости!"}
             </p>
           ) : (
             filteredProducts.map((product) => {
-              const isCake = product.category === "cakes";
+              const isCake = product.category === "cakes" || product.category === "tiramisu";
               const hasPrice = Boolean(product.price);
               const content = (
                 <>

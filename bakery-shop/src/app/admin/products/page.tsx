@@ -546,7 +546,7 @@ export default function AdminProductsPage() {
                 value={productForm.leadTime}
                 onChange={(event) => setProductForm((prev) => ({ ...prev, leadTime: event.target.value }))}
                 className="mt-1 w-full rounded-2xl border border-[#dcb1b1] bg-white px-4 py-3 text-sm focus:border-[#5f000b] focus:outline-none"
-                placeholder="напр. Доставка до 3 работни дни"
+                placeholder="напр. Доставка до 4 работни дни"
                 required
               />
             </label>

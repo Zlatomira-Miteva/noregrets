@@ -4,8 +4,17 @@ import { pgPool } from "@/lib/pg";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function GET(_: Request, { params }: any) {
+  const normalizeImagePath = (value?: string | null) => {
+    if (!value) return "";
+    if (value.startsWith("http://") || value.startsWith("https://") || value.startsWith("/")) {
+      return encodeURI(value);
+    }
+    return encodeURI(`/${value}`);
+  };
+
   try {
-    const slug = params?.slug?.toString();
+    const resolvedParams = await params;
+    const slug = resolvedParams?.slug?.toString();
     if (!slug) {
       return NextResponse.json({ error: "Missing category." }, { status: 400 });
     }
@@ -22,7 +31,22 @@ export async function GET(_: Request, { params }: any) {
       }
 
       const productsRes = await client.query(
-        `SELECT * FROM "Product" WHERE "categoryId" = $1 ORDER BY "createdAt" ASC`,
+        `SELECT id,
+                slug,
+                name,
+                "shortDescription" AS "shortDescription",
+                description,
+                weight,
+                "leadTime" AS "leadTime",
+                "heroImage" AS "heroImage",
+                price,
+                status,
+                "categoryId",
+                "createdAt",
+                "updatedAt"
+         FROM "Product"
+         WHERE "categoryId" = $1
+         ORDER BY "createdAt" ASC`,
         [category.id],
       );
       const ids = productsRes.rows.map((p) => p.id);
@@ -35,11 +59,25 @@ export async function GET(_: Request, { params }: any) {
 
       return NextResponse.json({
         category,
-        products: productsRes.rows.map((p) => ({
-          ...p,
-          price: Number(p.price),
-          images: imagesRes.rows.filter((img) => img.productid === p.id),
-        })),
+        products: productsRes.rows.map((p) => {
+          const productImages = imagesRes.rows
+            .filter((img) => img.productid === p.id)
+            .map((img) => ({
+              ...img,
+              productId: img.productid,
+              url: normalizeImagePath(img.url),
+            }));
+          const primaryImage = normalizeImagePath(p.heroImage ?? productImages[0]?.url ?? null);
+          return {
+            ...p,
+            price: Number(p.price),
+            heroImage: normalizeImagePath(p.heroImage ?? productImages[0]?.url ?? null) || undefined,
+            leadTime: p.leadTime ?? undefined,
+            shortDescription: p.shortDescription ?? undefined,
+            images: productImages,
+            image: primaryImage,
+          };
+        }),
       });
     } finally {
       client.release();
