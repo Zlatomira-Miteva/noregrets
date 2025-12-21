@@ -165,6 +165,12 @@ a.link-underline {
   text-decoration: none;
 }
 
+.nav-link-active {
+  text-decoration: underline !important;
+  text-decoration-thickness: 4px;
+  text-underline-offset: 8px;
+}
+
 .nav-link:hover {
   text-decoration: underline;
   text-decoration-thickness: 1px;

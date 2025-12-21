@@ -16,7 +16,23 @@ const SiteHeader = () => {
 
   const isActive = (href: string) => {
     if (href.includes("#")) return false;
-    return pathname === href;
+    const targetPath = new URL(href, "http://localhost").pathname.replace(/\/+$/, "") || "/";
+    const currentPath = (pathname ?? "/").replace(/\/+$/, "") || "/";
+
+    if (
+      currentPath === targetPath ||
+      currentPath.startsWith(`${targetPath}/`) ||
+      (targetPath === "/home" && currentPath === "/") ||
+      (targetPath === "/" && currentPath === "/home")
+    ) {
+      return true;
+    }
+
+    if (targetPath === "/products/cake-jar" && currentPath === "/cake-jars") {
+      return true;
+    }
+
+    return false;
   };
 
   return (
@@ -40,7 +56,7 @@ const SiteHeader = () => {
                   aria-current={active ? "page" : undefined}
                   className={`nav-link transition ${
                     active
-                      ? "text-[#5f000b] underline decoration-4 underline-offset-8"
+                      ? "nav-link-active font-semibold text-[#5f000b]"
                       : "text-[#5f000b]/80 hover:text-[#5f000b] hover:underline hover:decoration-4 hover:underline-offset-8"
                   }`}
                 >

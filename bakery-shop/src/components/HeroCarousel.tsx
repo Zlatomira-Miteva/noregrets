@@ -8,6 +8,7 @@ import CookieBoxPink from "../../public/cookie-box-hero.jpg";
 // import MochiePink from "../../public/mochi-hero.jpg";
 import CookiesPink from "../../public/cookies-hero.jpg";
 import CakeJars from "../../public/cake-jars-hero.jpg";
+import TiramisuHero from "../../public/tiramisu-hero.png";
 
 type Slide = {
   id: number;
@@ -49,6 +50,15 @@ const SLIDES: Slide[] = [
     description:"Разнообразие от вкусове, доставени до теб.",
     ctaLabel:"Поръчай торта",
     href: "/products/cake-jar",
+  },
+  {
+    id: 5,
+    image: TiramisuHero,
+    title: "Тирамису, но по нашия начин.",
+    description:
+      "Класика с италиански бишкоти, крем маскарпоне и какао, плюс ягодов или шамфъстък вариант за любителите на нови вкусове.",
+    ctaLabel: "Виж тирамису",
+    href: "/products/tiramisu/tiramisu-classic",
   },
 ];
 
