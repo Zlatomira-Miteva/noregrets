@@ -1,12 +1,11 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-import { sendOrderEmail } from "@/lib/notify/email";
-import { formatPrice } from "@/utils/price";
+import { buildBrandedEmail, sendOrderEmail } from "@/lib/notify/email";
 import { formatPrice } from "@/utils/price";
 
 const {
-  RESEND_API_KEY,info@noregrets.bg
+  RESEND_API_KEY,
   CONTACT_FROM = "No Regrets <onboarding@resend.dev>",
   ORDER_NOTIFICATION_RECIPIENT = "zlati.noregrets@gmail.com",
 } = process.env;
@@ -117,7 +116,7 @@ export async function POST(request: Request) {
       })
       .join("\n");
 
-    const lines = [
+    const adminLines = [
       `Поръчка: ${data.reference ?? "(без номер)"}`,
       data.createdAt ? `Дата: ${new Date(data.createdAt).toLocaleString("bg-BG")}` : null,
       data.deliveryLabel ? `Доставка: ${data.deliveryLabel}` : null,
@@ -145,8 +144,8 @@ export async function POST(request: Request) {
         from: CONTACT_FROM,
         to: [ORDER_NOTIFICATION_RECIPIENT],
         subject: `Нова онлайн поръчка ${data.reference ?? ""}`.trim(),
-        text: lines,
-        html: lines.replace(/\n/g, "<br />"),
+        text: adminLines,
+        html: adminLines.replace(/\n/g, "<br />"),
       }),
     });
 
@@ -165,23 +164,31 @@ export async function POST(request: Request) {
 
     // Also email the customer, if provided.
     if (data.customer?.email) {
-      const customerLines = [
-        `Здравейте${customerName ? `, ${customerName}` : ""}!`,
-        `Получихме вашата поръчка ${data.reference ?? ""}.`,
-        data.totalAmount ? `Обща сума: ${formatPrice(data.totalAmount)}` : null,
-        data.deliveryLabel ? `Доставка: ${data.deliveryLabel}` : null,
-        "",
-        "Продукти:",
-        itemsText || "(няма данни)",
-      ]
-        .filter(Boolean)
-        .join("\n");
+      const { html, text } = buildBrandedEmail({
+        title: `Благодарим Ви за поръчката`,
+        greetingName: customerName || data.customer.email,
+        orderReference: data.reference ?? "(без номер)",
+        introLines: [
+          `Благодарим Ви за покупката. Номерът на вашата поръчка е ${data.reference ?? "(без номер)"}.`,
+        ],
+        orderLines: [
+          data.totalAmount ? `Общо: ${formatPrice(data.totalAmount)}` : "",
+          data.totalQuantity ? `Брой артикули: ${data.totalQuantity}` : "",
+        ].filter(Boolean),
+        itemsLines: itemsText ? itemsText.split("\n").filter(Boolean) : [],
+        deliveryLines: data.deliveryLabel ? [data.deliveryLabel] : [],
+        customerLines: [
+          customerName || "",
+          data.customer.email ? `Имейл: ${data.customer.email}` : "",
+          data.customer.phone ? `Телефон: ${data.customer.phone}` : "",
+        ].filter(Boolean),
+      });
 
       sendOrderEmail({
         to: data.customer.email,
         subject: `Потвърждение за поръчка ${data.reference ?? ""}`.trim(),
-        text: customerLines,
-        html: customerLines.replace(/\n/g, "<br />"),
+        text,
+        html,
       }).catch((err) => console.error("[orders.notify.customer-email]", err));
     }
 

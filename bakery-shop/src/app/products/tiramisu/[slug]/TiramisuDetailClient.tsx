@@ -39,6 +39,16 @@ export default function TiramisuDetailClient({ products, initialSlug }: Props) {
     [products, selectedSlug],
   );
 
+  const gallery = useMemo(
+    () =>
+      products.map((product) => ({
+        slug: product.slug,
+        src: product.heroImage,
+        alt: product.name,
+      })),
+    [products],
+  );
+
   if (!selectedProduct) return null;
 
   const handleSelect = (slug: string) => {
@@ -49,16 +59,6 @@ export default function TiramisuDetailClient({ products, initialSlug }: Props) {
 
   const priceLabel = selectedProduct.priceLabel ?? formatPrice(selectedProduct.price);
   const priceValue = parsePrice(priceLabel);
-
-  const gallery = useMemo(
-    () =>
-      products.map((product) => ({
-        slug: product.slug,
-        src: product.heroImage,
-        alt: product.name,
-      })),
-    [products],
-  );
 
   const increase = () => setQuantity((prev) => prev + 1);
   const decrease = () => setQuantity((prev) => Math.max(1, prev - 1));

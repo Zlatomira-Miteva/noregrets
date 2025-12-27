@@ -75,7 +75,7 @@ export async function GET() {
         description: product.description,
         weight: product.weight,
         leadTime: product.leadtime,
-        heroImage: product.heroimage,
+        heroImage: product.heroimage ?? imagesRes.rows.find((img) => img.productid === product.id)?.url ?? null,
         galleryImages: imagesRes.rows.filter((img) => img.productid === product.id).map((img) => img.url),
         categoryImages: catImagesRes.rows.filter((img) => img.productid === product.id).map((img) => img.url),
         variantName: variantsRes.rows.find((v) => v.productid === product.id)?.name ?? "",

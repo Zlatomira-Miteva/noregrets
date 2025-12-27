@@ -62,7 +62,8 @@ export async function GET(request: Request) {
   const logsRes = await pgPool.query(`SELECT * FROM "OrderAuditLog" ORDER BY "createdAt" ASC`);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const logsByOrder = logsRes.rows.reduce<Record<string, any[]>>((acc, log) => {
-    const key = log.orderid;
+    const key = log.orderId ?? log.orderid;
+    if (!key) return acc;
     acc[key] = acc[key] ?? [];
     acc[key].push(log);
     return acc;

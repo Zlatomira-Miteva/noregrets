@@ -185,6 +185,7 @@ export default function AdminOrdersPage() {
   };
 
   const cancelOrder = (orderId: string) => submitUpdate(orderId, { status: "CANCELLED" });
+  const completeOrder = (orderId: string) => submitUpdate(orderId, { status: "COMPLETED" });
 
   const sendTestNotification = async () => {
     setTestMailStatus("Изпращаме тестов имейл…");
@@ -221,10 +222,22 @@ export default function AdminOrdersPage() {
           <p>Преглед, промяна на статус и отказване на поръчки.</p>
           <div className="flex flex-wrap items-center justify-center gap-3">
             <Link
+              href="/admin"
+              className="rounded-full border border-[#5f000b] px-4 py-2 text-xs font-semibold uppercase hover:bg-white/40"
+            >
+              Начало
+            </Link>
+            <Link
               href="/admin/products"
               className="rounded-full border border-[#5f000b] px-4 py-2 text-xs font-semibold uppercase hover:bg-white/40"
             >
               Категории и продукти
+            </Link>
+            <Link
+              href="/admin/orders/summary"
+              className="rounded-full border border-[#5f000b] px-4 py-2 text-xs font-semibold uppercase hover:bg-white/40"
+            >
+              Обобщение по дни
             </Link>
             <Link
               href="/admin/coupons"
@@ -447,6 +460,18 @@ export default function AdminOrdersPage() {
                         {new Date(order.updatedAt).toLocaleString("bg-BG")}
                       </p>
                       <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={() => completeOrder(order.id)}
+                          className="rounded-full border border-green-700 px-4 py-2 text-xs font-semibold uppercase text-green-800 transition hover:bg-green-50 disabled:opacity-50"
+                          disabled={savingId === order.id || order.status === "COMPLETED"}
+                        >
+                          {savingId === order.id
+                            ? "Запазваме..."
+                            : order.status === "COMPLETED"
+                              ? "Изпълнена"
+                              : "Маркирай изпълнена"}
+                        </button>
                         <button
                           type="button"
                           onClick={() => cancelOrder(order.id)}

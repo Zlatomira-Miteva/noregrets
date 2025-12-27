@@ -19,7 +19,7 @@ const FALLBACK_DETAILS = {
     "Доставка до 4 работни дни",
     "Включена кутийка с Nutella за топене",
   ],
-  weight: "Нетно тегло: 240 гр.",
+  weight: undefined as string | undefined,
   allergenNote: "Съдържа глутен, яйца, млечни продукти и следи от ядки.",
 };
 
@@ -145,7 +145,7 @@ export default function MiniCookiesClient({ initialProduct }: MiniCookiesClientP
                   {productDetails.highlights.map((item) => (
                     <li key={item}>• {item}</li>
                   ))}
-                  <li>{productDetails.weight}</li>
+                  {productDetails.weight ? <li>{productDetails.weight}</li> : null}
                 </ul>
                 <p className="uppercase ">{productDetails.allergenNote}</p>
               </header>

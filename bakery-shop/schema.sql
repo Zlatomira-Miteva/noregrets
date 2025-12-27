@@ -288,23 +288,6 @@ CREATE TABLE public."VerificationToken" (
 );
 
 
---
--- Name: _prisma_migrations; Type: TABLE; Schema: public; Owner: noregret_mira
---
-
-CREATE TABLE public._prisma_migrations (
-    id character varying(36) NOT NULL,
-    checksum character varying(64) NOT NULL,
-    finished_at timestamp with time zone,
-    migration_name character varying(255) NOT NULL,
-    logs text,
-    rolled_back_at timestamp with time zone,
-    started_at timestamp with time zone DEFAULT now() NOT NULL,
-    applied_steps_count integer DEFAULT 0 NOT NULL
-);
-
-
---
 -- Name: Account Account_pkey; Type: CONSTRAINT; Schema: public; Owner: noregret_mira
 --
 
@@ -405,14 +388,6 @@ ALTER TABLE ONLY public."Session"
 
 ALTER TABLE ONLY public."User"
     ADD CONSTRAINT "User_pkey" PRIMARY KEY (id);
-
-
---
--- Name: _prisma_migrations _prisma_migrations_pkey; Type: CONSTRAINT; Schema: public; Owner: noregret_mira
---
-
-ALTER TABLE ONLY public._prisma_migrations
-    ADD CONSTRAINT _prisma_migrations_pkey PRIMARY KEY (id);
 
 
 --

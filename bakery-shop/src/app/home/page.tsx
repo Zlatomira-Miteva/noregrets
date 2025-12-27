@@ -22,7 +22,7 @@ const NUTELLA_BISCOFF_IMAGE = "/nutella-biscoff-cake-jar.png";
 const RED_VELVET_IMAGE = "/red-velvet-cake-jar.png";
 
 const PICKUP_WINDOW_NOTICE =
-  "Взимането от магазина е възможно само между 16:00 и 18:00 часа в делнични дни и от 12:00 до 17:00 часа в събота. Невзети поръчки в обявените часове могат да се вземат на следващия ден в обявените работни часове.";
+  "Взимането от ателието е възможно само между 16:00 и 18:00 часа в делнични дни и от 12:00 до 17:00 часа в събота. Невзети поръчки в обявените часове могат да се вземат на следващия ден в обявените работни часове.";
 
 type HomepageFeaturedCard = {
   id: string;
@@ -61,13 +61,6 @@ const FEATURED_COOKIE_CONFIG: FeaturedCardConfig[] = [
     fallbackImage: BOX_SIX_COOKIES_IMAGE,
   },
 ];
-
-const FALLBACK_BEST_SELLER_CARDS: HomepageFeaturedCard[] = FEATURED_COOKIE_CONFIG.map((config) => ({
-  id: config.slug,
-  name: config.label,
-  href: config.href,
-  imageSrc: config.fallbackImage,
-}));
 
 const loadHomepageFeaturedCards = async (): Promise<HomepageFeaturedCard[]> => {
   const cards = await Promise.all(
@@ -161,7 +154,7 @@ const REVIEWS = [
 ];
 export default async function Home() {
   const featuredCookieCards = await loadHomepageFeaturedCards();
-  const bestSellerCards = featuredCookieCards.length ? featuredCookieCards : FALLBACK_BEST_SELLER_CARDS;
+  const bestSellerCards = featuredCookieCards;
 
   return (
     <div className="min-h-screen ">

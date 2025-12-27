@@ -132,7 +132,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     );
   };
 
-  const clearCart = () => setItems([]);
+  const clearCart = useCallback(() => setItems([]), []);
   const acknowledgeLastAdded = useCallback(() => setLastAddedEvent(null), []);
 
   const { totalQuantity, totalPrice } = useMemo(() => {

@@ -41,7 +41,7 @@ const CakeProductDetail = ({ cake, productPrefix = "cake" }: Props) => {
       name: cake.name,
       price: priceValue,
       quantity,
-      options: [cake.weight],
+      options: cake.weight ? [cake.weight] : [],
       image: cake.image,
     });
   };

@@ -92,6 +92,7 @@ export default function AdminProductsPage() {
   const [imageUploadError, setImageUploadError] = useState<string | null>(null);
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
   const [deletingProductId, setDeletingProductId] = useState<string | null>(null);
+  const [productDetailsLoading, setProductDetailsLoading] = useState(false);
   const isEditing = Boolean(editingProductId);
 
   const resetProductForm = (preserveCategory = true) => {
@@ -338,6 +339,39 @@ export default function AdminProductsPage() {
       galleryImages: formatArrayInput(product.galleryImages),
       categoryImages: formatArrayInput(product.categoryImages),
     });
+
+    // Fetch full details to ensure we populate all fields and images
+    setProductDetailsLoading(true);
+    fetch(`/api/admin/products/${product.id}`)
+      .then(async (res) => {
+        const payload = await res.json();
+        if (!res.ok) {
+          throw new Error(payload.error ?? "Неуспешно зареждане на продукта.");
+        }
+        const full = payload.product;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const galleryImages = full.images?.map((img: any) => img.url) ?? [];
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const categoryImages = full.categoryImages?.map((img: any) => img.url) ?? [];
+        setProductForm((prev) => ({
+          ...prev,
+          name: full.name ?? prev.name,
+          slug: full.slug ?? prev.slug,
+          shortDescription: full.shortDescription ?? full.shortdescription ?? prev.shortDescription,
+          description: full.description ?? prev.description,
+          weight: full.weight ?? prev.weight,
+          leadTime: full.leadTime ?? full.leadtime ?? prev.leadTime,
+          price: full.price?.toString() ?? prev.price,
+          categoryId: full.categoryId ?? prev.categoryId,
+          status: full.status ?? prev.status,
+          variantName: full.variants?.[0]?.name ?? prev.variantName,
+          heroImage: full.heroImage ?? galleryImages[0] ?? prev.heroImage,
+          galleryImages: formatArrayInput(galleryImages),
+          categoryImages: formatArrayInput(categoryImages),
+        }));
+      })
+      .catch((err: Error) => setProductError(err.message))
+      .finally(() => setProductDetailsLoading(false));
   };
 
   const handleDeleteProduct = (productId: string) => {
@@ -372,10 +406,22 @@ export default function AdminProductsPage() {
           <p>Добавяйте нови категории, продукти и варианти директно от това табло.</p>
           <div className="flex flex-wrap items-center justify-center gap-3">
             <Link
+              href="/admin"
+              className="rounded-full border border-[#5f000b] px-4 py-2 text-xs font-semibold uppercase hover:bg-white/40"
+            >
+              Начало
+            </Link>
+            <Link
               href="/admin/orders"
               className="rounded-full border border-[#5f000b] px-4 py-2 text-xs font-semibold uppercase hover:bg-white/40"
             >
               Поръчки
+            </Link>
+            <Link
+              href="/admin/orders/summary"
+              className="rounded-full border border-[#5f000b] px-4 py-2 text-xs font-semibold uppercase hover:bg-white/40"
+            >
+              Обобщение по дни
             </Link>
             <Link
               href="/admin/coupons"
@@ -536,7 +582,6 @@ export default function AdminProductsPage() {
                 onChange={(event) => setProductForm((prev) => ({ ...prev, weight: event.target.value }))}
                 className="mt-1 w-full rounded-2xl border border-[#dcb1b1] bg-white px-4 py-3 text-sm focus:border-[#5f000b] focus:outline-none"
                 placeholder="напр. 220 гр."
-                required
               />
             </label>
             <label className="text-sm uppercase">
@@ -554,8 +599,6 @@ export default function AdminProductsPage() {
               Цена
               <input
                 type="number"
-                min={0}
-                step={0.01}
                 value={productForm.price}
                 onChange={(event) => setProductForm((prev) => ({ ...prev, price: event.target.value }))}
                 className="mt-1 w-full rounded-2xl border border-[#dcb1b1] bg-white px-4 py-3 text-sm focus:border-[#5f000b] focus:outline-none"

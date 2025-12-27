@@ -12,6 +12,5 @@ TRUNCATE TABLE
   "ProductCategory",
   "Session",
   "VerificationToken",
-  "_prisma_migrations",
   "User"
 RESTART IDENTITY CASCADE;

@@ -30,7 +30,7 @@ const FALLBACK_DETAILS = {
     "Включени 6 различни вкуса",
     "Подходяща за подарък",
   ],
-  weight: "Нетно тегло: 900 гр.",
+  weight: undefined as string | undefined,
   allergenNote: "Съдържа глутен, яйца, млечни продукти и следи от ядки.",
 };
 
@@ -174,7 +174,7 @@ export default function BestSellersClient({ initialProduct }: BestSellersClientP
                   {productDetails.highlights.map((item) => (
                     <li key={item}>• {item}</li>
                   ))}
-                  <li>{productDetails.weight}</li>
+                  {productDetails.weight ? <li>{productDetails.weight}</li> : null}
                 </ul>
                 <p className="uppercase ">{productDetails.allergenNote}</p>
               </header>

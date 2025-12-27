@@ -73,7 +73,7 @@ export default function RootLayout({
             </Script>
           </>
         ) : null}
-        <Script src="https://t.contentsquare.net/uxa/90c76af42dd95.js" strategy="afterInteractive" />
+        <Script src="https://t.contentsquare.net/uxa/e9a4e8239ea47.js" strategy="afterInteractive" />
         <AuthProvider>
           <CartProvider>
             <CartToast />

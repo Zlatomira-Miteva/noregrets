@@ -345,19 +345,5 @@ VALUES
 
 
 --
--- Data for Name: _prisma_migrations; Type: TABLE DATA; Schema: public;
---
-
-INSERT INTO public._prisma_migrations
-(id, checksum, finished_at, migration_name, logs, rolled_back_at, started_at, applied_steps_count)
-VALUES
-('e3a5a6d4-6b3a-4b5b-bb5a-d22647ab616d', 'ec7766f5b46585c297cff7d4ce602c91847a54a8431a4947a1464dd98ed5671d', '2025-11-18 17:00:18.493109+02', '20251118150018_init', NULL, NULL, '2025-11-18 17:00:18.478612+02', 1),
-('ad6dc666-3df4-407f-968b-2d08fd513195', 'f8461f5053d35d9f3994597c49c22ca3ddbae69f09a30b0239ef1d44da04e6ed', '2025-11-19 14:12:20.825151+02', '20251119121220_add_cookie_options', NULL, NULL, '2025-11-19 14:12:20.822179+02', 1),
-('662bf409-b83d-44de-b928-cbe54dac67a6', '16d3a5eb9c1b981cc4677300e436c0c45a58b10423a94054bcb024a1deb78d59', '2025-12-01 19:07:21.958957+02', '20251201170721_add_cookie_option_price', NULL, NULL, '2025-12-01 19:07:21.956864+02', 1),
-('efb0eac2-1250-41a3-ae4a-b698b50918dc', 'b7e1ef9ea3e4875466ef43d4a1df74fda359f9735b42470d393a84bdbd877b56', '2025-12-03 15:28:41.580686+02', '20251203132841_order_audit_log', NULL, NULL, '2025-12-03 15:28:41.573961+02', 1),
-('fcbfc059-9de9-4889-bb0f-fbd759aee352', '8763d5f4c6abf00c5a672bab641e1a9cb17a37b0b1237cd77d81675813562183', '2025-12-03 19:07:54.929577+02', '20251203170754_order_audit_log', NULL, NULL, '2025-12-03 19:07:54.927652+02', 1);
-
-
---
 -- PostgreSQL data load complete
 --

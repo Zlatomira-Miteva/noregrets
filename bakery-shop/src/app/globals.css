@@ -141,6 +141,13 @@ h6 {
   letter-spacing: 0.18em;
 }
 
+/* Prevent browser/extension overlays from blocking clicks (e.g. screen-clip). */
+screen-clip,
+cs-native-frame-holder,
+grammarly-desktop-integration {
+  pointer-events: none !important;
+}
+
 @keyframes marquee-scroll {
   0% {
     transform: translateX(0%);

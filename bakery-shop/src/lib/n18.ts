@@ -8,7 +8,17 @@ type PgQueryable = Pool | PoolClient;
 
 // Ensures enums, extension, and tables exist (idempotent).
 export async function ensureN18Schema(client: PgQueryable = pgPool) {
-  await client.query(`CREATE EXTENSION IF NOT EXISTS "pgcrypto"`);
+  // pgcrypto provides gen_random_uuid(); attempt to enable but continue if missing.
+  await client.query(`DO $$
+    BEGIN
+      BEGIN
+        CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+      EXCEPTION
+        WHEN OTHERS THEN
+          -- Ignore missing extension on hosts where it's not available.
+          NULL;
+      END;
+    END$$;`);
 
   await client.query(`DO $$
     BEGIN
@@ -28,7 +38,7 @@ export async function ensureN18Schema(client: PgQueryable = pgPool) {
 
   await client.query(`
     CREATE TABLE IF NOT EXISTS orders (
-      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      id UUID PRIMARY KEY,
       reference TEXT UNIQUE NOT NULL,
       customer_name TEXT NOT NULL,
       customer_email TEXT NOT NULL,
@@ -78,7 +88,7 @@ export async function ensureN18Schema(client: PgQueryable = pgPool) {
 
   await client.query(`
     CREATE TABLE IF NOT EXISTS sales_documents (
-      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      id UUID PRIMARY KEY,
       order_id UUID REFERENCES orders(id) ON DELETE CASCADE,
       document_number TEXT UNIQUE NOT NULL,
       document_type sales_document_type_enum NOT NULL,
@@ -86,6 +96,26 @@ export async function ensureN18Schema(client: PgQueryable = pgPool) {
       total_amount NUMERIC(12,2) NOT NULL
     );
   `);
+
+  // Drop defaults that rely on gen_random_uuid if extension is absent.
+  await client.query(`
+    DO $$
+    BEGIN
+      IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='orders' AND column_name='id') THEN
+        BEGIN
+          ALTER TABLE orders ALTER COLUMN id DROP DEFAULT;
+        EXCEPTION
+          WHEN others THEN NULL;
+        END;
+      END IF;
+      IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='sales_documents' AND column_name='id') THEN
+        BEGIN
+          ALTER TABLE sales_documents ALTER COLUMN id DROP DEFAULT;
+        EXCEPTION
+          WHEN others THEN NULL;
+        END;
+      END IF;
+    END$$;`);
 }
 
 type SnapshotItem = {
@@ -122,11 +152,13 @@ export async function upsertOrderSnapshot(order: SnapshotOrder) {
     const existing = await client.query(`SELECT id FROM orders WHERE reference = $1 LIMIT 1`, [order.reference]);
     let orderId = existing.rows[0]?.id as string | undefined;
     if (!orderId) {
+      const newId = randomUUID();
       const res = await client.query(
-        `INSERT INTO orders (reference, customer_name, customer_email, customer_phone, delivery_address, total_amount, currency, payment_method, payment_status, created_at)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+        `INSERT INTO orders (id, reference, customer_name, customer_email, customer_phone, delivery_address, total_amount, currency, payment_method, payment_status, created_at)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
          RETURNING id`,
         [
+          newId,
           order.reference,
           order.customerName,
           order.customerEmail,

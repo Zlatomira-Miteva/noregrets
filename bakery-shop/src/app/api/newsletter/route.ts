@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { appendNewsletterEmail } from "@/lib/googleSheets";
+import { addToMailchimp } from "@/lib/mailchimp";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const RATE_LIMITS = [
@@ -57,7 +58,11 @@ export async function POST(request: Request) {
       );
     }
 
-    await appendNewsletterEmail(sanitizedEmail.toLowerCase());
+    const normalizedEmail = sanitizedEmail.toLowerCase();
+    await appendNewsletterEmail(normalizedEmail);
+    await addToMailchimp({ email: normalizedEmail }).catch((err) => {
+      console.warn("[newsletter.mailchimp] failed", err);
+    });
 
     return NextResponse.json({ success: true });
   } catch (error) {

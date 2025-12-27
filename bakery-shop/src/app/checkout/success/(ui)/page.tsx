@@ -131,9 +131,11 @@ export default function CheckoutSuccessPage() {
   }, [statusUpdate]);
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#fff6f1]">
-      <SiteHeader />
-      <main className="flex flex-1 flex-col items-center justify-center px-6 py-24 text-center">
+    <div className="relative z-[9999] flex min-h-screen flex-col bg-[#fff6f1] pointer-events-auto">
+      <div className="pointer-events-auto">
+        <SiteHeader />
+      </div>
+      <main className="flex flex-1 flex-col items-center justify-center px-6 py-24 text-center pointer-events-auto">
         <div className="max-w-xl space-y-6 rounded-3xl bg-white p-10 shadow-card">
           <p className="text-sm font-semibold uppercase tracking-wide text-green-700">Плащането е успешно</p>
           <h1 className="text-4xl font-semibold text-[#5f000b]">Благодарим ви!</h1>

@@ -1,10 +1,9 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { Prisma } from "@prisma/client";
 import { getServerSession } from "next-auth";
 
-import { prisma } from "@/lib/db";
 import { authOptions } from "@/auth";
+import { pgPool } from "@/lib/pg";
 
 const productSchema = z.object({
   name: z.string().min(2, "Въведете име."),
@@ -32,21 +31,26 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const products = await prisma.product.findMany({
-    orderBy: { createdAt: "desc" },
-    include: { category: true },
-  });
-
-  const payload = products.map((product) => ({
-    id: product.id,
-    name: product.name,
-    slug: product.slug,
-    price: Number(product.price),
-    status: product.status,
-    categoryName: product.category?.name ?? "",
-  }));
-
-  return NextResponse.json({ products: payload });
+  try {
+    const res = await pgPool.query(
+      `SELECT p.id, p.name, p.slug, p.price, p.status, c.name AS category_name
+       FROM "Product" p
+       LEFT JOIN "ProductCategory" c ON p."categoryId" = c.id
+       ORDER BY p."createdAt" DESC`,
+    );
+    const payload = res.rows.map((product: any) => ({
+      id: product.id,
+      name: product.name,
+      slug: product.slug,
+      price: Number(product.price),
+      status: product.status,
+      categoryName: product.category_name ?? "",
+    }));
+    return NextResponse.json({ products: payload });
+  } catch (error) {
+    console.error("Failed to load products", error);
+    return NextResponse.json({ error: "Неуспешно зареждане на продуктите." }, { status: 500 });
+  }
 }
 
 export async function POST(request: Request) {
@@ -64,37 +68,48 @@ export async function POST(request: Request) {
   const { name, slug, shortDescription, description, price, categoryId, image, status, variantName } = parsed.data;
   const finalSlug = slug?.trim() || slugify(name);
 
+  const client = await pgPool.connect();
   try {
-    const product = await prisma.product.create({
-      data: {
+    await client.query("BEGIN");
+    const productInsert = await client.query(
+      `INSERT INTO "Product" (id, slug, name, "shortDescription", description, price, status, "categoryId", "heroImage", "updatedAt")
+       VALUES (gen_random_uuid()::text, $1, $2, $3, $4, $5, $6, $7, $8, NOW())
+       RETURNING *`,
+      [
+        finalSlug,
         name,
-        slug: finalSlug,
-        shortDescription,
-        description,
+        shortDescription ?? null,
+        description ?? null,
         price,
-        status: status ?? "PUBLISHED",
+        status ?? "PUBLISHED",
         categoryId,
-        images: {
-          create: [{ url: image, alt: name, position: 0 }],
-        },
-        variants: {
-          create: [
-            {
-              name: variantName || name,
-              price,
-              isDefault: true,
-            },
-          ],
-        },
-      },
-    });
+        image,
+      ],
+    );
+    const product = productInsert.rows[0];
 
+    await client.query(
+      `INSERT INTO "ProductImage" (id,"productId",url,alt,"position")
+       VALUES (gen_random_uuid()::text, $1, $2, $3, 0)`,
+      [product.id, image, name],
+    );
+
+    await client.query(
+      `INSERT INTO "ProductVariant" (id,"productId",name,price,"isDefault")
+       VALUES (gen_random_uuid()::text, $1, $2, $3, true)`,
+      [product.id, variantName || name, price],
+    );
+
+    await client.query("COMMIT");
     return NextResponse.json({ product }, { status: 201 });
-  } catch (error) {
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+  } catch (error: any) {
+    await client.query("ROLLBACK");
+    if (error?.code === "23505") {
       return NextResponse.json({ error: "Продуктът вече съществува." }, { status: 409 });
     }
     console.error("Failed to create product", error);
     return NextResponse.json({ error: "Неуспешно създаване на продукт." }, { status: 500 });
+  } finally {
+    client.release();
   }
 }

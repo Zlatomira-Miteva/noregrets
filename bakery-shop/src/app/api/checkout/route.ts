@@ -11,6 +11,7 @@ const schema = z.object({
   amount: z.coerce.number().positive(),
   description: z.string().optional(),
   deliveryLabel: z.string().min(1),
+  couponCode: z.string().trim().toUpperCase().optional(),
   items: z
     .array(
       z.object({
@@ -55,7 +56,7 @@ const schema = z.object({
       ),
     })
     .optional(),
-});
+  });
 
 const normalizeSlug = (value?: string | null) => {
   if (!value) return null;
@@ -94,6 +95,50 @@ async function fetchProduct(slugOrId: string) {
   }
 }
 
+async function validateCoupon(code: string, total: number) {
+  const res = await pgPool.query(`SELECT * FROM "Coupon" WHERE code = $1 LIMIT 1`, [code]);
+  const coupon = res.rows[0];
+  if (!coupon) {
+    throw new Error("Кодът не е валиден.");
+  }
+
+  const discountType = coupon.discountType ?? coupon.discounttype;
+  const discountValue = Number(coupon.discountValue ?? coupon.discountvalue ?? 0);
+  const minimumOrderAmount = Number(coupon.minimumOrderAmount ?? coupon.minimumorderamount ?? 0);
+  const rawMaximum = coupon.maximumDiscountAmount ?? coupon.maximumdiscountamount;
+  const maximumDiscountAmount = rawMaximum === null || rawMaximum === undefined ? null : Number(rawMaximum);
+  const validFrom = coupon.validFrom ?? coupon.validfrom ?? null;
+  const validUntil = coupon.validUntil ?? coupon.validuntil ?? null;
+  const isActive = coupon.isActive ?? coupon.isactive ?? true;
+  const maxRedemptions = coupon.maxRedemptions ?? coupon.maxredemptions ?? null;
+  const timesRedeemed = coupon.timesRedeemed ?? coupon.timesredeemed ?? 0;
+
+  const now = new Date();
+  if (validFrom && now < new Date(validFrom)) throw new Error("Кодът още не е активен.");
+  if (validUntil && now > new Date(validUntil)) throw new Error("Кодът е изтекъл.");
+  if (!isActive) throw new Error("Кодът е деактивиран.");
+  if (total < minimumOrderAmount) throw new Error("Сумата е под минималната за този код.");
+  if (maxRedemptions && timesRedeemed >= maxRedemptions) throw new Error("Кодът е изчерпан.");
+
+  let discountAmount = 0;
+  if (discountType === "PERCENT") {
+    discountAmount = (discountValue / 100) * total;
+    const max = maximumDiscountAmount ?? null;
+    if (max !== null && discountAmount > max) discountAmount = max;
+  } else {
+    discountAmount = discountValue;
+  }
+
+  return {
+    code: coupon.code,
+    discountType,
+    discountValue,
+    maximumDiscountAmount: maximumDiscountAmount ?? null,
+    minimumOrderAmount,
+    discountAmount,
+  };
+}
+
 export async function POST(req: Request) {
   try {
     const body = schema.parse(await req.json());
@@ -117,18 +162,39 @@ export async function POST(req: Request) {
       }),
     );
 
-    const totalAmount = normalizedItems.reduce(
+    const subtotal = normalizedItems.reduce(
       (sum, it) => sum + Number(it.price) * Number(it.quantity),
       0,
     );
-    if (!Number.isFinite(totalAmount) || totalAmount <= 0) {
+    if (!Number.isFinite(subtotal) || subtotal <= 0) {
       throw new Error("Невалидна сума на поръчката.");
     }
+
+    let discountAmount = 0;
+    let couponInfo:
+      | {
+          code: string;
+          discountType: string;
+          discountValue: number;
+          maximumDiscountAmount: number | null;
+          minimumOrderAmount: number;
+          discountAmount: number;
+        }
+      | undefined;
+    if (body.couponCode) {
+      couponInfo = await validateCoupon(body.couponCode, subtotal);
+      discountAmount = couponInfo.discountAmount;
+    }
+
+    const totalAmount = Math.max(0, subtotal - discountAmount);
 
     const safePayload = {
       ...body,
       amount: Number(totalAmount.toFixed(2)),
       totalAmount: Number(totalAmount.toFixed(2)),
+      subtotal: Number(subtotal.toFixed(2)),
+      discountAmount: Number(discountAmount.toFixed(2)),
+      coupon: couponInfo,
       items: normalizedItems,
       cart: body.cart
         ? {

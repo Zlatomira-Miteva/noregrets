@@ -38,6 +38,7 @@ export default function AdminCouponsPage() {
   const [couponLoading, setCouponLoading] = useState(false);
   const [couponMessage, setCouponMessage] = useState<string | null>(null);
   const [couponError, setCouponError] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const loadCoupons = () => {
     setCouponError(null);
@@ -92,8 +93,12 @@ export default function AdminCouponsPage() {
       return;
     }
 
-    fetch("/api/coupons", {
-      method: "POST",
+    const isEditing = Boolean(editingId);
+    const endpoint = isEditing ? `/api/coupons/${editingId}` : "/api/coupons";
+    const method = isEditing ? "PATCH" : "POST";
+
+    fetch(endpoint, {
+      method,
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         code: couponForm.code.trim(),
@@ -110,8 +115,46 @@ export default function AdminCouponsPage() {
         if (!res.ok) {
           throw new Error(payload.error ?? "Неуспешно създаване на купон.");
         }
-        setCouponMessage("Купонът е създаден успешно.");
+        setCouponMessage(isEditing ? "Купонът е обновен успешно." : "Купонът е създаден успешно.");
         setCouponForm(defaultCouponForm);
+        setEditingId(null);
+        loadCoupons();
+      })
+      .catch((err: Error) => setCouponError(err.message))
+      .finally(() => setCouponLoading(false));
+  };
+
+  const startEdit = (coupon: Coupon) => {
+    setEditingId(coupon.id);
+    setCouponError(null);
+    setCouponMessage(null);
+    setCouponForm({
+      code: coupon.code,
+      discountType: coupon.discountType,
+      discountValue: coupon.discountValue.toString(),
+      minimumOrderAmount: coupon.minimumOrderAmount?.toString() ?? "0",
+      maximumDiscountAmount: coupon.maximumDiscountAmount?.toString() ?? "",
+      validFrom: coupon.validFrom ? coupon.validFrom.slice(0, 10) : "",
+      validUntil: coupon.validUntil ? coupon.validUntil.slice(0, 10) : "",
+    });
+  };
+
+  const deleteCoupon = (couponId: string) => {
+    if (!window.confirm("Сигурни ли сте, че искате да изтриете този купон?")) return;
+    setCouponLoading(true);
+    setCouponMessage(null);
+    setCouponError(null);
+    fetch(`/api/coupons/${couponId}`, { method: "DELETE" })
+      .then(async (res) => {
+        const payload = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          throw new Error(payload.error ?? "Неуспешно изтриване.");
+        }
+        if (editingId === couponId) {
+          setEditingId(null);
+          setCouponForm(defaultCouponForm);
+        }
+        setCouponMessage("Купонът беше изтрит.");
         loadCoupons();
       })
       .catch((err: Error) => setCouponError(err.message))
@@ -126,6 +169,12 @@ export default function AdminCouponsPage() {
           <h1 className="text-4xl font-semibold">Промо кодове</h1>
           <p>Добавяйте и следете активните промо кодове за No Regrets.</p>
           <div className="flex flex-wrap items-center justify-center gap-3">
+            <Link
+              href="/admin"
+              className="rounded-full border border-[#5f000b] px-4 py-2 text-xs font-semibold uppercase hover:bg-white/40"
+            >
+              Начало
+            </Link>
             <Link
               href="/admin/orders"
               className="rounded-full border border-[#5f000b] px-4 py-2 text-xs font-semibold uppercase hover:bg-white/40"
@@ -237,8 +286,22 @@ export default function AdminCouponsPage() {
               disabled={couponLoading}
               className="sm:col-span-2 rounded-full bg-[#5f000b] px-6 py-3 text-sm font-semibold uppercase text-white transition hover:bg-[#561c19] disabled:opacity-60"
             >
-              {couponLoading ? "Създаваме..." : "Добави промо код"}
+              {couponLoading ? "Запазваме..." : editingId ? "Запази промо код" : "Добави промо код"}
             </button>
+            {editingId ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingId(null);
+                  setCouponForm(defaultCouponForm);
+                  setCouponMessage(null);
+                  setCouponError(null);
+                }}
+                className="sm:col-span-2 rounded-full border border-[#5f000b] px-6 py-3 text-sm font-semibold uppercase text-[#5f000b] transition hover:bg-white/60"
+              >
+                Откажи редакция
+              </button>
+            ) : null}
           </form>
           {couponMessage ? <p className="mt-4 text-sm text-green-700">{couponMessage}</p> : null}
           {couponError ? <p className="mt-4 text-sm text-[#b42318]">{couponError}</p> : null}
@@ -255,6 +318,7 @@ export default function AdminCouponsPage() {
                   <th className="pb-2">Стойност</th>
                   <th className="pb-2">Минимум</th>
                   <th className="pb-2">Валидност</th>
+                  <th className="pb-2 text-right">Действия</th>
                 </tr>
               </thead>
               <tbody>
@@ -277,6 +341,24 @@ export default function AdminCouponsPage() {
                       <td className="py-2">{formatPrice(coupon.minimumOrderAmount)}</td>
                       <td className="py-2 text-sm text-[#5f000b]/70">
                         {coupon.validUntil ? new Date(coupon.validUntil).toLocaleDateString("bg-BG") : "—"}
+                      </td>
+                      <td className="py-2">
+                        <div className="flex justify-end gap-2">
+                          <button
+                            type="button"
+                            onClick={() => startEdit(coupon)}
+                            className="rounded-full border border-[#5f000b] px-3 py-1 text-xs font-semibold uppercase text-[#5f000b] hover:bg-white/60"
+                          >
+                            Редактирай
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => deleteCoupon(coupon.id)}
+                            className="rounded-full border border-[#b42318] px-3 py-1 text-xs font-semibold uppercase text-[#b42318] hover:bg-[#b42318]/10"
+                          >
+                            Изтрий
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))

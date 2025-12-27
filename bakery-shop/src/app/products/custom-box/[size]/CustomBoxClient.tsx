@@ -19,13 +19,29 @@ const BASE_GALLERY_IMAGES: string[] = [
   "/tripple choc ig.png",
 ];
 
+const absImage = (value?: string) => {
+  if (!value) return "";
+  if (value.startsWith("http://") || value.startsWith("https://")) return value;
+  const normalized = value.startsWith("/") ? value : `/${value}`;
+  const base = (process.env.NEXT_PUBLIC_APP_URL ?? "").replace(/\/+$/, "");
+  return base ? `${base}${normalized}` : normalized;
+};
+
 const getGalleryImages = (size: string): string[] => {
   const extras: string[] = [];
 
   if (size === "6") {
-    extras.push("/box-six-cookies-open.png", "/cookie-box.jpg", "/cookie-box-closed.png");
+    extras.push(
+      "/box-six-cookies-open.png",
+      "/cookie-box.jpg",
+      "/cookie-box-closed.png"
+    );
   } else if (size === "3") {
-    extras.push("/cooke-box-3-open.png", "/cookie-box.jpg", "/cookie-box-closed.png");
+    extras.push(
+      "/cooke-box-3-open.png",
+      "/cookie-box.jpg",
+      "/cookie-box-closed.png"
+    );
   }
 
   return [...extras, ...BASE_GALLERY_IMAGES];
@@ -37,7 +53,7 @@ type BoxConfig = {
   price: string;
   description: string;
   highlights: string[];
-  weight: string;
+
   allergenNote: string;
 };
 
@@ -46,56 +62,70 @@ const BOX_CONFIG: Record<string, BoxConfig> = {
     size: 3,
     name: "Направи сам кутия с 3 кукита",
     price: formatPrice(21),
-    description: "Създайте персонална селекция от три любими вкуса – перфектни за подарък или дегустация.",
+    description:
+      "Създайте персонална селекция от три любими вкуса – перфектни за подарък или дегустация.",
     highlights: [
       "Доставка до 4 работни дни",
-      "Всяко кукито е опаковано индивидуално за максимална свежест",
+      "Всяко куки е опаковано индивидуално за максимална свежест",
     ],
-    weight: "Нетно тегло: 450 гр.",
-    allergenNote: "Всички кукита съдържат глутен, яйца и млечни продукти. Възможни са следи от ядки и фъстъци.",
+
+    allergenNote:
+      "Всички кукита съдържат глутен, яйца и млечни продукти. Възможни са следи от ядки и фъстъци.",
   },
   "6": {
     size: 6,
     name: "Направи сам кутия с 6 кукита",
     price: formatPrice(50),
-    description: "Създайте своята мечтана селекция с шест любими вкуса, изпечени по ваша поръчка и доставени до дома ви.",
-    highlights: ["Доставка до 4 работни дни", "Всяко кукито е опаковано индивидуално за максимална свежест"],
-    weight: "Нетно тегло: 900 гр.",
-    allergenNote: "Всички кукита съдържат глутен, яйца и млечни продукти. Възможни са следи от ядки и фъстъци.",
+    description:
+      "Създайте своята мечтана селекция с шест любими вкуса, изпечени по ваша поръчка и доставени до дома ви.",
+    highlights: [
+      "Доставка до 4 работни дни",
+      "Всяко куки е опаковано индивидуално за максимална свежест",
+    ],
+
+    allergenNote:
+      "Всички кукита съдържат глутен, яйца и млечни продукти. Възможни са следи от ядки и фъстъци.",
   },
   "mochi-4": {
     size: 4,
     name: "Направи сам кутия от 4 мочи",
     price: formatPrice(20),
-    description: "Селекция от четири ръчно приготвени мочита – идеални за подарък или следобеден десерт.",
+    description:
+      "Селекция от четири ръчно приготвени мочита – идеални за подарък или следобеден десерт.",
     highlights: [
       "Доставка до 4 работни дни",
       "Свежо приготвени и шоково замразени за транспорт",
       "Включена картичка с инструкции за сервиране",
     ],
-    weight: "Нетно тегло: 240 гр.",
+
     allergenNote: "Съдържа глутен, млечни продукти и следи от ядки.",
   },
   mochi: {
     size: 4,
     name: "Направи сам кутия от 4 мочи",
     price: formatPrice(20),
-    description: "Селекция от четири ръчно приготвени мочита – идеални за подарък или следобеден десерт.",
+    description:
+      "Селекция от четири ръчно приготвени мочита – идеални за подарък или следобеден десерт.",
     highlights: [
       "Доставка до 4 работни дни",
       "Свежо приготвени и шоково замразени за транспорт",
       "Включена картичка с инструкции за сервиране",
     ],
-    weight: "Нетно тегло: 240 гр.",
+
     allergenNote: "Съдържа глутен, млечни продукти и следи от ядки.",
   },
   "mochi-9": {
     size: 9,
     name: "Направи сам кутия от 9 мочи",
     price: formatPrice(45),
-    description: "Максимум удоволствие – девет любими вкуса, комбинирани в голяма кутия за споделяне.",
-    highlights: ["Доставка до 4 работни дни", "Възможност за комбиниране на до девет вкуса", "Сладко изживяване за парти или офис"],
-    weight: "Нетно тегло: 540 гр.",
+    description:
+      "Максимум удоволствие – девет любими вкуса, комбинирани в голяма кутия за споделяне.",
+    highlights: [
+      "Доставка до 4 работни дни",
+      "Възможност за комбиниране на до девет вкуса",
+      "Сладко изживяване за парти или офис",
+    ],
+
     allergenNote: "Съдържа глутен, млечни продукти и следи от ядки.",
   },
 };
@@ -108,8 +138,18 @@ type CookieOption = {
 };
 
 const MOCHI_OPTIONS: CookieOption[] = [
-  { id: "white-choc-mochi", name: "Бяло шоколадово мочи", image: "/white-choc-mochi.png", price: 0 },
-  { id: "dark-choc-mochi", name: "Тъмно шоколадово мочи", image: "/dark-choc-mochi.png", price: 0 },
+  {
+    id: "white-choc-mochi",
+    name: "Бяло шоколадово мочи",
+    image: "/white-choc-mochi.png",
+    price: 0,
+  },
+  {
+    id: "dark-choc-mochi",
+    name: "Тъмно шоколадово мочи",
+    image: "/dark-choc-mochi.png",
+    price: 0,
+  },
 ];
 
 const MAX_SELECTION = 12;
@@ -121,7 +161,11 @@ type CustomBoxClientProps = {
   cookieOptions?: CookieOptionRecord[];
 };
 
-export default function CustomBoxClient({ requestedSize, initialProduct, cookieOptions }: CustomBoxClientProps) {
+export default function CustomBoxClient({
+  requestedSize,
+  initialProduct,
+  cookieOptions,
+}: CustomBoxClientProps) {
   const hasConfig = Boolean(BOX_CONFIG[requestedSize]);
   const normalizedSize = hasConfig ? requestedSize : DEFAULT_SIZE;
   const config = BOX_CONFIG[normalizedSize];
@@ -134,32 +178,40 @@ export default function CustomBoxClient({ requestedSize, initialProduct, cookieO
       price: option.price ?? 0,
     })) ?? [];
   const options = isMochiBox ? MOCHI_OPTIONS : resolvedCookieOptions;
-  const fallbackGallery = useMemo(() => getGalleryImages(normalizedSize), [normalizedSize]);
+  const fallbackGallery = useMemo(
+    () => getGalleryImages(normalizedSize),
+    [normalizedSize]
+  );
   const galleryImages = useMemo(() => {
     if (initialProduct?.galleryImages?.length) {
-      return initialProduct.galleryImages;
+      return initialProduct.galleryImages.map(absImage).filter(Boolean);
     }
-    return fallbackGallery;
+    return fallbackGallery.map(absImage).filter(Boolean);
   }, [initialProduct, fallbackGallery]);
   const [activeIndex, setActiveIndex] = useState(0);
   const basePrice = parsePrice(config.price);
   const resolvedPrice = isMochiBox ? initialProduct?.price ?? basePrice : 0;
   const [selection, setSelection] = useState<Record<string, number>>({});
   const computedBoxPrice = useMemo(
-    () => options.reduce((sum, cookie) => sum + (selection[cookie.id] ?? 0) * (cookie.price ?? 0), 0),
-    [options, selection],
+    () =>
+      options.reduce(
+        (sum, cookie) =>
+          sum + (selection[cookie.id] ?? 0) * (cookie.price ?? 0),
+        0
+      ),
+    [options, selection]
   );
   const priceValue = isMochiBox ? resolvedPrice : computedBoxPrice;
   const productDetails = useMemo(
     () => ({
       name: initialProduct?.name ?? config.name,
       description: initialProduct?.description ?? config.description,
-      weight: initialProduct?.weight ?? config.weight,
+
       price: formatPrice(priceValue),
       highlights: config.highlights,
       allergenNote: config.allergenNote,
     }),
-    [initialProduct, config, priceValue],
+    [initialProduct, config, priceValue]
   );
   const totalImages = galleryImages.length;
   const { addItem } = useCart();
@@ -170,7 +222,9 @@ export default function CustomBoxClient({ requestedSize, initialProduct, cookieO
   };
 
   const visibleIndices =
-    totalImages >= 3 ? [wrapIndex(activeIndex - 1), activeIndex, wrapIndex(activeIndex + 1)] : Array.from({ length: totalImages }, (_, idx) => idx);
+    totalImages >= 3
+      ? [wrapIndex(activeIndex - 1), activeIndex, wrapIndex(activeIndex + 1)]
+      : Array.from({ length: totalImages }, (_, idx) => idx);
 
   const handlePrevImage = () => setActiveIndex((prev) => wrapIndex(prev - 1));
   const handleNextImage = () => setActiveIndex((prev) => wrapIndex(prev + 1));
@@ -178,11 +232,14 @@ export default function CustomBoxClient({ requestedSize, initialProduct, cookieO
 
   const totalSelected = useMemo(
     () => options.reduce((sum, cookie) => sum + (selection[cookie.id] ?? 0), 0),
-    [selection, options],
+    [selection, options]
   );
   const requiredCount = config.size;
   const remainingSlots = requiredCount - totalSelected;
   const canAddToCart = totalSelected === requiredCount;
+
+  const getCookieWeight = (id: string) =>
+    id.includes("red-velvet") ? "140 г" : "150 г";
 
   const updateSelection = (id: string, delta: number) => {
     setSelection((prev) => {
@@ -190,7 +247,10 @@ export default function CustomBoxClient({ requestedSize, initialProduct, cookieO
       const nextCount = currentCount + delta;
       if (nextCount < 0) return prev;
 
-      const currentTotal = options.reduce((sum, cookie) => sum + (prev[cookie.id] ?? 0), 0);
+      const currentTotal = options.reduce(
+        (sum, cookie) => sum + (prev[cookie.id] ?? 0),
+        0
+      );
       const nextTotal = currentTotal + delta;
       if (delta > 0 && nextTotal > requiredCount) {
         return prev;
@@ -227,7 +287,6 @@ export default function CustomBoxClient({ requestedSize, initialProduct, cookieO
   if (!hasConfig) {
     return (
       <div className="flex min-h-screen flex-col">
-        
         <SiteHeader />
         <main className="flex flex-1 items-center justify-center px-6 py-20 text-center">
           <div className="space-y-4">
@@ -242,7 +301,6 @@ export default function CustomBoxClient({ requestedSize, initialProduct, cookieO
 
   return (
     <div className="flex min-h-screen flex-col ">
-      
       <SiteHeader />
 
       <main className="flex-1">
@@ -266,8 +324,18 @@ export default function CustomBoxClient({ requestedSize, initialProduct, cookieO
                         className="absolute left-4 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/80 opacity-0 shadow-card transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5f000b] focus-visible:ring-offset-2 focus-visible:ring-offset-[#fcd9d9] pointer-events-none group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100"
                         aria-label="Предишно изображение"
                       >
-                        <svg viewBox="0 0 16 16" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M10 4l-4 4 4 4" strokeLinecap="round" strokeLinejoin="round" />
+                        <svg
+                          viewBox="0 0 16 16"
+                          className="h-5 w-5"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          <path
+                            d="M10 4l-4 4 4 4"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
                         </svg>
                       </button>
                       <button
@@ -276,8 +344,18 @@ export default function CustomBoxClient({ requestedSize, initialProduct, cookieO
                         className="absolute right-4 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/80 opacity-0 shadow-card transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5f000b] focus-visible:ring-offset-2 focus-visible:ring-offset-[#fcd9d9] pointer-events-none group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100"
                         aria-label="Следващо изображение"
                       >
-                        <svg viewBox="0 0 16 16" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M6 4l4 4-4 4" strokeLinecap="round" strokeLinejoin="round" />
+                        <svg
+                          viewBox="0 0 16 16"
+                          className="h-5 w-5"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          <path
+                            d="M6 4l4 4-4 4"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
                         </svg>
                       </button>
                     </>
@@ -296,11 +374,19 @@ export default function CustomBoxClient({ requestedSize, initialProduct, cookieO
                       key={`${imageKey}-${position}`}
                       onClick={() => goToImage(imageIndex)}
                       className={`relative aspect-square overflow-hidden rounded-2xl border transition ${
-                        isActive ? "border-[#5f000b] ring-2 ring-[#5f000b]" : "border-white/40 hover:border-[#f1b8c4]"
+                        isActive
+                          ? "border-[#5f000b] ring-2 ring-[#5f000b]"
+                          : "border-white/40 hover:border-[#f1b8c4]"
                       }`}
                       aria-label={`Преглед на изображение ${position + 1}`}
                     >
-                      <Image src={image} alt="" fill className="object-cover" sizes="200px" />
+                      <Image
+                        src={image}
+                        alt=""
+                        fill
+                        className="object-cover"
+                        sizes="200px"
+                      />
                     </button>
                   );
                 })}
@@ -310,15 +396,18 @@ export default function CustomBoxClient({ requestedSize, initialProduct, cookieO
             <div className="space-y-10">
               <header className="space-y-4">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                  <h3 className="text-3xl leading-tight sm:text-4xl ">{productDetails.name}</h3>
-                  <span className="text-2xl font-semibold sm:pt-1">{productDetails.price}</span>
+                  <h3 className="text-3xl leading-tight sm:text-4xl ">
+                    {productDetails.name}
+                  </h3>
+                  <span className="text-2xl font-semibold sm:pt-1">
+                    {productDetails.price}
+                  </span>
                 </div>
                 <p>{productDetails.description}</p>
                 <ul className="space-y-2 ">
                   {config.highlights.map((item) => (
                     <li key={item}>• {item}</li>
                   ))}
-                  <li>{productDetails.weight}</li>
                 </ul>
                 <p className="uppercase ">{config.allergenNote}</p>
               </header>
@@ -329,10 +418,16 @@ export default function CustomBoxClient({ requestedSize, initialProduct, cookieO
                   {options.length ? (
                     <p>
                       Изберете точно {requiredCount} кукита. Остават{" "}
-                      <span className="font-semibold ">{Math.max(remainingSlots, 0)}</span> за добавяне.
+                      <span className="font-semibold ">
+                        {Math.max(remainingSlots, 0)}
+                      </span>{" "}
+                      за добавяне.
                     </p>
                   ) : (
-                    <p>В момента няма налични бисквитки. Моля, опитайте отново по-късно.</p>
+                    <p>
+                      В момента няма налични бисквитки. Моля, опитайте отново
+                      по-късно.
+                    </p>
                   )}
                 </div>
 
@@ -341,11 +436,25 @@ export default function CustomBoxClient({ requestedSize, initialProduct, cookieO
                     {options.map((cookie) => {
                       const count = selection[cookie.id] ?? 0;
                       return (
-                        <article key={cookie.id} className="rounded-s bg-[#ffeef1] p-1 shadow-card transition hover:-translate-y-0.5 hover:shadow-lg">
+                        <article
+                          key={cookie.id}
+                          className="rounded-s bg-[#ffeef1] p-1 shadow-card transition hover:-translate-y-0.5 hover:shadow-lg"
+                        >
                           <div className="flex flex-col gap-6 rounded-s border border-[#f4b9c2] bg-white p-6 sm:flex-row sm:items-center sm:justify-between">
-                            <div className="space-y-4 sm:max-w-[60%]">
-                              <h6 className="text-xl font-semibold text-[#5f000b]">{cookie.name}</h6>
-                              {!isMochiBox ? <p className="text-sm font-semibold text-[#5f000b]">{formatPrice(cookie.price)}</p> : null}
+                            <div className="space-y-2 sm:max-w-[60%]">
+                              <h6 className="text-xl font-semibold text-[#5f000b]">
+                                {cookie.name}
+                              </h6>
+                              {!isMochiBox ? (
+                                <p className="text-sm font-semibold text-[#5f000b]/80">
+                                  {getCookieWeight(cookie.id)}
+                                </p>
+                              ) : null}
+                              {!isMochiBox ? (
+                                <p className="text-sm font-semibold text-[#5f000b]">
+                                  {formatPrice(cookie.price)}
+                                </p>
+                              ) : null}
 
                               <div className="flex items-center gap-4 text-[#5f000b]">
                                 <button
@@ -373,7 +482,13 @@ export default function CustomBoxClient({ requestedSize, initialProduct, cookieO
                             </div>
 
                             <div className="relative h-24 w-24 overflow-hidden rounded-s bg-white">
-                              <Image src={cookie.image} alt={cookie.name} fill className="object-cover" sizes="96px" />
+                              <Image
+                                src={cookie.image}
+                                alt={cookie.name}
+                                fill
+                                className="object-cover"
+                                sizes="96px"
+                              />
                             </div>
                           </div>
                         </article>
@@ -385,15 +500,21 @@ export default function CustomBoxClient({ requestedSize, initialProduct, cookieO
                 <div className="flex items-center justify-between rounded-s bg-white p-4 text-[#5f000b] shadow-card">
                   <div>
                     <p className="text-sm uppercase tracking-wide">Обща цена</p>
-                    <p className="text-xs text-gray-600">Формира се по избраните кукита</p>
+                    <p className="text-xs">
+                      Формира се по избраните кукита
+                    </p>
                   </div>
-                  <p className="text-2xl font-semibold">{formatPrice(priceValue)}</p>
+                  <p className="text-2xl font-semibold">
+                    {formatPrice(priceValue)}
+                  </p>
                 </div>
 
                 <button
                   type="button"
                   className={`cta w-full rounded-full px-6 py-4 text-sm font-semibold uppercase transition ${
-                    canAddToCart && options.length ? "bg-[#5f000b]  hover:bg-[#561c19]" : "bg-[#bfa3aa]  cursor-not-allowed"
+                    canAddToCart && options.length
+                      ? "bg-[#5f000b]  hover:bg-[#561c19]"
+                      : "bg-[#bfa3aa]  cursor-not-allowed"
                   }`}
                   disabled={!canAddToCart || !options.length}
                   onClick={handleAddToCart}
@@ -401,31 +522,50 @@ export default function CustomBoxClient({ requestedSize, initialProduct, cookieO
                   Добави кутията в количката
                 </button>
                 {!canAddToCart && options.length ? (
-                  <p className="text-center">Изберете точно {requiredCount} кукита, за да продължите.</p>
+                  <p className="text-center">
+                    Изберете точно {requiredCount} кукита, за да продължите.
+                  </p>
                 ) : null}
               </section>
 
               <div className="space-y-6 rounded-2xl bg-white/80 p-6 text-sm ">
                 <div className="space-y-3">
-                  <strong className="text-base font-semibold ">Грижа за кукитата</strong>
+                  <strong className="text-base font-semibold ">
+                    Грижа за кукитата
+                  </strong>
                   <p>
-                    Печем всичко в деня на изпращане и пакетираме бисквитките за максимална свежест. Кукитата остават най-вкусни до две седмици, ако се
-                    съхраняват на стайна температура.
+                    Печем всичко в деня на изпращане и пакетираме бисквитките за
+                    максимална свежест. Кукитата остават най-вкусни до две
+                    седмици, ако се съхраняват на стайна температура.
                   </p>
-                  <p>Ако предпочитате да ги запазите за по-късно, поставете ги във фризер до един месец и ги затоплете за няколко минути преди сервиране.</p>
+                  <p>
+                    Ако предпочитате да ги запазите за по-късно, поставете ги
+                    във фризер до един месец и ги затоплете за няколко минути
+                    преди сервиране.
+                  </p>
                 </div>
 
                 <div className="space-y-3">
-                  <strong className="text-base font-semibold ">Информация за доставка</strong>
+                  <strong className="text-base font-semibold ">
+                    Информация за доставка
+                  </strong>
                   <p>
-                    Моля, предвидете 4 работни дни за доставка. Изпращаме от понеделник до четвъртък. Ако поръчката ви е направена
-                    след 16:30 ч. в четвъртък, тя ще бъде изпратена следващия понеделник.
+                    Моля, предвидете 4 работни дни за доставка. Изпращаме от
+                    понеделник до четвъртък. Ако поръчката ви е направена след
+                    16:30 ч. в четвъртък, тя ще бъде изпратена следващия
+                    понеделник.
                   </p>
                 </div>
 
                 <div className="space-y-3">
-                  <strong className="text-base font-semibold ">Алергени и съставки</strong>
-                  <p>Всички бисквитки съдържат глутен. Някои бисквитки съдържат ядки. Ако имате алергии, моля, прочетете внимателно съставките, преди да поръчате.</p>
+                  <strong className="text-base font-semibold ">
+                    Алергени и съставки
+                  </strong>
+                  <p>
+                    Всички бисквитки съдържат глутен. Някои бисквитки съдържат
+                    ядки. Ако имате алергии, моля, прочетете внимателно
+                    съставките, преди да поръчате.
+                  </p>
                 </div>
               </div>
             </div>

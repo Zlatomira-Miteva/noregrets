@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getServerSession } from "next-auth";
@@ -15,6 +16,15 @@ const updateSchema = z.object({
   heroImage: z.string().optional(),
   price: z.number().optional(),
   status: z.enum(["PUBLISHED", "DRAFT", "ARCHIVED"]).optional(),
+  galleryImages: z.array(z.string().min(1)).optional(),
+  categoryImages: z.array(z.string().min(1)).optional(),
+  variantName: z.string().optional(),
+  categoryId: z
+    .preprocess(
+      (val) => (typeof val === "string" ? val.trim() : val),
+      z.string().min(1),
+    )
+    .optional(),
 });
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -49,6 +59,7 @@ export async function GET(_: Request, { params }: { params: any }) {
       product: {
         ...product,
         price: Number(product.price),
+        heroImage: product.heroimage ?? null,
         images: images.rows,
         categoryImages: categoryImages.rows,
         variants: variants.rows.map((v) => ({ ...v, price: Number(v.price) })),
@@ -75,33 +86,109 @@ export async function PATCH(request: Request, { params }: { params: any }) {
     return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Невалидни данни." }, { status: 400 });
   }
 
-  const fields: string[] = [];
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const values: any[] = [];
-  let idx = 1;
-  Object.entries(parsed.data).forEach(([key, value]) => {
-    if (value !== undefined) {
-      if (key === "price") {
-        fields.push(`${key}=$${++idx}`);
-        values.push(Number(value));
+  const client = await pgPool.connect();
+  try {
+    await client.query("BEGIN");
+    const existingRes = await client.query(`SELECT * FROM "Product" WHERE id=$1 LIMIT 1`, [params.productId]);
+    if (!existingRes.rows.length) {
+      await client.query("ROLLBACK");
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+    const existing = existingRes.rows[0];
+
+    const gallery = parsed.data.galleryImages;
+    const categoryImages = parsed.data.categoryImages;
+
+    const finalHero = (parsed.data.heroImage ?? existing.heroimage ?? null) ?? (gallery?.[0] ?? null);
+
+    const nextProduct = {
+      name: parsed.data.name ?? existing.name,
+      slug: parsed.data.slug ?? existing.slug,
+      shortDescription: parsed.data.shortDescription ?? existing.shortdescription ?? null,
+      description: parsed.data.description ?? existing.description ?? null,
+      weight: parsed.data.weight ?? existing.weight ?? null,
+      leadTime: parsed.data.leadTime ?? existing.leadtime ?? null,
+      heroImage: finalHero,
+      price: parsed.data.price ?? Number(existing.price),
+      status: parsed.data.status ?? existing.status,
+      categoryId: parsed.data.categoryId ?? existing.categoryid ?? existing.categoryId,
+    };
+
+    const updateRes = await client.query(
+      `UPDATE "Product"
+       SET name=$1, slug=$2, "shortDescription"=$3, description=$4, weight=$5, "leadTime"=$6, "heroImage"=$7, price=$8, status=$9, "categoryId"=$10, "updatedAt"=NOW()
+       WHERE id=$11
+       RETURNING *`,
+      [
+        nextProduct.name,
+        nextProduct.slug,
+        nextProduct.shortDescription,
+        nextProduct.description,
+        nextProduct.weight,
+        nextProduct.leadTime,
+        nextProduct.heroImage,
+        nextProduct.price,
+        nextProduct.status,
+        nextProduct.categoryId,
+        params.productId,
+      ],
+    );
+    const product = updateRes.rows[0];
+
+    if (gallery) {
+      await client.query(`DELETE FROM "ProductImage" WHERE "productId" = $1`, [product.id]);
+      const ids = gallery.map(() => randomUUID());
+      const productIds = gallery.map(() => product.id);
+      const alts = gallery.map(() => product.name);
+      const positions = gallery.map((_, idx) => idx);
+      await client.query(
+        `INSERT INTO "ProductImage" (id,"productId",url,alt,"position")
+         SELECT * FROM unnest($1::text[], $2::text[], $3::text[], $4::text[], $5::int[]) AS t(id, "productId", url, alt, "position")`,
+        [ids, productIds, gallery, alts, positions],
+      );
+    }
+
+    if (categoryImages) {
+      await client.query(`DELETE FROM "ProductCategoryImage" WHERE "productId" = $1`, [product.id]);
+      const ids = categoryImages.map(() => randomUUID());
+      const productIds = categoryImages.map(() => product.id);
+      const alts = categoryImages.map(() => product.name);
+      const positions = categoryImages.map((_, idx) => idx);
+      await client.query(
+        `INSERT INTO "ProductCategoryImage" (id,"productId",url,alt,"position")
+         SELECT * FROM unnest($1::text[], $2::text[], $3::text[], $4::text[], $5::int[]) AS t(id, "productId", url, alt, "position")`,
+        [ids, productIds, categoryImages, alts, positions],
+      );
+    }
+
+    if (parsed.data.variantName || parsed.data.price !== undefined) {
+      const variantsRes = await client.query(
+        `SELECT * FROM "ProductVariant" WHERE "productId"=$1 ORDER BY "isDefault" DESC, name ASC LIMIT 1`,
+        [product.id],
+      );
+      const variant = variantsRes.rows[0];
+      if (variant) {
+        await client.query(
+          `UPDATE "ProductVariant" SET name=$1, price=$2 WHERE id=$3`,
+          [parsed.data.variantName ?? variant.name, parsed.data.price ?? variant.price, variant.id],
+        );
       } else {
-        fields.push(`"${key}"=$${++idx}`);
-        values.push(value);
+        await client.query(
+          `INSERT INTO "ProductVariant" (id,"productId",name,price,"isDefault") VALUES ($1,$2,$3,$4,true)`,
+          [randomUUID(), product.id, parsed.data.variantName ?? product.name, parsed.data.price ?? product.price],
+        );
       }
     }
-  });
 
-  if (!fields.length) {
-    return NextResponse.json({ error: "Няма промени." }, { status: 400 });
+    await client.query("COMMIT");
+    return NextResponse.json({ product: { ...product, heroImage: nextProduct.heroImage ?? product.heroimage } });
+  } catch (error) {
+    await client.query("ROLLBACK");
+    console.error("Failed to update product", error);
+    return NextResponse.json({ error: "Неуспешно обновяване." }, { status: 500 });
+  } finally {
+    client.release();
   }
-
-  const query = `UPDATE "Product" SET ${fields.join(",")}, "updatedAt"=NOW() WHERE id=$1 RETURNING *`;
-  const res = await pgPool.query(query, [params.productId, ...values]);
-  if (!res.rows.length) {
-    return NextResponse.json({ error: "Поръчката не е намерена." }, { status: 404 });
-  }
-
-  return NextResponse.json({ product: res.rows[0] });
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

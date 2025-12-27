@@ -39,7 +39,7 @@ async function loadFeaturedCookies() {
         name: product.name,
         priceLabel: isCustomBox ? undefined : formatPrice(product.price ?? 0),
         leadTime: product.leadTime || "Доставка до 4 работни дни",
-        weight: product.weight || "450 гр.",
+        weight: product.weight || undefined,
         imageSrc,
         href,
       };
@@ -51,7 +51,7 @@ async function loadFeaturedCookies() {
     name: string;
     priceLabel?: string;
     leadTime: string;
-    weight: string;
+    weight?: string;
     imageSrc: string;
     href: string;
   }>;
@@ -88,15 +88,15 @@ export default async function CookiesPage() {
           <section className="px-[clamp(1rem,4vw,4rem)] pb-12">
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
               {featuredBoxes.map((product) => (
-              <article
-                key={product.id}
-                className="group flex h-full flex-col overflow-hidden rounded-3xl bg-white shadow-card transition hover:-translate-y-1 hover:shadow-xl"
-              >
-                <Link
+                <article
+                  key={product.id}
+                  className="group flex h-full flex-col overflow-hidden rounded-3xl bg-white shadow-card transition hover:-translate-y-1 hover:shadow-xl"
+                >
+                  <Link
                     href={product.href}
                     className="flex flex-1 flex-col focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5f000b] focus-visible:ring-offset-2 focus-visible:ring-offset-[#fcd9d9]"
                   >
-                    <div className="relative aspect-[1/1] bg-[#fff4f1] overflow-hidden">
+                    <div className="relative aspect-[1/1] overflow-hidden bg-[#fff4f1]">
                       <img
                         src={product.imageSrc}
                         alt={product.name}
@@ -108,7 +108,7 @@ export default async function CookiesPage() {
                       <h6 className="text-lg font-semibold">{product.name}</h6>
                       <div className="text-sm text-[#5f000b]/80">
                         <p>{product.leadTime}</p>
-                        <p>{product.weight}</p>
+                        {product.weight ? <p>{product.weight}</p> : null}
                       </div>
                       {product.priceLabel ? (
                         <div className="mt-auto text-base font-semibold">{product.priceLabel}</div>
@@ -132,6 +132,7 @@ export default async function CookiesPage() {
                               />
                             </svg>
                           </span>
+                          <span>Детайли</span>
                         </div>
                       )}
                     </div>

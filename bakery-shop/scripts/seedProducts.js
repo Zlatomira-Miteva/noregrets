@@ -73,7 +73,7 @@ const cookies = [
     description:
       "Плътна и шоколадова – с млечен шоколад, хрупкаво Bueno парче и течен център от Nutella. Мека отвътре и леко карамелизирана по краищата.",
     shortDescription: "Пшенично брашно, захар, кафява захар, масло, яйца, млечен шоколад, Nutella, Bueno, набухватели",
-    price: 16.6,
+    price: 5.0,
     weight: "120 гр.",
     leadTime: "Доставка до 4 работни дни",
     heroImage: "/nutella-bueno-top.png",

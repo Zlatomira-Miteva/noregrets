@@ -120,7 +120,7 @@ const updateStatusAndEmail = async (reference: string) => {
       .filter(Boolean)
       .join("\n");
 
-    sendOrderEmail({info@noregrets.bg
+    sendOrderEmail({
       to: process.env.ORDER_NOTIFICATION_RECIPIENT ?? "zlati.noregrets@gmail.com",
       subject,
       html: lines.replace(/\n/g, "<br>"),

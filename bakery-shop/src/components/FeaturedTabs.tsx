@@ -122,7 +122,7 @@ const FeaturedTabs = () => {
           name: product.name,
           price: product.slug.startsWith("custom-box-") ? undefined : formatPrice(product.price ?? 0),
           leadTime: product.leadTime || "Доставка до 4 работни дни",
-          weight: product.weight || "450 гр.",
+          weight: product.weight,
           image: product.image || product.heroImage || "",
           category: "cookies",
           href: product.href || `/products/${product.slug}`,

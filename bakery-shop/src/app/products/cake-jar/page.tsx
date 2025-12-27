@@ -19,7 +19,7 @@ type CakeJar = {
   galleryImages: string[];
   categoryImages: string[];
   price: number;
-  weight: string;
+  weight?: string;
   leadTime: string;
 };
 
@@ -201,7 +201,7 @@ function CakeJarContent() {
                   <p className="text-[#5f000b]/80">{activeJar.description}</p>
                   <div className="flex flex-wrap gap-4 text-sm text-[#5f000b]/80">
                   <span>{activeJar.leadTime || "Доставка до 4 работни дни"}</span>
-                    <span>{activeJar.weight || "220 гр."}</span>
+                    {activeJar.weight ? <span>{activeJar.weight}</span> : null}
                   </div>
                   <p className="text-sm text-[#5f000b]/70">{CAKE_ALLERGEN_NOTE}</p>
                 </header>

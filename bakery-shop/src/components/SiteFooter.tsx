@@ -137,15 +137,7 @@ const SiteFooter = () => {
         </div>
 
         <div className="flex flex-col gap-6 border-t border-white/10 pt-8 text-sm text-white/80 md:flex-row md:items-center md:justify-between">
-          <button
-            type="button"
-            className="inline-flex items-center gap-3 rounded-full bg-white/10 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/20"
-          >
-            <span className="text-lg" aria-hidden="true">
-              🇧🇬
-            </span>
-            България (BGN)
-          </button>
+          {/* <div className="text-xs text-white/80">Фиксиран курс: 1 EUR = 1.95583 лв.</div> */}
 
           <div className="flex flex-wrap items-center gap-4 text-xs uppercase">
             <span>© {currentYear} No Regrets</span>

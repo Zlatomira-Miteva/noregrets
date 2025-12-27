@@ -6,7 +6,6 @@
 >
   <title id="logo-title">No Regrets logotype</title>
   <style>
-    @import url("https://fonts.googleapis.com/css2?family=Berkshire+Swash&display=swap");
     text {
       fill: #c60f24;
       font-family: "Berkshire Swash", "Brush Script MT", cursive;
