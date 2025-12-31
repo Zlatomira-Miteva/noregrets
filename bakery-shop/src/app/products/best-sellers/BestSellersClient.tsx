@@ -10,30 +10,11 @@ import { useCart } from "@/context/CartContext";
 import { formatPrice } from "@/utils/price";
 import type { ProductRecord } from "@/lib/products";
 
-const FALLBACK_GALLERY: string[] = [
-  "/best-sellers-cookie-box.png",
-  "/cookie-box-hero.jpg",
-  "/small-box-cookies.webp",
-];
-
 const INCLUDED_COOKIES: Array<{ name: string; image: string }> = [
-  { name: "Nutella Bueno", image: "/nutella-bueno-cookie.png" },
-  { name: "Biscoff", image: "/small-box-cookies.webp" },
-  { name: "Red Velvet Cheesecake", image: "/cookie-box-hero.jpg" },
+  { name: "Nutella Bueno", image: "/nutella-bueno-top.png" },
+  { name: "Biscoff", image: "/biscoff-top.png" },
+  { name: "Red Velvet Cheesecake", image: "/red-velvet-cookie-top.png" },
 ];
-
-const FALLBACK_DETAILS = {
-  name: "Best Sellers кутия",
-  description:
-    "Нашата най-популярна селекция от шест емблематични кукита – внимателно опаковани и готови за подарък или споделяне.",
-  highlights: [
-    "Доставка до 4 работни дни",
-    "Включени 6 различни вкуса",
-    "Подходяща за подарък",
-  ],
-  weight: undefined as string | undefined,
-  allergenNote: "Съдържа глутен, яйца, млечни продукти и следи от ядки.",
-};
 
 type BestSellersClientProps = {
   initialProduct?: ProductRecord | null;
@@ -49,23 +30,25 @@ export default function BestSellersClient({ initialProduct }: BestSellersClientP
   };
 
   const galleryImages = useMemo(() => {
-    const fromProduct = initialProduct?.galleryImages?.filter(Boolean).map(absImage) ?? [];
-    const combined = [...FALLBACK_GALLERY.map(absImage), ...fromProduct].filter(Boolean) as string[];
-    return Array.from(new Set(combined));
+    const base = initialProduct?.galleryImages?.filter(Boolean).map(absImage) ?? [];
+    return Array.from(new Set(base));
   }, [initialProduct?.galleryImages]);
+
+  const cookiesWithImages = INCLUDED_COOKIES;
 
   const [activeIndex, setActiveIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const { addItem } = useCart();
 
-  const priceValue = initialProduct?.price ?? 52;
-  const formattedPrice = formatPrice(priceValue);
+  const priceValue = Number(initialProduct?.price ?? 0);
+  const formattedPrice = priceValue > 0 ? formatPrice(priceValue) : "";
 
   const productDetails = {
-    ...FALLBACK_DETAILS,
-    name: initialProduct?.name ?? FALLBACK_DETAILS.name,
-    description: initialProduct?.description ?? FALLBACK_DETAILS.description,
-    weight: initialProduct?.weight || FALLBACK_DETAILS.weight,
+    name: initialProduct?.name ?? "",
+    description: initialProduct?.description ?? "",
+    weight: initialProduct?.weight ?? "",
+    highlights: [] as string[],
+    allergenNote: "",
   };
 
   const wrapIndex = (index: number) => {
@@ -92,7 +75,7 @@ export default function BestSellersClient({ initialProduct }: BestSellersClientP
       name: productDetails.name,
       price: priceValue,
       quantity,
-      options: INCLUDED_COOKIES.map((cookie) => cookie.name),
+      options: cookiesWithImages.map((cookie) => cookie.name),
       image: galleryImages[activeIndex] ?? galleryImages[0],
     });
   };
@@ -216,10 +199,15 @@ export default function BestSellersClient({ initialProduct }: BestSellersClientP
                 <div className="space-y-3 rounded-2xl bg-white/80 p-4 text-sm ">
                   <strong className="text-base font-semibold ">Какво е включено</strong>
                   <ul className="space-y-3">
-                    {INCLUDED_COOKIES.map((cookie) => (
+                    {cookiesWithImages.map((cookie) => (
                       <li key={cookie.name} className="flex items-center gap-3">
-                        <span className="relative h-12 w-12 overflow-hidden rounded-full border border-[#fbd0d9] bg-white">
-                          <img src={cookie.image} alt={cookie.name} className="h-full w-full object-cover" loading="lazy" />
+                        <span className="relative h-12 w-12 overflow-hidden rounded-full bg-white">
+                          <img
+                            src={cookie.image}
+                            alt={cookie.name}
+                            className="h-full w-full object-cover"
+                            loading="lazy"
+                          />
                         </span>
                         <span className="text-sm font-medium ">{cookie.name}</span>
                       </li>
