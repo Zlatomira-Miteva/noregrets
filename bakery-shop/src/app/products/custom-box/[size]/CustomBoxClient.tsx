@@ -207,7 +207,7 @@ export default function CustomBoxClient({
       name: initialProduct?.name ?? config.name,
       description: initialProduct?.description ?? config.description,
 
-      price: formatPrice(priceValue),
+      price: priceValue > 0 ? formatPrice(priceValue) : "—",
       highlights: config.highlights,
       allergenNote: config.allergenNote,
     }),
@@ -505,7 +505,7 @@ export default function CustomBoxClient({
                     </p>
                   </div>
                   <p className="text-2xl font-semibold">
-                    {formatPrice(priceValue)}
+                    {priceValue > 0 ? formatPrice(priceValue) : "—"}
                   </p>
                 </div>
 

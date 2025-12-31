@@ -95,13 +95,13 @@ const HeroCarousel = () => {
             priority={index === activeIndex}
             className="pointer-events-none object-cover"
           />
-          {/* <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/40 to-black/10"></div> */}
+          <div className="absolute inset-0 bg-[#40060D]/55 lg:bg-transparent" />
           <div className="relative z-10 mx-auto flex h-full w-full flex-col justify-center gap-4 px-[clamp(1rem,3vw,3rem)] text-left">
             <div className="max-w-xl space-y-3">
-              <h1 className="text-4xl font-semibold leading-tight md:text-6xl">
+              <h1 className="text-4xl font-semibold leading-tight text-white md:text-6xl lg:text-[#5f000b]">
                 {slide.title}
               </h1>
-              <p className="md:text-lg">{slide.description}</p>
+              <p className="text-white md:text-lg lg:text-[#5f000b]/80">{slide.description}</p>
             </div>
             <Link
               href={slide.href}

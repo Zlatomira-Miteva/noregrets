@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
+import FavoriteButton from "@/components/FavoriteButton";
 import { formatPrice } from "@/utils/price";
 import { getProductBySlug, getProductsByCategorySlug } from "@/lib/products";
 
@@ -137,6 +138,9 @@ export default async function CookiesPage() {
                       )}
                     </div>
                   </Link>
+                  <div className="px-6 pb-5">
+                    <FavoriteButton productId={product.id} className="w-full justify-center" />
+                  </div>
                 </article>
               ))}
             </div>
@@ -187,6 +191,7 @@ export default async function CookiesPage() {
                   >
                     Направи кутия с 6 кукита
                   </Link>
+                  <FavoriteButton productId={cookie.slug} />
                   <p className="text-sm italic text-[#5f000b]/70">{allergenNote}</p>
                 </div>
               </article>

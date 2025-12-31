@@ -4,6 +4,8 @@ import { z } from "zod";
 import { getServerSession } from "next-auth";
 
 import { authOptions } from "@/auth";
+import { logAudit } from "@/lib/audit";
+import { isActiveAdmin } from "@/lib/authz";
 import { pgPool } from "@/lib/pg";
 
 const productSchema = z.object({
@@ -32,7 +34,7 @@ const slugify = (value: string) =>
 
 export async function GET() {
   const session = await getServerSession(authOptions);
-  if (session?.user?.role !== "ADMIN") {
+  if (!isActiveAdmin(session)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -92,7 +94,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
-  if (session?.user?.role !== "ADMIN") {
+  if (!isActiveAdmin(session)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -174,6 +176,13 @@ export async function POST(request: Request) {
     );
 
     await client.query("COMMIT");
+    await logAudit({
+      entity: "product",
+      entityId: product.id,
+      action: "product_created",
+      newValue: product,
+      operatorCode: session?.user?.operatorCode ?? session?.user?.email ?? null,
+    });
     return NextResponse.json({ product }, { status: 201 });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {

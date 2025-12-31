@@ -8,6 +8,7 @@ export const FOOTER_LINK_GROUPS = [
       { label: "Политика за връщане", href: "/refund-policy" },
       { label: "Общи условия", href: "/terms" },
       { label: "Политика за поверителност", href: "/privacy" },
+      { label: "Политика за бисквитки", href: "/cookie-policy" },
     ],
   },
   {

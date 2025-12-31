@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 
 import { useCart } from "@/context/CartContext";
 import { formatPrice, parsePrice } from "@/utils/price";
+import FavoriteButton from "@/components/FavoriteButton";
 
 type TiramisuProduct = {
   slug: string;
@@ -179,6 +180,9 @@ export default function TiramisuDetailClient({ products, initialSlug }: Props) {
             >
               Добави {quantity} в количката
             </button>
+            <div className="flex">
+              <FavoriteButton productId={selectedProduct.slug} />
+            </div>
             <div className="space-y-3 rounded-2xl bg-[#fff8fa] p-4 text-sm text-[#5f000b]/80">
               <div>
                 <p className="font-semibold text-[#5f000b]">Съхранение</p>

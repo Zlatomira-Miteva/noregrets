@@ -5,6 +5,8 @@ import { getServerSession } from "next-auth";
 import { randomUUID } from "crypto";
 
 import { authOptions } from "@/auth";
+import { logAudit } from "@/lib/audit";
+import { isActiveAdmin } from "@/lib/authz";
 
 const normalizeInputToArray = (formData: FormData, key: string): File[] => {
   const value = formData.getAll(key);
@@ -13,7 +15,7 @@ const normalizeInputToArray = (formData: FormData, key: string): File[] => {
 
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
-  if (session?.user?.role !== "ADMIN") {
+  if (!isActiveAdmin(session)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -45,6 +47,13 @@ export async function POST(request: Request) {
   if (!urls.length) {
     return NextResponse.json({ error: "Неуспешно качване на файловете." }, { status: 500 });
   }
+
+  await logAudit({
+    entity: "upload",
+    action: "files_uploaded",
+    newValue: { urls },
+    operatorCode: session?.user?.operatorCode ?? session?.user?.email ?? null,
+  });
 
   return NextResponse.json({ urls }, { status: 201 });
 }

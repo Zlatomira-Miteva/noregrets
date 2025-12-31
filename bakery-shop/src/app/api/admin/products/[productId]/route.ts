@@ -4,6 +4,8 @@ import { z } from "zod";
 import { getServerSession } from "next-auth";
 
 import { authOptions } from "@/auth";
+import { logAudit } from "@/lib/audit";
+import { isActiveAdmin } from "@/lib/authz";
 import { pgPool } from "@/lib/pg";
 
 const updateSchema = z.object({
@@ -30,7 +32,7 @@ const updateSchema = z.object({
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function GET(_: Request, { params }: { params: any }) {
   const session = await getServerSession(authOptions);
-  if (session?.user?.role !== "ADMIN") {
+  if (!isActiveAdmin(session)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -76,7 +78,7 @@ export async function GET(_: Request, { params }: { params: any }) {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function PATCH(request: Request, { params }: { params: any }) {
   const session = await getServerSession(authOptions);
-  if (session?.user?.role !== "ADMIN") {
+  if (!isActiveAdmin(session)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -181,6 +183,14 @@ export async function PATCH(request: Request, { params }: { params: any }) {
     }
 
     await client.query("COMMIT");
+    await logAudit({
+      entity: "product",
+      entityId: product.id,
+      action: "product_updated",
+      oldValue: existing,
+      newValue: { ...product, heroImage: nextProduct.heroImage ?? product.heroimage },
+      operatorCode: session?.user?.operatorCode ?? session?.user?.email ?? null,
+    });
     return NextResponse.json({ product: { ...product, heroImage: nextProduct.heroImage ?? product.heroimage } });
   } catch (error) {
     await client.query("ROLLBACK");
@@ -194,10 +204,25 @@ export async function PATCH(request: Request, { params }: { params: any }) {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function DELETE(_: Request, { params }: { params: any }) {
   const session = await getServerSession(authOptions);
-  if (session?.user?.role !== "ADMIN") {
+  if (!isActiveAdmin(session)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  await pgPool.query(`DELETE FROM "Product" WHERE id=$1`, [params.productId]);
-  return NextResponse.json({ ok: true });
+  const res = await pgPool.query(`SELECT * FROM "Product" WHERE id=$1 LIMIT 1`, [params.productId]);
+  if (!res.rows.length) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  const product = res.rows[0];
+  await pgPool.query(`UPDATE "Product" SET status='ARCHIVED', "updatedAt"=NOW() WHERE id=$1`, [params.productId]);
+  await logAudit({
+    entity: "product",
+    entityId: params.productId,
+    action: "product_archived_instead_of_delete",
+    oldValue: product,
+    newValue: { ...product, status: "ARCHIVED" },
+    operatorCode: session?.user?.operatorCode ?? session?.user?.email ?? null,
+  });
+
+  return NextResponse.json({ ok: true, status: "ARCHIVED" });
 }

@@ -4,6 +4,8 @@ import { z } from "zod";
 import { getServerSession } from "next-auth";
 
 import { authOptions } from "@/auth";
+import { logAudit } from "@/lib/audit";
+import { isActiveAdmin } from "@/lib/authz";
 import { pgPool } from "@/lib/pg";
 
 const categorySchema = z.object({
@@ -23,7 +25,7 @@ const slugify = (value: string) =>
 
 export async function GET() {
   const session = await getServerSession(authOptions);
-  if (session?.user?.role !== "ADMIN") {
+  if (!session || !isActiveAdmin(session)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -33,7 +35,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
-  if (session?.user?.role !== "ADMIN") {
+  if (!session || !isActiveAdmin(session)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -55,7 +57,16 @@ export async function POST(request: Request) {
       [categoryId, finalSlug, name, description ?? null, heroImage ?? null],
     );
 
-    return NextResponse.json({ category: insert.rows[0] }, { status: 201 });
+    const category = insert.rows[0];
+    await logAudit({
+      entity: "category",
+      entityId: category.id,
+      action: "category_created",
+      newValue: category,
+      operatorCode: session.user?.operatorCode ?? session.user?.email ?? null,
+    });
+
+    return NextResponse.json({ category }, { status: 201 });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     if (error?.code === "23505") {

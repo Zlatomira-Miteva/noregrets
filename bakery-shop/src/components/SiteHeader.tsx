@@ -68,18 +68,32 @@ const SiteHeader = () => {
             })}
           </nav>
 
-          <Link
-            href="/cart"
-            aria-label="Преглед на количката"
-            className="relative hidden h-11 w-11 items-center justify-center rounded-full bg-white/90 text-[#5f000b] shadow-card transition hover:bg-white md:flex"
-          >
-            <Image src={shoppingCart} alt="" width={20} height={20} className="h-5 w-5" priority />
-            {totalQuantity > 0 ? (
-              <span className="absolute -right-1 -top-1 flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-[#5f000b] px-1 text-xs font-semibold text-white">
-                {totalQuantity}
-            </span>
-            ) : null}
-          </Link>
+          <div className="hidden items-center gap-2 md:flex">
+            <Link
+              href="/cart"
+              aria-label="Преглед на количката"
+              className="relative flex h-11 w-11 items-center justify-center rounded-full bg-white/90 text-[#5f000b] shadow-card transition hover:bg-white"
+            >
+              <Image src={shoppingCart} alt="" width={20} height={20} className="h-5 w-5" priority />
+              {totalQuantity > 0 ? (
+                <span className="absolute -right-1 -top-1 flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-[#5f000b] px-1 text-xs font-semibold text-white">
+                  {totalQuantity}
+                </span>
+              ) : null}
+            </Link>
+            <Link
+              href="/account"
+              aria-label="Моят профил"
+              className="relative flex h-11 w-11 items-center justify-center rounded-full bg-white/90 text-[#5f000b] shadow-card transition hover:bg-white"
+            >
+              <span className="h-6 w-6">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-full w-full">
+                  <circle cx="12" cy="8" r="4" />
+                  <path d="M4 20c1.5-3 4.5-5 8-5s6.5 2 8 5" strokeLinecap="round" />
+                </svg>
+              </span>
+            </Link>
+          </div>
 
           <div className="flex items-center gap-3 md:hidden">
             <Link
@@ -93,6 +107,18 @@ const SiteHeader = () => {
                   {totalQuantity}
                 </span>
               ) : null}
+            </Link>
+            <Link
+              href="/account"
+              aria-label="Моят профил"
+              className="relative flex h-11 w-11 items-center justify-center rounded-full bg-white/90 text-[#5f000b] shadow-card transition hover:bg-white"
+            >
+              <span className="h-6 w-6">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-full w-full">
+                  <circle cx="12" cy="8" r="4" />
+                  <path d="M4 20c1.5-3 4.5-5 8-5s6.5 2 8 5" strokeLinecap="round" />
+                </svg>
+              </span>
             </Link>
 
             <button

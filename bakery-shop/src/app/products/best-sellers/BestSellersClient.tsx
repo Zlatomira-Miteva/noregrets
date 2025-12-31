@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 
 import CookieShowcase from "@/components/CookieShowcase";
+import FavoriteButton from "@/components/FavoriteButton";
 import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
 import { useCart } from "@/context/CartContext";
@@ -233,6 +234,7 @@ export default function BestSellersClient({ initialProduct }: BestSellersClientP
                 >
                   Добави {quantityLabel} в количката
                 </button>
+                <FavoriteButton productId={initialProduct?.slug ?? "best-sellers"} className="w-full justify-center" />
               </section>
 
               <div className="space-y-6 rounded-2xl bg-white/80 p-6 text-sm ">

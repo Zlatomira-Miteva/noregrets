@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 
 import { authOptions } from "@/auth";
+import { isActiveAdmin } from "@/lib/authz";
 import { pgPool } from "@/lib/pg";
 
 const toIso = (value: unknown) => {
@@ -13,7 +14,7 @@ const toIso = (value: unknown) => {
 
 export async function GET() {
   const session = await getServerSession(authOptions);
-  if (!session?.user) {
+  if (!isActiveAdmin(session)) {
     return NextResponse.json({ error: "Неупълномощен достъп." }, { status: 401 });
   }
 

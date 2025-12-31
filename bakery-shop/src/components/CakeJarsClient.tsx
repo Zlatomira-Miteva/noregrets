@@ -5,6 +5,7 @@ import { useMemo } from "react";
 
 import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
+import FavoriteButton from "@/components/FavoriteButton";
 import { useCart } from "@/context/CartContext";
 import { formatPrice } from "@/utils/price";
 
@@ -138,6 +139,7 @@ export default function CakeJarsClient({ initialJars }: CakeJarsClientProps) {
                           >
                             Добави в количката
                           </button>
+                          <FavoriteButton productId={jar.slug ?? jar.id} className="sm:w-auto" />
                           <Link
                             href={`/products/cake-jar?flavor=${encodeURIComponent(jar.slug)}`}
                             className="inline-flex items-center text-sm font-semibold text-[#5f000b] underline-offset-4 hover:underline"

@@ -139,43 +139,6 @@ const parseCsvLine = (line: string) => {
   return values.map((value) => value.trim());
 };
 
-const parseSitesCsv = (csv: string): SpeedySite[] => {
-  const lines = csv
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean);
-
-  if (lines.length === 0) return [];
-
-  const maybeHeader = lines[0].toLowerCase().includes("countryid");
-  const rows = maybeHeader ? lines.slice(1) : lines;
-
-  const sites: SpeedySite[] = [];
-
-  for (const line of rows) {
-    const columns = parseCsvLine(line);
-    if (columns.length < 6) continue;
-    const id = columns[0];
-    const name = columns[5];
-    const nameEn = columns[6];
-    const region = columns[9];
-    const postCode = columns[11];
-
-    const siteId = String(id || "").trim();
-    const siteName = (name || nameEn || "").trim();
-    if (!siteId || !siteName) continue;
-
-    sites.push({
-      id: siteId,
-      name: siteName,
-      postCode: postCode?.trim() || undefined,
-      region: region?.trim() || undefined,
-    });
-  }
-
-  return sites;
-};
-
 export async function loadSpeedySites(): Promise<SpeedySite[]> {
   const now = Date.now();
   if (allSitesCache.value && allSitesCache.fetchedAt && now - allSitesCache.fetchedAt < CACHE_TTL_MS) {

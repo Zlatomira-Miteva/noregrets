@@ -1,8 +1,12 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { getServerSession } from "next-auth";
+
+import { authOptions } from "@/auth";
 import { createMyposCheckout } from "@/lib/mypos";
 import { saveOrderWithAudit } from "@/lib/orders";
 import { pgPool } from "@/lib/pg";
+import { ensureCustomerSchema } from "@/lib/customer-schema";
 
 export const runtime = "nodejs";
 
@@ -142,6 +146,8 @@ async function validateCoupon(code: string, total: number) {
 export async function POST(req: Request) {
   try {
     const body = schema.parse(await req.json());
+    const session = await getServerSession(authOptions);
+    await ensureCustomerSchema();
 
     const normalizedItems = await Promise.all(
       body.items.map(async (item) => {
@@ -169,6 +175,10 @@ export async function POST(req: Request) {
     if (!Number.isFinite(subtotal) || subtotal <= 0) {
       throw new Error("Невалидна сума на поръчката.");
     }
+    const computedQuantity = normalizedItems.reduce(
+      (sum, it) => sum + Number(it.quantity),
+      0,
+    );
 
     let discountAmount = 0;
     let couponInfo:
@@ -187,11 +197,23 @@ export async function POST(req: Request) {
     }
 
     const totalAmount = Math.max(0, subtotal - discountAmount);
+    const roundedTotal = Number(totalAmount.toFixed(2));
+    const bodyTotal = Number(body.totalAmount);
+    const bodyQty = Number(body.totalQuantity);
+    if (Number.isNaN(bodyTotal) || Number.isNaN(bodyQty)) {
+      throw new Error("Невалидни стойности за количество или сума.");
+    }
+    if (bodyQty !== computedQuantity) {
+      throw new Error("Несъответствие в общото количество артикули.");
+    }
+    if (Math.abs(bodyTotal - roundedTotal) > 0.01) {
+      throw new Error("Несъответствие в общата сума на поръчката.");
+    }
 
     const safePayload = {
       ...body,
-      amount: Number(totalAmount.toFixed(2)),
-      totalAmount: Number(totalAmount.toFixed(2)),
+      amount: roundedTotal,
+      totalAmount: roundedTotal,
       subtotal: Number(subtotal.toFixed(2)),
       discountAmount: Number(discountAmount.toFixed(2)),
       coupon: couponInfo,
@@ -211,7 +233,13 @@ export async function POST(req: Request) {
         : undefined,
     };
 
-    await saveOrderWithAudit(safePayload, body.customer.email);
+    await saveOrderWithAudit(
+      {
+        ...safePayload,
+        userId: session?.user?.id ?? undefined,
+      },
+      body.customer.email,
+    );
 
     const redirect = createMyposCheckout({
       ...safePayload,

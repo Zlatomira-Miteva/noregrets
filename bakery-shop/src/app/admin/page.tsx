@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { signOut, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
 const cards = [
   {
@@ -32,8 +33,16 @@ const cards = [
 ];
 
 export default function AdminHomePage() {
-  const { status } = useSession();
+  const { status, data } = useSession();
   const router = useRouter();
+
+  const isAdmin = data?.user?.role === "ADMIN";
+
+  useEffect(() => {
+    if (status === "unauthenticated" || (!isAdmin && status === "authenticated")) {
+      router.replace("/admin/login");
+    }
+  }, [status, isAdmin, router]);
 
   if (status === "loading") {
     return (
@@ -43,8 +52,7 @@ export default function AdminHomePage() {
     );
   }
 
-  if (status === "unauthenticated") {
-    router.replace("/admin/login");
+  if (status === "unauthenticated" || !isAdmin) {
     return null;
   }
 

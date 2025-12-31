@@ -35,6 +35,7 @@ export type OrderPayload = {
   description?: string;
   deliveryLabel: string;
   items: OrderItem[];
+  userId?: string | null;
   totalQuantity?: number;
   totalAmount?: number;
   createdAt?: string;
@@ -64,6 +65,7 @@ export type AdminOrderUpdateInput = {
 
 export type OrderRecord = {
   id: string;
+  userId?: string | null;
   reference: string;
   customerName: string;
   customerEmail: string;
@@ -83,6 +85,7 @@ const decimal = (value: number) => Number(value.toFixed(2));
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const serializeOrder = (row: any): OrderRecord => ({
   id: row.id,
+  userId: row.userId ?? row.userid ?? null,
   reference: row.reference,
   customerName: row.customerName ?? row.customername,
   customerEmail: row.customerEmail ?? row.customeremail,
@@ -168,8 +171,8 @@ export async function saveOrderWithAudit(payload: OrderPayload, performedBy?: st
     if (existing) {
       const updateRes = await client.query(
         `UPDATE "Order"
-         SET "customerName"=$1,"customerEmail"=$2,"customerPhone"=$3,"deliveryLabel"=$4,"items"=$5,"totalAmount"=$6,"status"=$7,"metadata"=$8,"updatedAt"=NOW()
-         WHERE id=$9
+         SET "customerName"=$1,"customerEmail"=$2,"customerPhone"=$3,"deliveryLabel"=$4,"items"=$5,"totalAmount"=$6,"status"=$7,"metadata"=$8,"userId"=COALESCE($9,"userId"),"updatedAt"=NOW()
+         WHERE id=$10
          RETURNING *`,
         [
           customerName,
@@ -180,6 +183,7 @@ export async function saveOrderWithAudit(payload: OrderPayload, performedBy?: st
           decimal(amount),
           nextStatus,
           metadata,
+          payload.userId ?? null,
           existing.id,
         ],
       );
@@ -188,8 +192,8 @@ export async function saveOrderWithAudit(payload: OrderPayload, performedBy?: st
       const newOrderId = randomUUID();
       const insertRes = await client.query(
         `INSERT INTO "Order"
-         (id, reference, "customerName", "customerEmail", "customerPhone", "deliveryLabel", items, "totalAmount", status, metadata, "updatedAt")
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10, NOW())
+         (id, reference, "customerName", "customerEmail", "customerPhone", "deliveryLabel", items, "totalAmount", status, metadata, "userId", "updatedAt")
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11, NOW())
          RETURNING *`,
         [
           newOrderId,
@@ -202,6 +206,7 @@ export async function saveOrderWithAudit(payload: OrderPayload, performedBy?: st
           decimal(amount),
           nextStatus,
           metadata,
+          payload.userId ?? null,
         ],
       );
       orderRow = insertRes.rows[0];
@@ -313,25 +318,30 @@ export async function deleteOrderByReference(
   const client = await pgPool.connect();
   try {
     await client.query("BEGIN");
-    const res = await client.query(`SELECT id FROM "Order" WHERE reference = $1 LIMIT 1`, [reference]);
+    const res = await client.query(`SELECT * FROM "Order" WHERE reference = $1 LIMIT 1`, [reference]);
     if (!res.rows.length) {
       await client.query("ROLLBACK");
       return false;
     }
-    const orderId = res.rows[0].id as string;
+    const existing = serializeOrder(res.rows[0]);
 
-    // Remove audit rows first to avoid FK issues.
-    await client.query(`DELETE FROM "OrderAuditLog" WHERE "orderId" = $1`, [orderId]);
-    await client.query(`DELETE FROM "Order" WHERE id = $1`, [orderId]);
+    const metadata = {
+      ...(existing.metadata ?? {}),
+      cancelledReason: reason ?? null,
+      cancelledBy: performedBy ?? null,
+      cancelledAt: new Date().toISOString(),
+    };
 
-    // Optional audit of deletion (kept minimal).
-    await client.query(
-      `INSERT INTO "OrderDeletionLog" (id,"orderId","reference","reason","performedBy") VALUES ($1,$2,$3,$4,$5)`,
-      [randomUUID(), orderId, reference, reason ?? null, performedBy ?? null],
-    ).catch(() => {
-      // If the optional log table doesn't exist, skip silently.
-    });
+    const updateRes = await client.query(
+      `UPDATE "Order"
+       SET status=$2, metadata=$3, "updatedAt"=NOW()
+       WHERE id=$1
+       RETURNING *`,
+      [existing.id, ORDER_STATUS.CANCELLED, metadata],
+    );
+    const updated = serializeOrder(updateRes.rows[0]);
 
+    await appendAuditLog(client, existing.id, "order_marked_cancelled_instead_of_delete", existing, updated, performedBy);
     await client.query("COMMIT");
     return true;
   } catch (err) {

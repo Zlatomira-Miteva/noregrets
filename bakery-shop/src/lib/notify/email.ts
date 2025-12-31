@@ -30,7 +30,6 @@ const STATUS_LABELS: Record<OrderStatus, string> = {
 const {
   RESEND_API_KEY,
   CONTACT_FROM = "No Regrets <info@noregrets.bg>",
-  ORDER_NOTIFICATION_RECIPIENT = "info@noregrets.bg",
 } = process.env;
 
 const BRAND_BG = "#ffefed";

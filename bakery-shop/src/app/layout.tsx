@@ -3,6 +3,7 @@ import Script from "next/script";
 import { Montserrat_Alternates } from "next/font/google";
 import "./globals.css";
 import AuthProvider from "@/components/AuthProvider";
+import CanonicalLink from "@/components/CanonicalLink";
 import CartToast from "@/components/CartToast";
 import CookieConsentToast from "@/components/CookieConsentToast";
 import { CartProvider } from "@/context/CartContext";
@@ -17,9 +18,6 @@ export const metadata: Metadata = {
   },
   description: "Ръчно изработени кукита, торти и сладки изкушения от сладкарско ателие No Regrets в Пловдив. Поръчки онлайн и взимане от място.",
   keywords: ["кукита", "торти", "сладкарница Пловдив", "No Regrets", "ръчно изработени десерти"],
-  alternates: {
-    canonical: "/",
-  },
   openGraph: {
     title: "No Regrets – Сладкарско ателие",
     description: "Открийте любими кукита, торти и мини десерти, приготвени по поръчка в No Regrets.",
@@ -73,9 +71,9 @@ export default function RootLayout({
             </Script>
           </>
         ) : null}
-        <Script src="https://t.contentsquare.net/uxa/e9a4e8239ea47.js" strategy="afterInteractive" />
         <AuthProvider>
           <CartProvider>
+            <CanonicalLink />
             <CartToast />
             <CookieConsentToast />
             {children}

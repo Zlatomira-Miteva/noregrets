@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { getServerSession } from "next-auth";
 
+import { authOptions } from "@/auth";
+import { isActiveAdmin } from "@/lib/authz";
+import { logAudit } from "@/lib/audit";
 import { pgPool } from "@/lib/pg";
 
 const couponUpdateSchema = z.object({
@@ -22,6 +26,11 @@ export async function PATCH(
   const couponId = params?.couponId;
   if (!couponId) {
     return NextResponse.json({ error: "Липсва ID на купона." }, { status: 400 });
+  }
+
+  const session = await getServerSession(authOptions);
+  if (!isActiveAdmin(session)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
@@ -78,7 +87,16 @@ export async function PATCH(
       return NextResponse.json({ error: "Купонът не е намерен." }, { status: 404 });
     }
 
-    return NextResponse.json({ coupon: result.rows[0] });
+    const coupon = result.rows[0];
+    await logAudit({
+      entity: "coupon",
+      entityId: coupon.id,
+      action: "coupon_updated",
+      newValue: coupon,
+      operatorCode: session?.user?.operatorCode ?? session?.user?.email ?? null,
+    });
+
+    return NextResponse.json({ coupon });
   } catch (error) {
     console.error("[coupon.patch]", error);
     return NextResponse.json({ error: "Неуспешно обновяване на купон." }, { status: 500 });
@@ -95,12 +113,31 @@ export async function DELETE(
     return NextResponse.json({ error: "Липсва ID на купона." }, { status: 400 });
   }
 
+  const session = await getServerSession(authOptions);
+  if (!isActiveAdmin(session)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
-    const result = await pgPool.query(`DELETE FROM "Coupon" WHERE id=$1`, [couponId]);
-    if (result.rowCount === 0) {
+    const select = await pgPool.query(`SELECT * FROM "Coupon" WHERE id=$1 LIMIT 1`, [couponId]);
+    if (!select.rows.length) {
       return NextResponse.json({ error: "Купонът не е намерен." }, { status: 404 });
     }
-    return NextResponse.json({ ok: true });
+    const existing = select.rows[0];
+    const update = await pgPool.query(
+      `UPDATE "Coupon" SET "isActive"=false, "updatedAt"=NOW() WHERE id=$1 RETURNING *`,
+      [couponId],
+    );
+    const coupon = update.rows[0];
+    await logAudit({
+      entity: "coupon",
+      entityId: couponId,
+      action: "coupon_archived_instead_of_delete",
+      oldValue: existing,
+      newValue: coupon,
+      operatorCode: session?.user?.operatorCode ?? session?.user?.email ?? null,
+    });
+    return NextResponse.json({ ok: true, status: "ARCHIVED" });
   } catch (error) {
     console.error("[coupon.delete]", error);
     return NextResponse.json({ error: "Неуспешно изтриване на купон." }, { status: 500 });

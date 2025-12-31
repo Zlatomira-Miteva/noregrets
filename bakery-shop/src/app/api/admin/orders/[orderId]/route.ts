@@ -3,6 +3,7 @@ import { z } from "zod";
 import { getServerSession } from "next-auth";
 
 import { authOptions } from "@/auth";
+import { isActiveAdmin } from "@/lib/authz";
 import { type OrderStatus, updateOrderWithAudit } from "@/lib/orders";
 import { sendOrderStatusChangeEmail } from "@/lib/notify/email";
 
@@ -24,7 +25,7 @@ export async function PATCH(
 ) {
   const orderId = params?.orderId;
   const session = await getServerSession(authOptions);
-  if (!session?.user) {
+  if (!isActiveAdmin(session)) {
     return NextResponse.json({ error: "Неупълномощен достъп." }, { status: 401 });
   }
 
@@ -36,7 +37,8 @@ export async function PATCH(
     const body = await request.json();
     const updates = updateSchema.parse(body);
 
-    const updated = await updateOrderWithAudit(orderId, updates, session.user.email ?? "admin");
+    const performedBy = session?.user?.operatorCode ?? session?.user?.email ?? "admin";
+    const updated = await updateOrderWithAudit(orderId, updates, performedBy);
     if (!updated) {
       return NextResponse.json({ error: "Поръчката не е намерена." }, { status: 404 });
     }

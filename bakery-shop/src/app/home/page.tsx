@@ -348,7 +348,7 @@ export default async function Home() {
                   Научете повече{" "}
                 </Link>
               </div>
-              <div className="relative h-72 overflow-hidden sm:h-96 lg:h-full">
+              <div className="relative h-72 overflow-hidden sm:h-[26rem] lg:h-full">
                 <Image
                   src={ATELIE_IMAGE}
                   alt="Сладкарско ателие No Regrets"

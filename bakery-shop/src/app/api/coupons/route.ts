@@ -1,7 +1,11 @@
 import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { getServerSession } from "next-auth";
 
+import { authOptions } from "@/auth";
+import { isActiveAdmin } from "@/lib/authz";
+import { logAudit } from "@/lib/audit";
 import { pgPool } from "@/lib/pg";
 
 const couponSchema = z.object({
@@ -15,11 +19,21 @@ const couponSchema = z.object({
 });
 
 export async function GET() {
+  const session = await getServerSession(authOptions);
+  if (!isActiveAdmin(session)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const res = await pgPool.query(`SELECT * FROM "Coupon" ORDER BY "createdAt" DESC`);
   return NextResponse.json({ coupons: res.rows });
 }
 
 export async function POST(request: Request) {
+  const session = await getServerSession(authOptions);
+  if (!isActiveAdmin(session)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const json = await request.json();
     const parsed = couponSchema.safeParse(json);
@@ -47,7 +61,16 @@ export async function POST(request: Request) {
       ],
     );
 
-    return NextResponse.json({ coupon: insert.rows[0] }, { status: 201 });
+    const coupon = insert.rows[0];
+    await logAudit({
+      entity: "coupon",
+      entityId: coupon.id,
+      action: "coupon_created",
+      newValue: coupon,
+      operatorCode: session?.user?.operatorCode ?? session?.user?.email ?? null,
+    });
+
+    return NextResponse.json({ coupon }, { status: 201 });
   } catch (error) {
     console.error("Failed to create coupon", error);
     return NextResponse.json({ error: "Неуспешно създаване на купон." }, { status: 500 });

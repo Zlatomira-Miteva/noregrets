@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import { useSession } from "next-auth/react";
 import { DayPicker } from "react-day-picker";
 import "react-day-picker/dist/style.css";
 import { useCart } from "@/context/CartContext";
@@ -22,8 +23,9 @@ type AppliedCoupon = {
 };
 
 const CartPage = () => {
-  const { items, totalPrice, clearCart, removeItem, updateQuantity } =
+  const { items, totalPrice, clearCart, removeItem, updateQuantity, updateItemPrice } =
     useCart();
+  const { data: session } = useSession();
 
   const [reachMessage, setReachMessage] = useState<string | null>(null);
   const [shippingMethod, setShippingMethod] = useState<
@@ -53,6 +55,7 @@ const CartPage = () => {
     phone: "",
     email: "",
   });
+  const [saveProfile, setSaveProfile] = useState(false);
   const [customerErrors, setCustomerErrors] = useState({
     phone: "",
     email: "",
@@ -84,6 +87,7 @@ const CartPage = () => {
   const [isPreparingOrder, setIsPreparingOrder] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [marketingConsent, setMarketingConsent] = useState(false);
+  const [profileLoaded, setProfileLoaded] = useState(false);
 
   const cityOptions = useMemo(() => {
     const unique: typeof cities = [];
@@ -129,6 +133,67 @@ const CartPage = () => {
     return "";
   };
 
+  useEffect(() => {
+    const loadProfile = async () => {
+      if (!session?.user || profileLoaded) return;
+      try {
+        const res = await fetch("/api/account/profile");
+        if (!res.ok) return;
+        const profile = await res.json();
+        if (!profile) return;
+        setCustomerInfo((prev) => ({
+          firstName: profile.firstName ?? prev.firstName,
+          lastName: profile.lastName ?? prev.lastName,
+          phone: profile.phone ?? prev.phone,
+          email: profile.email ?? prev.email ?? session.user?.email ?? "",
+        }));
+        setAddressInfo((prev) => ({
+          city: profile.city ?? prev.city,
+          street: profile.address ?? prev.street,
+          number: profile.zip ?? prev.number,
+          details: profile.notes ?? prev.details,
+        }));
+        if (profile.econtCityId) {
+          setSelectedCityId(profile.econtCityId);
+        }
+        if (profile.econtOfficeId) {
+          setSelectedOffice(profile.econtOfficeId);
+        }
+        setProfileLoaded(true);
+      } catch {
+        /* ignore */
+      }
+    };
+    loadProfile();
+  }, [session, profileLoaded]);
+
+  // Refresh item prices from backend to avoid stale cart pricing
+  useEffect(() => {
+    if (!items.length) return;
+    const controller = new AbortController();
+    const uniqueIds = Array.from(new Set(items.map((item) => item.productId)));
+    (async () => {
+      for (const productId of uniqueIds) {
+        try {
+          const res = await fetch(`/api/products/${encodeURIComponent(productId)}`, {
+            signal: controller.signal,
+          });
+          if (!res.ok) continue;
+          const data = await res.json();
+          const price = Number(data.product?.price ?? data.price);
+          const name = data.product?.name ?? data.name;
+          if (Number.isFinite(price) && price > 0) {
+            updateItemPrice(productId, price, name);
+          }
+        } catch (err) {
+          if (controller.signal.aborted) return;
+          console.error("Failed to refresh price", err);
+        }
+      }
+    })();
+    return () => controller.abort();
+  }, [items, updateItemPrice]);
+
   const validateContactInfo = () => {
     const phoneError = validatePhoneValue(customerInfo.phone);
     const emailError = validateEmailValue(customerInfo.email);
@@ -140,6 +205,30 @@ const CartPage = () => {
       return false;
     }
     return true;
+  };
+
+  const saveProfileIfNeeded = async () => {
+    if (!saveProfile || !session?.user) return;
+    try {
+      await fetch("/api/account/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          firstName: customerInfo.firstName,
+          lastName: customerInfo.lastName,
+          phone: customerInfo.phone,
+          email: customerInfo.email,
+          city: addressInfo.city,
+          zip: addressInfo.number,
+          address: addressInfo.street,
+          notes: addressInfo.details,
+          econtCityId: selectedCityId,
+          econtOfficeId: selectedOffice,
+        }),
+      });
+    } catch {
+      /* ignore */
+    }
   };
 
   const couponDiscountAmount = useMemo(() => {
@@ -418,6 +507,7 @@ const CartPage = () => {
     setIsPreparingOrder(true);
 
     try {
+      await saveProfileIfNeeded();
       sessionStorage.setItem("pendingOrder", JSON.stringify(orderPayload));
 
       const response = await fetch("/api/checkout", {
@@ -467,6 +557,11 @@ const CartPage = () => {
   };
 
   useEffect(() => {
+    if (totalPrice <= 0) {
+      setReachMessage(null);
+      return;
+    }
+
     if (totalPrice >= FREE_SHIPPING_THRESHOLD) {
       setReachMessage("Поздравления! Вие получавате безплатна доставка.");
     } else {
@@ -514,7 +609,10 @@ const CartPage = () => {
         const nextOffices = Array.isArray(data.offices) ? data.offices : [];
         setOffices(nextOffices);
         setOfficesError(data.fallback ? data.message ?? null : null);
-        setSelectedOffice("");
+        setSelectedOffice((prev) => {
+          if (!prev) return "";
+          return nextOffices.some((o) => o.id === prev) ? prev : "";
+        });
         setNoOfficesMessage(
           nextOffices.length === 0
             ? "Няма офис на Еконт в този град. Моля, изберете доставка до адрес."
@@ -610,9 +708,13 @@ const CartPage = () => {
                       <div className="flex items-center gap-3 rounded-full p-3">
                         <button
                           type="button"
-                          onClick={() =>
-                            updateQuantity(item.key, item.quantity - 1)
-                          }
+                          onClick={() => {
+                            if (item.quantity <= 1) {
+                              removeItem(item.key);
+                            } else {
+                              updateQuantity(item.key, item.quantity - 1);
+                            }
+                          }}
                           className="flex h-10 w-10 items-center justify-center rounded-full border border-[#f1b8c4] text-lg font-semibold transition hover:bg-white"
                         >
                           –
@@ -754,14 +856,27 @@ const CartPage = () => {
                             : "border-[#f4b9c2] focus:border-[#5f000b]"
                         }`}
                       />
-                      {customerErrors.email ? (
-                        <p className="text-xs text-red-600">
-                          {customerErrors.email}
-                        </p>
-                      ) : null}
+                    {customerErrors.email ? (
+                      <p className="text-xs text-red-600">
+                        {customerErrors.email}
+                      </p>
+                    ) : null}
+                  </label>
+                  {session?.user ? (
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={saveProfile}
+                        onChange={(event) => setSaveProfile(event.target.checked)}
+                        className="h-4 w-4 accent-[#5f000b]"
+                      />
+                      <span className="text-xs text-[#5f000b]/80">
+                        Запази данните в профила ми
+                      </span>
                     </label>
-                  </div>
+                  ) : null}
                 </div>
+              </div>
 
                 <div className="space-y-3 border-t border-[#f4b9c2] pt-8">
                   <h3 className="text-lg">Метод на плащане</h3>

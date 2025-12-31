@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useMemo, useState } from "react";
 
+import FavoriteButton from "@/components/FavoriteButton";
 import { useCart } from "@/context/CartContext";
 import { parsePrice } from "@/utils/price";
 
@@ -123,11 +124,12 @@ const CakeProductDetail = ({ cake, productPrefix = "cake" }: Props) => {
             <button
               type="button"
               onClick={handleAddToCart}
-              className="cta w-full rounded-full bg-[#5f000b] px-6 py-4 text-sm font-semibold uppercase text-white transition hover:bg-[#561c19]"
-            >
-              Добави {quantity} в количката
-            </button>
-            <div className="space-y-3 rounded-2xl bg-[#fff8fa] p-4 text-sm text-[#5f000b]/80">
+            className="cta w-full rounded-full bg-[#5f000b] px-6 py-4 text-sm font-semibold uppercase text-white transition hover:bg-[#561c19]"
+          >
+            Добави {quantity} в количката
+          </button>
+          <FavoriteButton productId={`${productPrefix}-${cake.slug}`} />
+          <div className="space-y-3 rounded-2xl bg-[#fff8fa] p-4 text-sm text-[#5f000b]/80">
               <div>
                 <p className="font-semibold text-[#5f000b]">Съхранение</p>
                 <p className="mt-1">{STORAGE_TEXT}</p>

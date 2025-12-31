@@ -26,6 +26,7 @@ type CartContextValue = {
   addItem: (payload: AddItemPayload) => void;
   removeItem: (key: string) => void;
   updateQuantity: (key: string, quantity: number) => void;
+  updateItemPrice: (productId: string, price: number, name?: string) => void;
   clearCart: () => void;
   totalQuantity: number;
   totalPrice: number;
@@ -119,6 +120,20 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     setItems((prev) => prev.filter((item) => item.key !== key));
   };
 
+  const updateItemPrice = (productId: string, price: number, name?: string) => {
+    setItems((prev) =>
+      prev.map((item) =>
+        item.productId === productId
+          ? {
+              ...item,
+              price,
+              name: name ?? item.name,
+            }
+          : item,
+      ),
+    );
+  };
+
   const updateQuantity = (key: string, quantity: number) => {
     setItems((prev) =>
       prev.map((item) =>
@@ -149,13 +164,14 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
   const value: CartContextValue = {
     items,
     addItem,
-    removeItem,
-    updateQuantity,
-    clearCart,
-    totalQuantity,
-    totalPrice,
-    lastAddedEvent,
-    acknowledgeLastAdded,
+  removeItem,
+  updateQuantity,
+  updateItemPrice,
+  clearCart,
+  totalQuantity,
+  totalPrice,
+  lastAddedEvent,
+  acknowledgeLastAdded,
   };
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
