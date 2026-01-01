@@ -331,7 +331,7 @@ export default function AboutPage() {
               </p>
               <div className="mt-6 flex flex-wrap items-center justify-center gap-4">
                 <Link
-                  href="mailto:info@noregrets.bg"
+                  href="/contact"
                   className="cta inline-flex items-center justify-center rounded-full bg-[#5f000b] px-6 py-3 text-sm font-semibold uppercase transition hover:-translate-y-0.5"
                 >
                   Свържи се с мен

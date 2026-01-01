@@ -93,7 +93,7 @@ const SERVICE_HIGHLIGHTS = [
   { id: 1, icon: "\u{1F381}", label: "Ръчно приготвени" },
   { id: 2, icon: "\u{2B50}", label: "Избрани продукти" },
   { id: 3, icon: "\u267B", label: "Невероятен вкус" },
-  { id: 4, icon: "\u{1F69A}", label: "Експресна доставка" },
+
 ];
 const MERCH_ITEMS = [
   {
