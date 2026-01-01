@@ -6,9 +6,10 @@ import { useRouter } from "next/navigation";
 type Props = {
   productId: string;
   className?: string;
+  disabled?: boolean;
 };
 
-export default function FavoriteButton({ productId, className }: Props) {
+export default function FavoriteButton({ productId, className, disabled }: Props) {
   const router = useRouter();
   const [isFav, setIsFav] = useState<boolean>(false);
   const [loading, setLoading] = useState(false);
@@ -33,6 +34,7 @@ export default function FavoriteButton({ productId, className }: Props) {
   }, [productId]);
 
   const toggle = async () => {
+    if (disabled) return;
     setLoading(true);
     try {
       const method = isFav ? "DELETE" : "POST";
@@ -61,8 +63,9 @@ export default function FavoriteButton({ productId, className }: Props) {
     <button
       type="button"
       onClick={toggle}
-      disabled={loading}
+      disabled={loading || disabled}
       className={`inline-flex items-center gap-2 rounded-full border border-[#f3bec8] px-4 py-2 text-sm font-semibold transition hover:bg-[#fff6f8] ${className ?? ""}`}
+      aria-disabled={disabled || loading}
     >
       <span aria-hidden="true">{isFav ? "♥" : "♡"}</span> {isFav ? "В любими" : "Добави в любими"}
     </button>

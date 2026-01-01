@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import HeroCarousel from "@/components/HeroCarousel";
@@ -10,6 +11,12 @@ import { formatPrice } from "@/utils/price";
 import { getProductBySlug } from "@/lib/products";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: "No Regrets – Ръчно изпечени кукита, тирамису и торти в Пловдив | NoRegrets.bg",
+  description:
+    "Открий уникални ръчно приготвени кукита, торти в буркан и тирамису от сладкарско ателие No Regrets в Пловдив. Поръчай онлайн или вземи от ателието! ✨",
+};
 
 const PRODUCT_IMAGE = "/small-box-cookies.webp";
 const COOKIE_BOX_IMAGE = "/cookie-box-closed.png";

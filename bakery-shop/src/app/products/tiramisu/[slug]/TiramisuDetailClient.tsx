@@ -1,8 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import { useMemo, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { useMemo, useState, useEffect } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import { useCart } from "@/context/CartContext";
 import { formatPrice, parsePrice } from "@/utils/price";
@@ -13,7 +13,6 @@ type TiramisuProduct = {
   name: string;
   price: number;
   priceLabel?: string;
-  weight?: string;
   leadTime?: string;
   description?: string;
   heroImage: string;
@@ -28,12 +27,23 @@ type Props = {
 const flavorButtonClass =
   "rounded-full border border-[#5f000b] px-4 py-2 text-sm font-semibold transition hover:bg-[#5f000b] hover:text-white";
 
+const SIZE_OPTIONS = [
+  { id: "single", label: "Малко", weight: "150 г" },
+  { id: "double", label: "Голямо", weight: "280 г" },
+];
+
 export default function TiramisuDetailClient({ products, initialSlug }: Props) {
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { addItem } = useCart();
   const [selectedSlug, setSelectedSlug] = useState<string>(initialSlug);
   const [quantity, setQuantity] = useState(1);
+  const [selectedSize, setSelectedSize] = useState<string>(() => {
+    const fromQuery = searchParams?.get("size");
+    const exists = SIZE_OPTIONS.some((s) => s.id === fromQuery);
+    return exists && fromQuery ? fromQuery : SIZE_OPTIONS[0].id;
+  });
 
   const selectedProduct = useMemo(
     () => products.find((p) => p.slug === selectedSlug) ?? products[0],
@@ -55,8 +65,20 @@ export default function TiramisuDetailClient({ products, initialSlug }: Props) {
   const handleSelect = (slug: string) => {
     setSelectedSlug(slug);
     const basePath = pathname.split("/").slice(0, -1).join("/") || "/products/tiramisu";
-    router.replace(`${basePath}/${slug}`, { scroll: false });
+    const params = new URLSearchParams(searchParams?.toString());
+    params.set("size", selectedSize);
+    router.replace(`${basePath}/${slug}?${params.toString()}`, { scroll: false });
   };
+
+  // Keep size in the URL so it persists across flavor changes/navigations.
+  useEffect(() => {
+    const currentSize = searchParams?.get("size");
+    if (currentSize === selectedSize) return;
+    const params = new URLSearchParams(searchParams?.toString());
+    params.set("size", selectedSize);
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedSize]);
 
   const priceLabel = selectedProduct.priceLabel ?? formatPrice(selectedProduct.price);
   const priceValue = parsePrice(priceLabel);
@@ -65,12 +87,13 @@ export default function TiramisuDetailClient({ products, initialSlug }: Props) {
   const decrease = () => setQuantity((prev) => Math.max(1, prev - 1));
 
   const handleAddToCart = () => {
+    const sizeLabel = SIZE_OPTIONS.find((s) => s.id === selectedSize)?.label ?? "";
     addItem({
       productId: `tiramisu-${selectedProduct.slug.replace(/^tiramisu-/, "")}`,
       name: selectedProduct.name,
       price: priceValue,
       quantity,
-      options: [selectedProduct.weight ?? ""].filter(Boolean),
+      options: [sizeLabel].filter(Boolean),
       image: selectedProduct.heroImage,
     });
   };
@@ -119,12 +142,28 @@ export default function TiramisuDetailClient({ products, initialSlug }: Props) {
               <span className="text-2xl font-semibold sm:pt-1">{priceLabel}</span>
             </div>
             {selectedProduct.description ? <p className="text-[#3d1b20]">{selectedProduct.description}</p> : null}
-            <ul className="space-y-1 text-sm">
-              {selectedProduct.weight ? <li>{selectedProduct.weight}</li> : null}
-            </ul>
             <p className="uppercase text-sm text-[#5f000b]/70">
               Всички торти съдържат глутен, млечни продукти и яйца. Някои варианти включват ядки или следи от тях.
             </p>
+          </div>
+
+          <div className="rounded-3xl bg-white/90 p-6 shadow-card">
+            <p className="text-sm uppercase text-[#5f000b]/60">Избери размер</p>
+            <div className="mt-4 flex flex-wrap gap-3">
+              {SIZE_OPTIONS.map((size) => {
+                const isActive = size.id === selectedSize;
+                return (
+                  <button
+                    key={size.id}
+                    type="button"
+                    onClick={() => setSelectedSize(size.id)}
+                    className={`${flavorButtonClass} ${isActive ? "bg-[#5f000b] text-white" : "bg-white text-[#5f000b]"}`}
+                  >
+                    {size.label} {size.weight ? `(${size.weight})` : ""}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           <div className="rounded-3xl bg-white/90 p-6 shadow-card">

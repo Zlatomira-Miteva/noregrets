@@ -58,7 +58,7 @@ export const COOKIES: CookieInfo[] = [
       "Bueno",
       "Набухватели",
     ],
-    image: "/nutella-bueno-top.png",
+    image: "/nutella-bueno-cookie-top.png",
   },
   {
     id: "biscoff",
@@ -76,7 +76,7 @@ export const COOKIES: CookieInfo[] = [
       "Lotus крем",
       "Набухватели",
     ],
-    image: "/biscoff-top.png",
+    image: "/biscoff-cookie-top.png",
   },
   {
     id: "new-york",
@@ -93,7 +93,7 @@ export const COOKIES: CookieInfo[] = [
       "Орехи",
       "Набухватели",
     ],
-    image: "/new-york-top.png",
+    image: "/new-york-cookie-top.png",
   },
   {
     id: "triple-choc",
@@ -110,6 +110,6 @@ export const COOKIES: CookieInfo[] = [
       "Царевично нишесте",
       "Набухватели",
     ],
-    image: "/tripple-choc-top.png",
+    image: "/tripple-choc-cookie-top.png",
   },
 ];

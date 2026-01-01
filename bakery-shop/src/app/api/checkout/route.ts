@@ -198,17 +198,6 @@ export async function POST(req: Request) {
 
     const totalAmount = Math.max(0, subtotal - discountAmount);
     const roundedTotal = Number(totalAmount.toFixed(2));
-    const bodyTotal = Number(body.totalAmount);
-    const bodyQty = Number(body.totalQuantity);
-    if (Number.isNaN(bodyTotal) || Number.isNaN(bodyQty)) {
-      throw new Error("Невалидни стойности за количество или сума.");
-    }
-    if (bodyQty !== computedQuantity) {
-      throw new Error("Несъответствие в общото количество артикули.");
-    }
-    if (Math.abs(bodyTotal - roundedTotal) > 0.01) {
-      throw new Error("Несъответствие в общата сума на поръчката.");
-    }
 
     const safePayload = {
       ...body,

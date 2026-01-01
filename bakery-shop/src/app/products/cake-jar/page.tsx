@@ -4,6 +4,7 @@ import Image from "next/image";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
+import FavoriteButton from "@/components/FavoriteButton";
 import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
 import { useCart } from "@/context/CartContext";
@@ -264,6 +265,9 @@ function CakeJarContent() {
                   >
                     Добави {quantity} в количката
                   </button>
+                  <div className="flex justify-center">
+                    <FavoriteButton productId={activeJar.slug ?? activeJar.id} />
+                  </div>
                 </div>
               </div>
             </div>

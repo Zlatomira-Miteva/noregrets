@@ -126,7 +126,10 @@ const SiteFooter = () => {
               <ul className="space-y-2 text-sm text-white/80">
                 {group.links.map((link) => (
                   <li key={link.label}>
-                    <a href={link.href} className="transition hover:text-white hover:underline">
+                    <a
+                      href={link.href}
+                      className="underline decoration-2 underline-offset-4 decoration-white/70 transition hover:text-white hover:decoration-white"
+                    >
                       {link.label}
                     </a>
                   </li>
@@ -142,11 +145,17 @@ const SiteFooter = () => {
           <div className="flex flex-wrap items-center gap-4 text-xs uppercase">
             <span>© {currentYear} No Regrets</span>
             <span className="hidden h-4 w-px bg-white/20 md:block" />
-            <a href="/privacy" className="hover:text-white">
+            <a
+              href="/privacy"
+              className="underline decoration-2 underline-offset-4 decoration-white/70 hover:text-white hover:decoration-white"
+            >
               Политика за поверителност
             </a>
             <span className="hidden h-4 w-px bg-white/20 md:block" />
-            <a href="/terms" className="hover:text-white">
+            <a
+              href="/terms"
+              className="underline decoration-2 underline-offset-4 decoration-white/70 hover:text-white hover:decoration-white"
+            >
               Общи условия
             </a>
           </div>

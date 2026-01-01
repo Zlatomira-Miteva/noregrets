@@ -2,11 +2,11 @@ import { NextResponse } from "next/server";
 
 import { pgPool } from "@/lib/pg";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function GET(_: Request, { params }: any) {
+export async function GET(_: Request, context: { params: Promise<{ slug?: string }> }) {
   try {
-    const slug = params?.slug?.toString();
-    if (!slug) {
+    const { slug } = await context.params;
+    const normalizedSlug = slug?.toString();
+    if (!normalizedSlug) {
       return NextResponse.json({ error: "Missing product." }, { status: 400 });
     }
 
@@ -16,7 +16,7 @@ export async function GET(_: Request, { params }: any) {
         `SELECT p.*, c.name as category_name FROM "Product" p
          LEFT JOIN "ProductCategory" c ON p."categoryId" = c.id
          WHERE p.slug = $1 LIMIT 1`,
-        [slug],
+        [normalizedSlug],
       );
       const product = productRes.rows[0];
       if (!product) {

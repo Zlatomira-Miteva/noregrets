@@ -27,7 +27,7 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        url: "/og-default.svg",
+        url: "/cookies.jpg",
         width: 1200,
         height: 630,
         alt: "No Regrets – Сладкарско ателие",
@@ -39,7 +39,7 @@ export const metadata: Metadata = {
     site: "@noregretsbg",
     title: "No Regrets – Сладкарско ателие",
     description: "Ръчно изработени десерти по поръчка в Пловдив.",
-    images: ["/og-default.svg"],
+    images: ["/cookies.jpg"],
   },
   robots: {
     index: true,

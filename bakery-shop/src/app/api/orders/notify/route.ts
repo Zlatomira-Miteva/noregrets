@@ -6,7 +6,7 @@ import { formatPrice } from "@/utils/price";
 
 const {
   RESEND_API_KEY,
-  CONTACT_FROM = "No Regrets <onboarding@resend.dev>",
+  CONTACT_FROM = "No Regrets <info@noregrets.bg>",
   ORDER_NOTIFICATION_RECIPIENT = "zlati.noregrets@gmail.com",
 } = process.env;
 
@@ -51,6 +51,7 @@ const orderSchema = z.object({
   totalAmount: z.number().optional(),
   totalQuantity: z.number().optional(),
   createdAt: z.string().optional(),
+  status: z.string().optional(),
 });
 
 export async function POST(request: Request) {
@@ -162,8 +163,8 @@ export async function POST(request: Request) {
       );
     }
 
-    // Also email the customer, if provided.
-    if (data.customer?.email) {
+    // Email към клиента само при успешно платени поръчки.
+    if (data.customer?.email && data.status?.toUpperCase() === "PAID") {
       const { html, text } = buildBrandedEmail({
         title: `Благодарим Ви за поръчката`,
         greetingName: customerName || data.customer.email,

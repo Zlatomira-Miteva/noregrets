@@ -10,37 +10,37 @@ import { useCart } from "@/context/CartContext";
 import { formatPrice } from "@/utils/price";
 import type { ProductRecord } from "@/lib/products";
 
-const FALLBACK_GALLERY: string[] = ["/cookie-box.jpg", "/mini-cookies-falling.png"];
-const FALLBACK_DETAILS = {
-  name: "Мини кукита с течен шоколад",
-  description:
-    "Най-обичаните ни мини кукита, сервирани с кутийка с Nutella. Перфектни за споделяне, подарък или сладко изкушение у дома.",
-  highlights: [
-    "Доставка до 4 работни дни",
-    "Включена кутийка с Nutella за топене",
-  ],
-  weight: undefined as string | undefined,
-  allergenNote: "Съдържа глутен, яйца, млечни продукти и следи от ядки.",
-};
-
 type MiniCookiesClientProps = {
   initialProduct?: ProductRecord | null;
 };
 
 export default function MiniCookiesClient({ initialProduct }: MiniCookiesClientProps) {
-  const galleryImages =
-    initialProduct?.galleryImages?.length ? initialProduct.galleryImages : FALLBACK_GALLERY;
+  const absImage = (value?: string) => {
+    if (!value) return "";
+    if (value.startsWith("http://") || value.startsWith("https://")) return value;
+    const normalized = value.startsWith("/") ? value : `/${value}`;
+    const base = (process.env.NEXT_PUBLIC_APP_URL ?? "").replace(/\/+$/, "");
+    return base ? `${base}${normalized}` : normalized;
+  };
+
+  const galleryImages = initialProduct?.galleryImages?.length
+    ? initialProduct.galleryImages.map(absImage).filter(Boolean)
+    : initialProduct?.heroImage
+      ? [absImage(initialProduct.heroImage)]
+      : [];
 
   const [activeIndex, setActiveIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const { addItem } = useCart();
 
-  const priceValue = initialProduct?.price ?? 12;
+  const priceValue = initialProduct?.price ?? 0;
   const productDetails = {
-    ...FALLBACK_DETAILS,
-    name: initialProduct?.name ?? FALLBACK_DETAILS.name,
-    description: initialProduct?.description ?? FALLBACK_DETAILS.description,
-    weight: initialProduct?.weight || FALLBACK_DETAILS.weight,
+    name: initialProduct?.name ?? "",
+    description: initialProduct?.description ?? "",
+    weight: initialProduct?.weight,
+    highlights: initialProduct?.leadTime ? [initialProduct.leadTime] : [],
+    allergenNote:
+      "Всички мини кукита съдържат глутен, яйца и млечни продукти. Възможни са следи от ядки и фъстъци.",
   };
 
   const wrapIndex = (index: number) => {
@@ -66,7 +66,7 @@ export default function MiniCookiesClient({ initialProduct }: MiniCookiesClientP
       name: productDetails.name,
       price: priceValue,
       quantity,
-      image: galleryImages[activeIndex] ?? galleryImages[0],
+      image: galleryImages[activeIndex] ?? galleryImages[0] ?? "",
     });
   };
 
@@ -115,7 +115,7 @@ export default function MiniCookiesClient({ initialProduct }: MiniCookiesClientP
               <div className="grid grid-cols-3 gap-4">
                 {visibleIndices.map((imageIndex, position) => {
                   const image = galleryImages[imageIndex];
-                  const imageKey = image;
+                  const imageKey = image ?? `placeholder-${position}`;
                   const isActive = imageIndex === activeIndex;
                   return (
                     <button
@@ -127,7 +127,13 @@ export default function MiniCookiesClient({ initialProduct }: MiniCookiesClientP
                       }`}
                       aria-label={`Преглед на изображение ${position + 1}`}
                     >
-                      <Image src={image} alt="" fill className="object-cover" sizes="200px" />
+                      {image ? (
+                        <Image src={image} alt="" fill className="object-cover" sizes="200px" />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center bg-[#fff5f7] text-xs text-[#5f000b]/60">
+                          Няма изображение
+                        </div>
+                      )}
                     </button>
                   );
                 })}
@@ -141,12 +147,14 @@ export default function MiniCookiesClient({ initialProduct }: MiniCookiesClientP
                   <span className="text-2xl font-semibold sm:pt-1">{formatPrice(priceValue)}</span>
                 </div>
                 <p>{productDetails.description}</p>
-                <ul className="space-y-2 ">
-                  {productDetails.highlights.map((item) => (
-                    <li key={item}>• {item}</li>
-                  ))}
-                  {productDetails.weight ? <li>{productDetails.weight}</li> : null}
-                </ul>
+                {productDetails.highlights.length || productDetails.weight ? (
+                  <ul className="space-y-2 ">
+                    {productDetails.highlights.map((item) => (
+                      <li key={item}>• {item}</li>
+                    ))}
+                    {productDetails.weight ? <li>{productDetails.weight}</li> : null}
+                  </ul>
+                ) : null}
                 <p className="uppercase ">{productDetails.allergenNote}</p>
               </header>
               <section className="space-y-6 rounded-s  shadow-card">

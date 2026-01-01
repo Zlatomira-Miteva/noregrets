@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import SiteFooter from "@/components/SiteFooter";
@@ -8,6 +9,12 @@ import TiramisuDetailClient from "./TiramisuDetailClient";
 
 type TiramisuPageProps = {
   params: Promise<{ slug: string }>;
+};
+
+export const metadata: Metadata = {
+  title: "Тирамису – класически и авторски вкусове | NoRegrets.bg",
+  description:
+    "Наслади се на нашето тирамису – италианска класика с twist. Поръчай онлайн или вземи от ателието в Пловдив. 🍮",
 };
 
 export default async function TiramisuProductPage({ params }: TiramisuPageProps) {

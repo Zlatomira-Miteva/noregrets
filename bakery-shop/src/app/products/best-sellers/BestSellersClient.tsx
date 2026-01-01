@@ -11,8 +11,8 @@ import { formatPrice } from "@/utils/price";
 import type { ProductRecord } from "@/lib/products";
 
 const INCLUDED_COOKIES: Array<{ name: string; image: string }> = [
-  { name: "Nutella Bueno", image: "/nutella-bueno-top.png" },
-  { name: "Biscoff", image: "/biscoff-top.png" },
+  { name: "Nutella Bueno", image: "/nutella-bueno-cookie-top.png" },
+  { name: "Biscoff", image: "/biscoff-cookie-top.png" },
   { name: "Red Velvet Cheesecake", image: "/red-velvet-cookie-top.png" },
 ];
 

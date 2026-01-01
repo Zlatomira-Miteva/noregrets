@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -8,6 +9,11 @@ import { formatPrice } from "@/utils/price";
 import { getProductBySlug, getProductsByCategorySlug } from "@/lib/products";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: "Кукита – Ръчно изпечени сладки в Пловдив | NoRegrets.bg",
+  description: "Кукита – Ръчно изпечени сладки в Пловдив | NoRegrets.bg",
+};
 
 const allergenNote =
   "Всички кукита съдържат пшеница, яйца и млечни продукти. Възможни са следи от ядки и фъстъци.";
@@ -191,7 +197,6 @@ export default async function CookiesPage() {
                   >
                     Направи кутия с 6 кукита
                   </Link>
-                  <FavoriteButton productId={cookie.slug} />
                   <p className="text-sm italic text-[#5f000b]/70">{allergenNote}</p>
                 </div>
               </article>

@@ -4,47 +4,21 @@ import Image from "next/image";
 import { useMemo, useState } from "react";
 
 import CookieShowcase from "@/components/CookieShowcase";
+import FavoriteButton from "@/components/FavoriteButton";
 import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
 import { useCart } from "@/context/CartContext";
 import { formatPrice, parsePrice } from "@/utils/price";
 import type { CookieOptionRecord, ProductRecord } from "@/lib/products";
 
-const BASE_GALLERY_IMAGES: string[] = [
-  "/red velvet ig.png",
-  "/nutella ig.png",
-  "/biscoff ig.png",
-  "/oreo ig.png",
-  "/new york ig.png",
-  "/tripple choc ig.png",
-];
-
 const absImage = (value?: string) => {
   if (!value) return "";
-  if (value.startsWith("http://") || value.startsWith("https://")) return value;
-  const normalized = value.startsWith("/") ? value : `/${value}`;
+  const raw = decodeURI(value);
+  if (raw.startsWith("http://") || raw.startsWith("https://")) return raw;
+  const normalized = raw.startsWith("/") ? raw : `/${raw}`;
   const base = (process.env.NEXT_PUBLIC_APP_URL ?? "").replace(/\/+$/, "");
-  return base ? `${base}${normalized}` : normalized;
-};
-
-const getGalleryImages = (size: string): string[] => {
-  const extras: string[] = [];
-
-  if (size === "6") {
-    extras.push(
-      "/box-six-cookies-open.png",
-      "/cookie-box.jpg",
-      "/cookie-box-closed.png"
-    );
-  } else if (size === "3") {
-    extras.push(
-      "/cooke-box-3-open.png",
-      "/cookie-box.jpg",
-      "/cookie-box-closed.png"
-    );
-  }
-
-  return [...extras, ...BASE_GALLERY_IMAGES];
+  const full = base ? `${base}${normalized}` : normalized;
+  return encodeURI(full);
 };
 
 type BoxConfig = {
@@ -178,16 +152,12 @@ export default function CustomBoxClient({
       price: option.price ?? 0,
     })) ?? [];
   const options = isMochiBox ? MOCHI_OPTIONS : resolvedCookieOptions;
-  const fallbackGallery = useMemo(
-    () => getGalleryImages(normalizedSize),
-    [normalizedSize]
-  );
   const galleryImages = useMemo(() => {
-    if (initialProduct?.galleryImages?.length) {
-      return initialProduct.galleryImages.map(absImage).filter(Boolean);
-    }
-    return fallbackGallery.map(absImage).filter(Boolean);
-  }, [initialProduct, fallbackGallery]);
+    const fromProduct = initialProduct?.galleryImages?.map(absImage).filter(Boolean) ?? [];
+    const hero = initialProduct?.heroImage ? [absImage(initialProduct.heroImage)] : [];
+    const combined = [...fromProduct, ...hero].filter(Boolean);
+    return Array.from(new Set(combined));
+  }, [initialProduct]);
   const [activeIndex, setActiveIndex] = useState(0);
   const basePrice = parsePrice(config.price);
   const resolvedPrice = isMochiBox ? initialProduct?.price ?? basePrice : 0;
@@ -278,7 +248,7 @@ export default function CustomBoxClient({
       price: priceValue,
       quantity: 1,
       options: summary,
-      image: galleryImages[activeIndex] ?? galleryImages[0],
+      image: galleryImages[activeIndex] ?? galleryImages[0] ?? "",
     });
 
     setSelection(Object.fromEntries(options.map((cookie) => [cookie.id, 0])));
@@ -309,13 +279,19 @@ export default function CustomBoxClient({
             <div className="space-y-6">
               <div className="overflow-hidden rounded-[1rem] bg-white p-1 shadow-card">
                 <div className="group relative aspect-square overflow-hidden rounded-[0.75rem]">
-                  <Image
-                    src={galleryImages[activeIndex]}
-                    alt="Кутия с кукита"
-                    fill
-                    className="object-cover transition duration-500"
-                    sizes="(min-width: 1024px) 512px, 100vw"
-                  />
+                  {galleryImages[activeIndex] ? (
+                    <Image
+                      src={galleryImages[activeIndex]}
+                      alt="Кутия с кукита"
+                      fill
+                      className="object-cover transition duration-500"
+                      sizes="(min-width: 1024px) 512px, 100vw"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center bg-[#fff5f7] text-sm text-[#5f000b]/60">
+                      Няма изображение
+                    </div>
+                  )}
                   {totalImages > 1 ? (
                     <>
                       <button
@@ -521,6 +497,16 @@ export default function CustomBoxClient({
                 >
                   Добави кутията в количката
                 </button>
+                <div className="flex flex-col items-center gap-2">
+                  <FavoriteButton
+                    productId={`custom-box-${normalizedSize}`}
+                    disabled={!canAddToCart || !options.length}
+                    className={!canAddToCart || !options.length ? "opacity-60" : ""}
+                  />
+                  {!canAddToCart && options.length ? (
+                    <p className="text-sm text-[#5f000b]/70">Изберете всички {requiredCount} кукита, за да запазите кутията в любими.</p>
+                  ) : null}
+                </div>
                 {!canAddToCart && options.length ? (
                   <p className="text-center">
                     Изберете точно {requiredCount} кукита, за да продължите.

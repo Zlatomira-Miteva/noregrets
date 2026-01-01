@@ -5,8 +5,8 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 export type CartItem = {
   key: string;
   productId: string;
-  name: string;
-  price: number;
+  name?: string;
+  price?: number;
   quantity: number;
   options?: string[];
   image?: string;
@@ -14,8 +14,8 @@ export type CartItem = {
 
 type AddItemPayload = {
   productId: string;
-  name: string;
-  price: number;
+  name?: string;
+  price?: number;
   quantity: number;
   options?: string[];
   image?: string;

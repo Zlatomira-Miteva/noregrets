@@ -1,10 +1,16 @@
-"use client";
-
 import Image from "next/image";
 import Link from "next/link";
 
+import type { Metadata } from "next";
+
 import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
+
+export const metadata: Metadata = {
+  title: "За No Regrets – история на сладкарско ателие в Пловдив",
+  description:
+    "Запознай се с историята зад No Regrets – страст към печене, ръчна изработка и любов към сладките моменти. 🍪‍",
+};
 const ABOUT_US_IMAGE = "/about-us.png";
 
 const SOCIAL_URLS = {

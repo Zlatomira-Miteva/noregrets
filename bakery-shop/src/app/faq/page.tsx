@@ -1,7 +1,14 @@
 "use client";
 import { useState } from "react";
+import type { Metadata } from "next";
+
 import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
+
+export const metadata: Metadata = {
+  title: "ЧЗВ – Поръчки, доставка и взимане | NoRegrets.bg",
+  description: "Научи отговорите на най-честите въпроси за поръчки, доставка и взимане на сладкиши от No Regrets. ❓",
+};
 type FaqItem = { question: string; answer: string[] };
 const FAQ_ITEMS: FaqItem[] = [
   {

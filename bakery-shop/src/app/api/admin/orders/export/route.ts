@@ -55,22 +55,35 @@ export async function GET(request: Request) {
     const domainName = getEnvOrFail("NAP_DOMAIN_NAME");
 
     const url = new URL(request.url);
+    // Support both mon/god (preferred) and start/end (YYYY-MM-DD) query params.
     const mon = url.searchParams.get("mon");
     const god = url.searchParams.get("god");
-    if (!mon || !god) {
-      return NextResponse.json({ error: "Missing mon (01-12) or god (YYYY) query params" }, { status: 400 });
-    }
-    const monNum = Number(mon);
-    const godNum = Number(god);
-    if (!Number.isInteger(monNum) || monNum < 1 || monNum > 12) {
-      return NextResponse.json({ error: "Invalid mon, expected 01-12" }, { status: 400 });
-    }
-    if (!Number.isInteger(godNum) || `${god}`.length !== 4) {
-      return NextResponse.json({ error: "Invalid god, expected 4-digit year" }, { status: 400 });
-    }
+    const startParam = url.searchParams.get("start");
+    const endParam = url.searchParams.get("end");
 
-    const startDate = new Date(Date.UTC(godNum, monNum - 1, 1, 0, 0, 0));
-    const endDate = new Date(Date.UTC(godNum, monNum, 0, 23, 59, 59, 999));
+    let startDate: Date;
+    let endDate: Date;
+
+    if (mon && god) {
+      const monNum = Number(mon);
+      const godNum = Number(god);
+      if (!Number.isInteger(monNum) || monNum < 1 || monNum > 12) {
+        return NextResponse.json({ error: "Invalid mon, expected 01-12" }, { status: 400 });
+      }
+      if (!Number.isInteger(godNum) || `${god}`.length !== 4) {
+        return NextResponse.json({ error: "Invalid god, expected 4-digit year" }, { status: 400 });
+      }
+      startDate = new Date(Date.UTC(godNum, monNum - 1, 1, 0, 0, 0));
+      endDate = new Date(Date.UTC(godNum, monNum, 0, 23, 59, 59, 999));
+    } else if (startParam && endParam) {
+      startDate = new Date(startParam);
+      endDate = new Date(endParam);
+      if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
+        return NextResponse.json({ error: "Invalid start or end date (expected YYYY-MM-DD)" }, { status: 400 });
+      }
+    } else {
+      return NextResponse.json({ error: "Missing mon/god or start/end query params" }, { status: 400 });
+    }
 
     const ordersRes = await pgPool.query(
       `SELECT * FROM "Order"
@@ -78,6 +91,9 @@ export async function GET(request: Request) {
        ORDER BY "createdAt" ASC`,
       [startDate, endDate],
     );
+
+    const monOut = mon ? mon.padStart(2, "0") : String(new Date(startDate).getUTCMonth() + 1).padStart(2, "0");
+    const godOut = mon ? String(god) : new Date(startDate).getUTCFullYear().toString();
 
     const header = [
       "EIK",
@@ -157,8 +173,8 @@ export async function GET(request: Request) {
           eShopType,
           domainName,
           creationDate,
-          mon.padStart(2, "0"),
-          String(god),
+          monOut,
+          godOut,
           orderRef,
           docDate,
           orderRef,
@@ -196,8 +212,8 @@ export async function GET(request: Request) {
           eShopType,
           domainName,
           creationDate,
-          mon.padStart(2, "0"),
-          String(god),
+          monOut,
+          godOut,
           orderRef,
           docDate,
           orderRef,
@@ -234,8 +250,8 @@ export async function GET(request: Request) {
       entity: "orders",
       action: "orders_export_csv_n18",
       newValue: {
-        mon,
-        god,
+        mon: monOut,
+        god: godOut,
         count: rows.length,
       },
       operatorCode: session?.user?.operatorCode ?? session?.user?.email ?? null,

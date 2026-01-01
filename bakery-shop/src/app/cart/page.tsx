@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import { DayPicker } from "react-day-picker";
 import "react-day-picker/dist/style.css";
@@ -25,6 +25,7 @@ type AppliedCoupon = {
 const CartPage = () => {
   const { items, totalPrice, clearCart, removeItem, updateQuantity, updateItemPrice } =
     useCart();
+  const refreshedPricesRef = useRef(false);
   const { data: session } = useSession();
 
   const [reachMessage, setReachMessage] = useState<string | null>(null);
@@ -126,7 +127,7 @@ const CartPage = () => {
     if (!trimmed) {
       return "Въведете имейл.";
     }
-    const pattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const pattern = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
     if (!pattern.test(trimmed)) {
       return "Невалиден формат на имейл.";
     }
@@ -170,6 +171,8 @@ const CartPage = () => {
   // Refresh item prices from backend to avoid stale cart pricing
   useEffect(() => {
     if (!items.length) return;
+    if (refreshedPricesRef.current) return;
+    refreshedPricesRef.current = true;
     const controller = new AbortController();
     const uniqueIds = Array.from(new Set(items.map((item) => item.productId)));
     (async () => {
@@ -182,9 +185,7 @@ const CartPage = () => {
           const data = await res.json();
           const price = Number(data.product?.price ?? data.price);
           const name = data.product?.name ?? data.name;
-          if (Number.isFinite(price) && price > 0) {
-            updateItemPrice(productId, price, name);
-          }
+          updateItemPrice(productId, Number.isFinite(price) ? price : undefined, name);
         } catch (err) {
           if (controller.signal.aborted) return;
           console.error("Failed to refresh price", err);
@@ -474,11 +475,7 @@ const CartPage = () => {
         quantity: item.quantity,
         options: item.options,
       })),
-      totalQuantity: normalizedItems.reduce(
-        (sum, item) => sum + item.quantity,
-        0
-      ),
-      totalAmount: roundedTotal,
+      // Let the server recompute total/quantity; do not send client totals.
       createdAt: new Date().toISOString(),
       consents: {
         termsAccepted,
@@ -611,7 +608,7 @@ const CartPage = () => {
         setOfficesError(data.fallback ? data.message ?? null : null);
         setSelectedOffice((prev) => {
           if (!prev) return "";
-          return nextOffices.some((o) => o.id === prev) ? prev : "";
+          return nextOffices.some((o: { id: string }) => o.id === prev) ? prev : "";
         });
         setNoOfficesMessage(
           nextOffices.length === 0
@@ -701,7 +698,7 @@ const CartPage = () => {
                     </div>
 
                     <div className="hidden text-base font-semibold sm:block">
-                      {formatPrice(item.price)}
+                      {item.price ? formatPrice(item.price) : "—"}
                     </div>
 
                     <div className="flex items-center justify-start sm:justify-center">
@@ -735,7 +732,7 @@ const CartPage = () => {
                     </div>
 
                     <div className="text-base font-semibold">
-                      {formatPrice(item.price * item.quantity)}
+                      {item.price ? formatPrice(item.price * item.quantity) : "—"}
                     </div>
                   </li>
                 ))}
@@ -796,12 +793,10 @@ const CartPage = () => {
                             ...prev,
                             phone: next,
                           }));
-                          if (customerErrors.phone) {
-                            setCustomerErrors((prev) => ({
-                              ...prev,
-                              phone: validatePhoneValue(next),
-                            }));
-                          }
+                          setCustomerErrors((prev) => ({
+                            ...prev,
+                            phone: validatePhoneValue(next),
+                          }));
                         }}
                         onBlur={() =>
                           setCustomerErrors((prev) => ({
@@ -836,12 +831,10 @@ const CartPage = () => {
                             ...prev,
                             email: next,
                           }));
-                          if (customerErrors.email) {
-                            setCustomerErrors((prev) => ({
-                              ...prev,
-                              email: validateEmailValue(next),
-                            }));
-                          }
+                          setCustomerErrors((prev) => ({
+                            ...prev,
+                            email: validateEmailValue(next),
+                          }));
                         }}
                         onBlur={() =>
                           setCustomerErrors((prev) => ({

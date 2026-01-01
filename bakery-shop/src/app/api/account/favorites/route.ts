@@ -3,8 +3,8 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 
 import { authOptions } from "@/auth";
-import { ensureCustomerSchema } from "@/lib/customer-schema";
 import { pgPool } from "@/lib/pg";
+import { ensureCustomerSchema } from "@/lib/customer-schema";
 
 export const dynamic = "force-dynamic";
 
@@ -46,6 +46,32 @@ export async function POST(request: Request) {
   const productId = typeof body?.productId === "string" ? body.productId : "";
   if (!productId) {
     return NextResponse.json({ error: "productId е задължителен." }, { status: 400 });
+  }
+
+  // Allow only valid products and block single cookie flavors from being favorited.
+  const productRes = await pgPool.query(
+    `SELECT p.id,
+            p.slug,
+            p.status,
+            c.slug AS "categorySlug"
+       FROM "Product" p
+       JOIN "ProductCategory" c ON p."categoryId" = c.id
+      WHERE p.id = $1 OR p.slug = $1
+      LIMIT 1`,
+    [productId],
+  );
+
+  const product = productRes.rows[0];
+  if (!product) {
+    return NextResponse.json({ error: "Невалиден продукт." }, { status: 404 });
+  }
+
+  if (product.categorySlug === "cookies") {
+    return NextResponse.json({ error: "Можеш да запазваш само конфигурирани кутии, не отделни вкусове." }, { status: 400 });
+  }
+
+  if (product.status !== "PUBLISHED") {
+    return NextResponse.json({ error: "Продуктът не е наличен за запазване." }, { status: 400 });
   }
 
   const client = await pgPool.connect();

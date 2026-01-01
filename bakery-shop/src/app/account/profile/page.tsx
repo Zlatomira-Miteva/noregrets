@@ -34,6 +34,7 @@ export default function AccountProfilePage() {
   const [officesLoading, setOfficesLoading] = useState(false);
   const [citiesError, setCitiesError] = useState<string | null>(null);
   const [officesError, setOfficesError] = useState<string | null>(null);
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -141,6 +142,7 @@ export default function AccountProfilePage() {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setSaveMessage(null);
     setLoading(true);
     try {
       const payload =
@@ -161,6 +163,9 @@ export default function AccountProfilePage() {
       if (!res.ok) {
         const payload = await res.json().catch(() => ({}));
         setError(payload?.error ?? "Неуспешно запазване.");
+      } else {
+        setSaveMessage("Промените са запазени успешно.");
+        setTimeout(() => setSaveMessage(null), 10000);
       }
     } catch {
       setError("Неуспешно запазване.");
@@ -326,6 +331,7 @@ export default function AccountProfilePage() {
               </>
             )}
             {error ? <p className="text-sm text-red-600 sm:col-span-2">{error}</p> : null}
+            {saveMessage ? <p className="text-sm text-green-700 sm:col-span-2">{saveMessage}</p> : null}
             <div className="sm:col-span-2">
               <button
                 type="submit"

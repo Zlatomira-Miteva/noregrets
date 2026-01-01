@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "No Regrets – Сладкарско ателие в Пловдив",
+  title: "No Regrets – Ръчно изпечени кукита, тирамису и торти в Пловдив | NoRegrets.bg",
+  description:
+    "Открий уникални ръчно приготвени кукита, торти в буркан и тирамису от сладкарско ателие No Regrets в Пловдив. Поръчай онлайн или вземи от ателието! ✨",
   robots: {
     index: true,
     follow: true,
