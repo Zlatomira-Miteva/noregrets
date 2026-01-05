@@ -30,6 +30,9 @@ export async function GET() {
     totalAmount: Number(order.totalAmount ?? order.totalamount),
     status: order.status,
     metadata: order.metadata,
+    refundAmount: order.refundAmount ?? order.refundamount ?? null,
+    refundMethod: order.refundMethod ?? order.refundmethod ?? null,
+    refundAt: toIso(order.refundAt ?? order.refundat),
     createdAt: toIso(order.createdAt ?? order.createdat) ?? "",
     updatedAt: toIso(order.updatedAt ?? order.updatedat) ?? "",
   }));

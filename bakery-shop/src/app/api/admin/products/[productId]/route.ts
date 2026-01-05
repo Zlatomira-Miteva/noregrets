@@ -7,16 +7,21 @@ import { authOptions } from "@/auth";
 import { logAudit } from "@/lib/audit";
 import { isActiveAdmin } from "@/lib/authz";
 import { pgPool } from "@/lib/pg";
+import { ensureProductSchema } from "@/lib/product-schema";
 
 const updateSchema = z.object({
   name: z.string().optional(),
   slug: z.string().optional(),
   shortDescription: z.string().optional(),
   description: z.string().optional(),
-  weight: z.string().optional(),
+  weight: z.string().nullable().optional(),
+  weightSmall: z.string().nullable().optional(),
+  weightLarge: z.string().nullable().optional(),
   leadTime: z.string().optional(),
   heroImage: z.string().optional(),
   price: z.number().optional(),
+  priceSmall: z.number().nullable().optional(),
+  priceLarge: z.number().nullable().optional(),
   status: z.enum(["PUBLISHED", "DRAFT", "ARCHIVED"]).optional(),
   galleryImages: z.array(z.string().min(1)).optional(),
   categoryImages: z.array(z.string().min(1)).optional(),
@@ -36,6 +41,7 @@ export async function GET(_: Request, { params }: { params: any }) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  await ensureProductSchema();
   const client = await pgPool.connect();
   try {
     const productRes = await client.query(`SELECT * FROM "Product" WHERE id=$1 LIMIT 1`, [params.productId]);
@@ -61,7 +67,11 @@ export async function GET(_: Request, { params }: { params: any }) {
       product: {
         ...product,
         price: Number(product.price),
-        heroImage: product.heroimage ?? null,
+        priceSmall: product.priceSmall != null ? Number(product.priceSmall) : null,
+        priceLarge: product.priceLarge != null ? Number(product.priceLarge) : null,
+        weightSmall: product.weightSmall,
+        weightLarge: product.weightLarge,
+        heroImage: product.heroImage ?? null,
         images: images.rows,
         categoryImages: categoryImages.rows,
         variants: variants.rows.map((v) => ({ ...v, price: Number(v.price) })),
@@ -88,6 +98,7 @@ export async function PATCH(request: Request, { params }: { params: any }) {
     return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Невалидни данни." }, { status: 400 });
   }
 
+  await ensureProductSchema();
   const client = await pgPool.connect();
   try {
     await client.query("BEGIN");
@@ -102,24 +113,36 @@ export async function PATCH(request: Request, { params }: { params: any }) {
     const categoryImages = parsed.data.categoryImages;
 
     const finalHero = (parsed.data.heroImage ?? existing.heroimage ?? null) ?? (gallery?.[0] ?? null);
+    const pickProvided = <T,>(incoming: T | undefined, existingValue: T) =>
+      incoming === undefined ? existingValue : incoming;
 
     const nextProduct = {
       name: parsed.data.name ?? existing.name,
       slug: parsed.data.slug ?? existing.slug,
-      shortDescription: parsed.data.shortDescription ?? existing.shortdescription ?? null,
+      shortDescription: parsed.data.shortDescription ?? existing.shortDescription ?? existing.shortdescription ?? null,
       description: parsed.data.description ?? existing.description ?? null,
-      weight: parsed.data.weight ?? existing.weight ?? null,
-      leadTime: parsed.data.leadTime ?? existing.leadtime ?? null,
+      weight: pickProvided(parsed.data.weight, existing.weight ?? null),
+      weightSmall: pickProvided(parsed.data.weightSmall, existing.weightSmall ?? existing.weightsmall ?? null),
+      weightLarge: pickProvided(parsed.data.weightLarge, existing.weightLarge ?? existing.weightlarge ?? null),
+      leadTime: pickProvided(parsed.data.leadTime, existing.leadTime ?? existing.leadtime ?? null),
       heroImage: finalHero,
-      price: parsed.data.price ?? Number(existing.price),
+      price: pickProvided(parsed.data.price, Number(existing.price)),
+      priceSmall: pickProvided(
+        parsed.data.priceSmall,
+        existing.priceSmall != null ? Number(existing.priceSmall) : null,
+      ),
+      priceLarge: pickProvided(
+        parsed.data.priceLarge,
+        existing.priceLarge != null ? Number(existing.priceLarge) : null,
+      ),
       status: parsed.data.status ?? existing.status,
-      categoryId: parsed.data.categoryId ?? existing.categoryid ?? existing.categoryId,
+      categoryId: parsed.data.categoryId ?? existing.categoryId ?? existing.categoryid,
     };
 
     const updateRes = await client.query(
       `UPDATE "Product"
-       SET name=$1, slug=$2, "shortDescription"=$3, description=$4, weight=$5, "leadTime"=$6, "heroImage"=$7, price=$8, status=$9, "categoryId"=$10, "updatedAt"=NOW()
-       WHERE id=$11
+       SET name=$1, slug=$2, "shortDescription"=$3, description=$4, weight=$5, "weightSmall"=$6, "weightLarge"=$7, "leadTime"=$8, "heroImage"=$9, price=$10, "priceSmall"=$11, "priceLarge"=$12, status=$13, "categoryId"=$14, "updatedAt"=NOW()
+       WHERE id=$15
        RETURNING *`,
       [
         nextProduct.name,
@@ -127,9 +150,13 @@ export async function PATCH(request: Request, { params }: { params: any }) {
         nextProduct.shortDescription,
         nextProduct.description,
         nextProduct.weight,
+        nextProduct.weightSmall,
+        nextProduct.weightLarge,
         nextProduct.leadTime,
         nextProduct.heroImage,
         nextProduct.price,
+        nextProduct.priceSmall,
+        nextProduct.priceLarge,
         nextProduct.status,
         nextProduct.categoryId,
         params.productId,
@@ -163,21 +190,25 @@ export async function PATCH(request: Request, { params }: { params: any }) {
       );
     }
 
-    if (parsed.data.variantName || parsed.data.price !== undefined) {
+    if (parsed.data.variantName || parsed.data.price !== undefined || parsed.data.priceSmall !== undefined) {
       const variantsRes = await client.query(
         `SELECT * FROM "ProductVariant" WHERE "productId"=$1 ORDER BY "isDefault" DESC, name ASC LIMIT 1`,
         [product.id],
       );
       const variant = variantsRes.rows[0];
+      const nextVariantPrice =
+        parsed.data.priceSmall ??
+        parsed.data.price ??
+        (variant ? Number(variant.price) : nextProduct.price ?? 0);
       if (variant) {
         await client.query(
           `UPDATE "ProductVariant" SET name=$1, price=$2 WHERE id=$3`,
-          [parsed.data.variantName ?? variant.name, parsed.data.price ?? variant.price, variant.id],
+          [parsed.data.variantName ?? variant.name, nextVariantPrice, variant.id],
         );
       } else {
         await client.query(
           `INSERT INTO "ProductVariant" (id,"productId",name,price,"isDefault") VALUES ($1,$2,$3,$4,true)`,
-          [randomUUID(), product.id, parsed.data.variantName ?? product.name, parsed.data.price ?? product.price],
+          [randomUUID(), product.id, parsed.data.variantName ?? product.name, nextVariantPrice],
         );
       }
     }

@@ -16,7 +16,10 @@ type AdminOrder = {
   deliveryLabel: string;
   items: unknown;
   totalAmount: number;
-  status: "PENDING" | "IN_PROGRESS" | "COMPLETED" | "PAID" | "FAILED" | "CANCELLED";
+  status: "PENDING" | "IN_PROGRESS" | "COMPLETED" | "PAID" | "FAILED" | "CANCELLED" | "REFUNDED";
+  refundAmount?: number | null;
+  refundMethod?: string | null;
+  refundAt?: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -28,6 +31,8 @@ type OrderDraft = {
   deliveryLabel: string;
   totalAmount: string;
   status: AdminOrder["status"];
+  refundAmount?: string;
+  refundMethod?: string;
 };
 
 const statusLabels: Record<AdminOrder["status"], string> = {
@@ -37,6 +42,7 @@ const statusLabels: Record<AdminOrder["status"], string> = {
   PAID: "Платена",
   FAILED: "Неуспешна",
   CANCELLED: "Отказана",
+  REFUNDED: "Върната",
 };
 
 const statusClasses: Record<AdminOrder["status"], string> = {
@@ -46,6 +52,7 @@ const statusClasses: Record<AdminOrder["status"], string> = {
   PAID: "bg-green-100 text-green-800",
   FAILED: "bg-red-100 text-red-800",
   CANCELLED: "bg-gray-200 text-gray-700",
+  REFUNDED: "bg-purple-100 text-purple-800",
 };
 
 const parseItems = (items: unknown): Array<{ name?: string; quantity?: number; price?: number }> => {
@@ -95,6 +102,8 @@ export default function AdminOrdersPage() {
           deliveryLabel: order.deliveryLabel,
           totalAmount: (order.totalAmount ?? 0).toString(),
           status: order.status,
+          refundAmount: order.refundAmount != null ? order.refundAmount.toString() : "",
+          refundMethod: order.refundMethod ?? "",
         };
       });
       setDrafts(nextDrafts);
@@ -147,6 +156,13 @@ export default function AdminOrdersPage() {
       ...draft,
       ...overrides,
       totalAmount: Number((overrides?.totalAmount ?? draft.totalAmount ?? "0").toString().replace(",", ".")),
+      refundAmount:
+        overrides?.refundAmount !== undefined
+          ? Number(overrides.refundAmount || "0")
+          : draft.refundAmount !== undefined
+            ? Number(draft.refundAmount || "0")
+            : undefined,
+      refundMethod: overrides?.refundMethod ?? draft.refundMethod ?? undefined,
     };
 
     setSavingId(orderId);
@@ -174,6 +190,8 @@ export default function AdminOrdersPage() {
           deliveryLabel: updated.deliveryLabel,
           totalAmount: (updated.totalAmount ?? 0).toString(),
           status: updated.status,
+          refundAmount: updated.refundAmount != null ? updated.refundAmount.toString() : "",
+          refundMethod: updated.refundMethod ?? "",
         },
       }));
       setMessage("Поръчката е обновена.");
@@ -186,6 +204,18 @@ export default function AdminOrdersPage() {
 
   const cancelOrder = (orderId: string) => submitUpdate(orderId, { status: "CANCELLED" });
   const completeOrder = (orderId: string) => submitUpdate(orderId, { status: "COMPLETED" });
+  const refundOrder = (order: AdminOrder) => {
+    const draft = drafts[order.id];
+    const amount =
+      draft?.refundAmount && draft.refundAmount.trim().length
+        ? draft.refundAmount
+        : (order.refundAmount ?? order.totalAmount ?? 0).toString();
+    submitUpdate(order.id, {
+      status: "REFUNDED",
+      refundAmount: amount,
+      refundMethod: draft?.refundMethod ?? "",
+    });
+  };
 
   const sendTestNotification = async () => {
     setTestMailStatus("Изпращаме тестов имейл…");
@@ -449,7 +479,34 @@ export default function AdminOrdersPage() {
                             <option value="PAID">Платена</option>
                             <option value="FAILED">Неуспешна</option>
                             <option value="CANCELLED">Отказана</option>
+                            <option value="REFUNDED">Върната</option>
                           </select>
+                        </label>
+                        <label className="text-xs uppercase">
+                          Сума за връщане (EUR)
+                          <input
+                            type="number"
+                            value={draft?.refundAmount ?? ""}
+                            onChange={(event) =>
+                              handleFieldChange(order.id, "refundAmount", event.target.value)
+                            }
+                            className="mt-1 w-full rounded-2xl border border-[#dcb1b1] bg-white px-3 py-2 text-sm focus:border-[#5f000b] focus:outline-none"
+                            placeholder="напр. 10.00"
+                            min="0"
+                            step="0.01"
+                          />
+                        </label>
+                        <label className="text-xs uppercase">
+                          Начин на връщане
+                          <input
+                            type="text"
+                            value={draft?.refundMethod ?? ""}
+                            onChange={(event) =>
+                              handleFieldChange(order.id, "refundMethod", event.target.value)
+                            }
+                            className="mt-1 w-full rounded-2xl border border-[#dcb1b1] bg-white px-3 py-2 text-sm focus:border-[#5f000b] focus:outline-none"
+                            placeholder="напр. карта/по сметка"
+                          />
                         </label>
                       </div>
                     </div>
@@ -471,6 +528,14 @@ export default function AdminOrdersPage() {
                             : order.status === "COMPLETED"
                               ? "Изпълнена"
                               : "Маркирай изпълнена"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => refundOrder(order)}
+                          className="rounded-full border border-purple-700 px-4 py-2 text-xs font-semibold uppercase text-purple-800 transition hover:bg-purple-50 disabled:opacity-50"
+                          disabled={savingId === order.id}
+                        >
+                          {savingId === order.id ? "Запазваме..." : "Маркирай върната"}
                         </button>
                         <button
                           type="button"

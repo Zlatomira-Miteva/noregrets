@@ -106,38 +106,38 @@ async function speedyRequest<T>(
   throw lastError ?? new Error("Speedy API request failed");
 }
 
-const parseCsvLine = (line: string) => {
-  const values: string[] = [];
-  let current = "";
-  let inQuotes = false;
-
-  for (let i = 0; i < line.length; i += 1) {
-    const char = line[i];
-    const next = line[i + 1];
-
-    if (char === '"' && inQuotes && next === '"') {
-      current += '"';
-      i += 1;
-      continue;
-    }
-
-    if (char === '"') {
-      inQuotes = !inQuotes;
-      continue;
-    }
-
-    if (char === "," && !inQuotes) {
-      values.push(current);
-      current = "";
-      continue;
-    }
-
-    current += char;
-  }
-
-  values.push(current);
-  return values.map((value) => value.trim());
-};
+// const parseCsvLine = (line: string) => {
+//   const values: string[] = [];
+//   let current = "";
+//   let inQuotes = false;
+//
+//   for (let i = 0; i < line.length; i += 1) {
+//     const char = line[i];
+//     const next = line[i + 1];
+//
+//     if (char === '"' && inQuotes && next === '"') {
+//       current += '"';
+//       i += 1;
+//       continue;
+//     }
+//
+//     if (char === '"') {
+//       inQuotes = !inQuotes;
+//       continue;
+//     }
+//
+//     if (char === "," && !inQuotes) {
+//       values.push(current);
+//       current = "";
+//       continue;
+//     }
+//
+//     current += char;
+//   }
+//
+//   values.push(current);
+//   return values.map((value) => value.trim());
+// };
 
 export async function loadSpeedySites(): Promise<SpeedySite[]> {
   const now = Date.now();

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { pgPool } from "@/lib/pg";
+import { ensureProductSchema } from "@/lib/product-schema";
 
 export async function GET(_: Request, context: { params: Promise<{ slug?: string }> }) {
   try {
@@ -12,6 +13,7 @@ export async function GET(_: Request, context: { params: Promise<{ slug?: string
 
     const client = await pgPool.connect();
     try {
+      await ensureProductSchema(client);
       const productRes = await client.query(
         `SELECT p.*, c.name as category_name FROM "Product" p
          LEFT JOIN "ProductCategory" c ON p."categoryId" = c.id
@@ -40,6 +42,10 @@ export async function GET(_: Request, context: { params: Promise<{ slug?: string
         product: {
           ...product,
           price: Number(product.price),
+          priceSmall: product.priceSmall != null ? Number(product.priceSmall) : null,
+          priceLarge: product.priceLarge != null ? Number(product.priceLarge) : null,
+          weightSmall: product.weightSmall ?? null,
+          weightLarge: product.weightLarge ?? null,
           images: imagesRes.rows,
           categoryImages: categoryImagesRes.rows,
           variants: variantsRes.rows.map((v) => ({ ...v, price: Number(v.price) })),

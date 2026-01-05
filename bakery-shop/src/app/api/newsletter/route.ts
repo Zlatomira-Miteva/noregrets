@@ -31,9 +31,15 @@ const isRateLimited = (key: string) => {
 
 export async function POST(request: Request) {
   try {
-    const { email, honeypot } = await request.json();
+    const { email, honeypot, firstName, lastName, phone, address, city, zip } = await request.json();
     const sanitizedEmail = typeof email === "string" ? email.trim() : "";
     const honeypotValue = typeof honeypot === "string" ? honeypot.trim() : "";
+    const normalizedFirst = typeof firstName === "string" ? firstName.trim() : "";
+    const normalizedLast = typeof lastName === "string" ? lastName.trim() : "";
+    const normalizedPhone = typeof phone === "string" ? phone.trim() : "";
+    const normalizedAddress = typeof address === "string" ? address.trim() : "";
+    const normalizedCity = typeof city === "string" ? city.trim() : "";
+    const normalizedZip = typeof zip === "string" ? zip.trim() : "";
 
     if (honeypotValue) {
       return NextResponse.json({ error: "Невалидна заявка." }, { status: 400 });
@@ -59,8 +65,16 @@ export async function POST(request: Request) {
     }
 
     const normalizedEmail = sanitizedEmail.toLowerCase();
-    await appendNewsletterEmail(normalizedEmail);
-    await addToMailchimp({ email: normalizedEmail }).catch((err) => {
+    await appendNewsletterEmail({
+      email: normalizedEmail,
+      firstName: normalizedFirst,
+      lastName: normalizedLast,
+      phone: normalizedPhone,
+      address: normalizedAddress,
+      city: normalizedCity,
+      zip: normalizedZip,
+    });
+    await addToMailchimp({ email: normalizedEmail, firstName: normalizedFirst, lastName: normalizedLast }).catch((err) => {
       console.warn("[newsletter.mailchimp] failed", err);
     });
 

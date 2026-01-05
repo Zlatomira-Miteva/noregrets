@@ -34,6 +34,7 @@ export default async function TiramisuProductPage({ params }: TiramisuPageProps)
           products={products.map((product) => ({
             ...product,
             priceLabel: formatPrice(product.price),
+            shortDescription: product.shortDescription,
           }))}
           initialSlug={initialProduct.slug}
         />

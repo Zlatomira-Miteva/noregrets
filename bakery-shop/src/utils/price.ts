@@ -1,4 +1,4 @@
-const EUR_CONVERSION_RATE = 1.95583;
+const EUR_CONVERSION_RATE = 1.95583; // 1 EUR = 1.95583 BGN
 
 export const parsePrice = (price: string): number => {
   if (!price) return 0;
@@ -14,6 +14,7 @@ export const formatPrice = (value: number | string | null | undefined): string =
   if (!Number.isFinite(numericValue)) {
     return "0.00 € / 0.00 лв";
   }
-  const eurValue = numericValue / EUR_CONVERSION_RATE;
-  return `${eurValue.toFixed(2)} € / ${numericValue.toFixed(2)} лв`;
+  const eurValue = numericValue; // база: EUR
+  const bgnValue = eurValue * EUR_CONVERSION_RATE;
+  return `${eurValue.toFixed(2)} € / ${bgnValue.toFixed(2)} лв`;
 };

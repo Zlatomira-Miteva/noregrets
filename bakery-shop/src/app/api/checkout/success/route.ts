@@ -73,7 +73,18 @@ const buildHtml = (redirectPath: string) => `<!doctype html>
       letter-spacing:0.06em;
     }
   </style>
-  <script>window.location.replace(${JSON.stringify(redirectPath)});</script>
+  <script>
+    (function(){
+      try {
+        window.localStorage.removeItem("noregrets-cart");
+        window.sessionStorage.removeItem("pendingOrder");
+        window.sessionStorage.removeItem("newsletterCaptured");
+      } catch (e) {
+        // ignore storage errors
+      }
+      window.location.replace(${JSON.stringify(redirectPath)});
+    })();
+  </script>
 </head>
 <body>
   <div class="card">

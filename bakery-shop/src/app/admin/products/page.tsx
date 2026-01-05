@@ -21,6 +21,8 @@ type ProductSummary = {
   name: string;
   slug: string;
   price: number;
+  priceSmall?: number | null;
+  priceLarge?: number | null;
   status: string;
   categoryName: string;
   categoryId: string;
@@ -28,6 +30,8 @@ type ProductSummary = {
   description?: string | null;
   variantName?: string | null;
   weight?: string | null;
+  weightSmall?: string | null;
+  weightLarge?: string | null;
   leadTime?: string | null;
   heroImage?: string | null;
   galleryImages?: string[];
@@ -47,6 +51,8 @@ const defaultProductForm = {
   shortDescription: "",
   description: "",
   price: "",
+  priceSmall: "",
+  priceLarge: "",
   heroImage: "",
   galleryImages: "",
   categoryImages: "",
@@ -54,6 +60,8 @@ const defaultProductForm = {
   status: "PUBLISHED",
   variantName: "",
   weight: "",
+  weightSmall: "",
+  weightLarge: "",
   leadTime: "",
 };
 
@@ -198,11 +206,35 @@ export default function AdminProductsPage() {
     setProductError(null);
 
     const priceValue = Number(productForm.price);
-    if (Number.isNaN(priceValue)) {
+    if (!Number.isFinite(priceValue) || priceValue <= 0) {
       setProductError("Моля, въведете валидна цена.");
       setProductLoading(false);
       return;
     }
+
+    let validationFailed = false;
+    const parseOptionalPrice = (value: string, label: string) => {
+      const trimmed = value.trim();
+      if (!trimmed) return null;
+      const parsed = Number(trimmed);
+      if (!Number.isFinite(parsed) || parsed <= 0) {
+        setProductError(`Моля, въведете валидна цена за ${label}.`);
+        validationFailed = true;
+        return null;
+      }
+      return parsed;
+    };
+
+    const priceSmallValue = parseOptionalPrice(productForm.priceSmall, "малък размер");
+    const priceLargeValue = parseOptionalPrice(productForm.priceLarge, "голям размер");
+    if (validationFailed) {
+      setProductLoading(false);
+      return;
+    }
+
+    const weightValue = productForm.weight.trim() || null;
+    const weightSmallValue = productForm.weightSmall.trim() || null;
+    const weightLargeValue = productForm.weightLarge.trim() || null;
 
     if (!productForm.categoryId) {
       setProductError("Изберете категория за продукта.");
@@ -231,12 +263,16 @@ export default function AdminProductsPage() {
         slug: productForm.slug || undefined,
         shortDescription: productForm.shortDescription || undefined,
         description: productForm.description || undefined,
-        weight: productForm.weight,
+        weight: weightValue,
+        weightSmall: weightSmallValue,
+        weightLarge: weightLargeValue,
         leadTime: productForm.leadTime,
         heroImage: productForm.heroImage,
         galleryImages,
         categoryImages: categoryImages.length ? categoryImages : undefined,
         price: priceValue,
+        priceSmall: priceSmallValue,
+        priceLarge: priceLargeValue,
         categoryId: productForm.categoryId,
         status: productForm.status,
         variantName: productForm.variantName || undefined,
@@ -330,8 +366,12 @@ export default function AdminProductsPage() {
       shortDescription: product.shortDescription ?? "",
       description: product.description ?? "",
       weight: product.weight ?? "",
+      weightSmall: product.weightSmall ?? "",
+      weightLarge: product.weightLarge ?? "",
       leadTime: product.leadTime ?? "",
-      price: product.price.toString(),
+      price: product.price?.toString() ?? "",
+      priceSmall: product.priceSmall != null ? product.priceSmall.toString() : "",
+      priceLarge: product.priceLarge != null ? product.priceLarge.toString() : "",
       categoryId: product.categoryId,
       status: product.status,
       variantName: product.variantName ?? "",
@@ -360,8 +400,12 @@ export default function AdminProductsPage() {
           shortDescription: full.shortDescription ?? full.shortdescription ?? prev.shortDescription,
           description: full.description ?? prev.description,
           weight: full.weight ?? prev.weight,
+          weightSmall: full.weightSmall ?? full.weightsmall ?? prev.weightSmall,
+          weightLarge: full.weightLarge ?? full.weightlarge ?? prev.weightLarge,
           leadTime: full.leadTime ?? full.leadtime ?? prev.leadTime,
           price: full.price?.toString() ?? prev.price,
+          priceSmall: full.priceSmall != null ? full.priceSmall.toString() : prev.priceSmall,
+          priceLarge: full.priceLarge != null ? full.priceLarge.toString() : prev.priceLarge,
           categoryId: full.categoryId ?? prev.categoryId,
           status: full.status ?? prev.status,
           variantName: full.variants?.[0]?.name ?? prev.variantName,
@@ -585,6 +629,32 @@ export default function AdminProductsPage() {
               />
             </label>
             <label className="text-sm uppercase">
+              Тегло (малко)
+              <input
+                type="text"
+                value={productForm.weightSmall}
+                onChange={(event) => setProductForm((prev) => ({ ...prev, weightSmall: event.target.value }))}
+                className="mt-1 w-full rounded-2xl border border-[#dcb1b1] bg-white px-4 py-3 text-sm focus:border-[#5f000b] focus:outline-none"
+                placeholder="напр. 150 г"
+              />
+            </label>
+            <label className="text-sm uppercase">
+              Тегло (голямо)
+              <input
+                type="text"
+                value={productForm.weightLarge}
+                onChange={(event) => setProductForm((prev) => ({ ...prev, weightLarge: event.target.value }))}
+                className="mt-1 w-full rounded-2xl border border-[#dcb1b1] bg-white px-4 py-3 text-sm focus:border-[#5f000b] focus:outline-none"
+                placeholder="напр. 280 г"
+              />
+            </label>
+            <div className="sm:col-span-2 rounded-2xl bg-[#fff8fa] px-4 py-3 text-xs text-[#5f000b]/80">
+              <p className="font-semibold uppercase text-[#5f000b]">Размери и цени</p>
+              <p className="mt-1 normal-case">
+                Ако продуктът е само в един размер, попълни базовата цена и тегло, а полетата за малко/голямо ги остави празни.
+              </p>
+            </div>
+            <label className="text-sm uppercase">
               Срок за доставка
               <input
                 type="text"
@@ -596,13 +666,33 @@ export default function AdminProductsPage() {
               />
             </label>
             <label className="text-sm uppercase">
-              Цена
+              Цена (база / едно измерение)
               <input
                 type="number"
                 value={productForm.price}
                 onChange={(event) => setProductForm((prev) => ({ ...prev, price: event.target.value }))}
                 className="mt-1 w-full rounded-2xl border border-[#dcb1b1] bg-white px-4 py-3 text-sm focus:border-[#5f000b] focus:outline-none"
                 required
+              />
+            </label>
+            <label className="text-sm uppercase">
+              Цена (малко)
+              <input
+                type="number"
+                value={productForm.priceSmall}
+                onChange={(event) => setProductForm((prev) => ({ ...prev, priceSmall: event.target.value }))}
+                className="mt-1 w-full rounded-2xl border border-[#dcb1b1] bg-white px-4 py-3 text-sm focus:border-[#5f000b] focus:outline-none"
+                placeholder="цена в евро"
+              />
+            </label>
+            <label className="text-sm uppercase">
+              Цена (голямо)
+              <input
+                type="number"
+                value={productForm.priceLarge}
+                onChange={(event) => setProductForm((prev) => ({ ...prev, priceLarge: event.target.value }))}
+                className="mt-1 w-full rounded-2xl border border-[#dcb1b1] bg-white px-4 py-3 text-sm focus:border-[#5f000b] focus:outline-none"
+                placeholder="цена в евро"
               />
             </label>
             <label className="text-sm uppercase">

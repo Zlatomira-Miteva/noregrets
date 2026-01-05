@@ -5,8 +5,46 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/auth";
 import { pgPool } from "@/lib/pg";
 import { ensureCustomerSchema } from "@/lib/customer-schema";
+import { computeVariantKey } from "@/lib/favorites";
 
 export const dynamic = "force-dynamic";
+const ALLOW_DDL = process.env.ALLOW_SCHEMA_DDL === "1";
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const ensureFavoritesSchema = async (client: any) => {
+  if (!ALLOW_DDL) return;
+  try {
+    await client.query(
+      `DO $$
+       BEGIN
+         IF NOT EXISTS (
+           SELECT 1 FROM information_schema.columns
+           WHERE table_name = 'UserFavorite' AND column_name = 'variantKey'
+         ) THEN
+           ALTER TABLE "UserFavorite" ADD COLUMN "variantKey" text;
+         END IF;
+       END$$;`,
+    );
+
+    const legacyConstraint = await client.query(
+      `SELECT tc.constraint_name
+         FROM information_schema.table_constraints tc
+        WHERE tc.table_name = 'UserFavorite'
+          AND tc.constraint_type = 'UNIQUE'
+          AND tc.constraint_name LIKE 'UserFavorite_userId_productId%'`,
+    );
+    for (const row of legacyConstraint.rows) {
+      await client.query(`ALTER TABLE "UserFavorite" DROP CONSTRAINT IF EXISTS "${row.constraint_name}"`);
+    }
+
+    await client.query(
+      `CREATE UNIQUE INDEX IF NOT EXISTS "UserFavorite_user_product_variant_idx"
+         ON "UserFavorite" ("userId","productId","variantKey")`,
+    );
+  } catch (schemaErr) {
+    console.warn("[favorites] ensureFavoritesSchema skipped", schemaErr);
+  }
+};
 
 export async function GET() {
   const session = await getServerSession(authOptions);
@@ -14,8 +52,10 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  await ensureFavoritesSchema(pgPool);
+
   const res = await pgPool.query(
-    `SELECT f."productId", f."createdAt", p.name, p.slug, p.price, p."heroImage", p."status"
+    `SELECT f."productId", f."createdAt", f.payload, f."variantKey", p.name, p.slug, p.price, p."heroImage", p."status"
      FROM "UserFavorite" f
      LEFT JOIN "Product" p
        ON p.id = f."productId" OR p.slug = f."productId"
@@ -33,6 +73,8 @@ export async function GET() {
       heroImage: row.heroImage,
       status: row.status,
       createdAt: row.createdAt,
+      payload: row.payload,
+      variantKey: row.variantKey ?? "",
     })),
   });
 }
@@ -44,6 +86,8 @@ export async function POST(request: Request) {
   }
   const body = await request.json().catch(() => null);
   const productId = typeof body?.productId === "string" ? body.productId : "";
+  const payload = typeof body?.payload === "object" && body?.payload !== null ? body.payload : null;
+  const variantKey = computeVariantKey(payload);
   if (!productId) {
     return NextResponse.json({ error: "productId е задължителен." }, { status: 400 });
   }
@@ -77,14 +121,33 @@ export async function POST(request: Request) {
   const client = await pgPool.connect();
   try {
     await ensureCustomerSchema(client);
-    await client.query(
-      `INSERT INTO "UserFavorite" (id,"userId","productId") VALUES ($1,$2,$3)
-       ON CONFLICT ("userId","productId") DO NOTHING`,
-      [randomUUID(), session.user.id, productId],
-    );
+    await ensureFavoritesSchema(client);
+    const insert = async () =>
+      client.query(
+        `INSERT INTO "UserFavorite" (id,"userId","productId",payload,"variantKey") VALUES ($1,$2,$3,$4,$5)
+         ON CONFLICT ("userId","productId","variantKey") DO UPDATE SET payload = EXCLUDED.payload, "createdAt" = NOW()`,
+        [randomUUID(), session.user.id, productId, payload, variantKey],
+      );
+    try {
+      await insert();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (err: any) {
+      // Column missing in prod? Try to create and retry once.
+      if (err?.code === "42703") {
+        await ensureFavoritesSchema(client);
+        await insert();
+      } else {
+        throw err;
+      }
+    }
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error("[favorites] add error", error);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const code = (error as any)?.code;
+    if (code === "23505") {
+      return NextResponse.json({ error: "Вече е запазено този вариант." }, { status: 409 });
+    }
     return NextResponse.json({ error: "Неуспешно запазване" }, { status: 500 });
   } finally {
     client.release();
@@ -98,13 +161,23 @@ export async function DELETE(request: Request) {
   }
   const body = await request.json().catch(() => null);
   const productId = typeof body?.productId === "string" ? body.productId : "";
+  const variantKey = typeof body?.variantKey === "string" ? body.variantKey : undefined;
   if (!productId) {
     return NextResponse.json({ error: "productId е задължителен." }, { status: 400 });
   }
 
-  await pgPool.query(`DELETE FROM "UserFavorite" WHERE "userId"=$1 AND "productId"=$2`, [
-    session.user.id,
-    productId,
-  ]);
+  await ensureFavoritesSchema(pgPool);
+
+  if (variantKey) {
+    await pgPool.query(
+      `DELETE FROM "UserFavorite" WHERE "userId"=$1 AND "productId"=$2 AND "variantKey"=$3`,
+      [session.user.id, productId, variantKey],
+    );
+  } else {
+    await pgPool.query(`DELETE FROM "UserFavorite" WHERE "userId"=$1 AND "productId"=$2`, [
+      session.user.id,
+      productId,
+    ]);
+  }
   return NextResponse.json({ ok: true });
 }

@@ -111,7 +111,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
 
     setLastAddedEvent({
       id: eventIncrement.current++,
-      name: payload.name,
+      name: payload.name ?? "",
       timestamp: Date.now(),
     });
   };
@@ -154,7 +154,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     return items.reduce(
       (acc, item) => {
         acc.totalQuantity += item.quantity;
-        acc.totalPrice += item.price * item.quantity;
+        acc.totalPrice += (item.price ?? 0) * item.quantity;
         return acc;
       },
       { totalQuantity: 0, totalPrice: 0 }

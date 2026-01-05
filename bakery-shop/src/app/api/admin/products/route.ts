@@ -7,18 +7,23 @@ import { authOptions } from "@/auth";
 import { logAudit } from "@/lib/audit";
 import { isActiveAdmin } from "@/lib/authz";
 import { pgPool } from "@/lib/pg";
+import { ensureProductSchema } from "@/lib/product-schema";
 
 const productSchema = z.object({
   name: z.string().min(2, "Въведете име."),
   slug: z.string().min(2).optional(),
   shortDescription: z.string().optional(),
   description: z.string().optional(),
-  weight: z.string().optional(),
+  weight: z.string().nullable().optional(),
+  weightSmall: z.string().nullable().optional(),
+  weightLarge: z.string().nullable().optional(),
   leadTime: z.string().optional(),
   heroImage: z.string().optional(),
   galleryImages: z.array(z.string().min(1)).optional(),
   categoryImages: z.array(z.string().min(1)).optional(),
   price: z.number().positive("Цената трябва да е положително число."),
+  priceSmall: z.number().positive().nullable().optional(),
+  priceLarge: z.number().positive().nullable().optional(),
   categoryId: z.string().min(1, "Изберете категория."),
   status: z.enum(["PUBLISHED", "DRAFT", "ARCHIVED"]).optional(),
   variantName: z.string().optional(),
@@ -39,6 +44,7 @@ export async function GET() {
   }
 
   try {
+    await ensureProductSchema();
     const productsRes = await pgPool.query(
       `SELECT p.*, c.name as category_name FROM "Product" p
        LEFT JOIN "ProductCategory" c ON p."categoryId" = c.id
@@ -70,14 +76,18 @@ export async function GET() {
         name: product.name,
         slug: product.slug,
         price: Number(product.price),
+        priceSmall: product.priceSmall != null ? Number(product.priceSmall) : null,
+        priceLarge: product.priceLarge != null ? Number(product.priceLarge) : null,
         status: product.status,
         categoryName: product.category_name,
         categoryId: product.categoryId,
-        shortDescription: product.shortdescription,
+        shortDescription: product.shortDescription,
         description: product.description,
         weight: product.weight,
-        leadTime: product.leadtime,
-        heroImage: product.heroimage ?? imagesRes.rows.find((img) => img.productid === product.id)?.url ?? null,
+        weightSmall: product.weightSmall,
+        weightLarge: product.weightLarge,
+        leadTime: product.leadTime,
+        heroImage: product.heroImage ?? imagesRes.rows.find((img) => img.productid === product.id)?.url ?? null,
         galleryImages: imagesRes.rows.filter((img) => img.productid === product.id).map((img) => img.url),
         categoryImages: catImagesRes.rows.filter((img) => img.productid === product.id).map((img) => img.url),
         variantName: variantsRes.rows.find((v) => v.productid === product.id)?.name ?? "",
@@ -110,11 +120,15 @@ export async function POST(request: Request) {
     shortDescription,
     description,
     weight,
+    weightSmall,
+    weightLarge,
     leadTime,
     heroImage,
     galleryImages,
     categoryImages,
     price,
+    priceSmall,
+    priceLarge,
     categoryId,
     status,
     variantName,
@@ -123,11 +137,12 @@ export async function POST(request: Request) {
 
   const client = await pgPool.connect();
   try {
+    await ensureProductSchema(client);
     await client.query("BEGIN");
     const productId = randomUUID();
     const productInsert = await client.query(
-      `INSERT INTO "Product" (id, slug, name, "shortDescription", description, weight, "leadTime", "heroImage", price, status, "categoryId", "updatedAt")
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11, NOW())
+      `INSERT INTO "Product" (id, slug, name, "shortDescription", description, weight, "weightSmall", "weightLarge", "leadTime", "heroImage", price, "priceSmall", "priceLarge", status, "categoryId", "updatedAt")
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15, NOW())
        RETURNING *`,
       [
         productId,
@@ -136,9 +151,13 @@ export async function POST(request: Request) {
         shortDescription ?? null,
         description ?? null,
         weight ?? null,
+        weightSmall ?? null,
+        weightLarge ?? null,
         leadTime ?? null,
         heroImage ?? null,
         price,
+        priceSmall ?? null,
+        priceLarge ?? null,
         status ?? "PUBLISHED",
         categoryId,
       ],
@@ -169,10 +188,12 @@ export async function POST(request: Request) {
       );
     }
 
+    const defaultVariantPrice = priceSmall ?? price ?? priceLarge ?? price;
+
     await client.query(
       `INSERT INTO "ProductVariant" (id,"productId",name,price,"isDefault")
        VALUES ($1, $2, $3, $4, true)`,
-      [randomUUID(), product.id, variantName || name, price],
+      [randomUUID(), product.id, variantName || name, defaultVariantPrice],
     );
 
     await client.query("COMMIT");

@@ -4,7 +4,7 @@ import Link from "next/link";
 import HeroCarousel from "@/components/HeroCarousel";
 import CookieShowcase from "@/components/CookieShowcase";
 import FeaturedTabs from "@/components/FeaturedTabs";
-import ReviewsCarousel from "@/components/ReviewsCarousel";
+// ReviewsCarousel временно е спрян
 import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
 import { formatPrice } from "@/utils/price";
@@ -367,7 +367,7 @@ export default async function Home() {
             </div>
           </div>
         </section>
-        <section className="py-20">
+        <section>
           <div className="mx-auto grid w-full gap-10 bg-[#3e1b20] px-[clamp(1.5rem,4vw,3.5rem)] py-12 text-white lg:grid-cols-[1.1fr_minmax(0,0.9fr)]">
             <div className="space-y-5">
               <h2 className="text-3xl font-bold sm:text-4xl">Сладости за твоя бизнес</h2>
@@ -398,7 +398,7 @@ export default async function Home() {
             </div>
           </div>
         </section>
-        <ReviewsCarousel reviews={REVIEWS} />
+        {/* <ReviewsCarousel reviews={REVIEWS} /> */}
         <SiteFooter />
       </main>
     </div>

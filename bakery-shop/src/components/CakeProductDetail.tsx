@@ -7,9 +7,9 @@ import FavoriteButton from "@/components/FavoriteButton";
 import { useCart } from "@/context/CartContext";
 import { parsePrice } from "@/utils/price";
 
-const STORAGE_TEXT = "Съхранявайте тортата в хладилник до 48 часа.";
+const STORAGE_TEXT = "Съхранявайте тортата в хладилник до 5 дни.";
 const DELIVERY_TEXT =
-  "Изпращаме охладени торти от понеделник до четвъртък. Поръчки след 16:30 ч. се обработват на следващия работен ден.";
+  "Всяка торта се доставя с хладилна кутия и е готова за сервиране. Изпращаме от понеделник до четвъртък. Поръчки след 15:00 ч. се обработват на следващия работен ден.";
 const ALLERGEN_TEXT =
   "Всички торти съдържат глутен, млечни продукти и яйца. Някои варианти включват ядки или следи от тях.";
 
@@ -80,7 +80,9 @@ const CakeProductDetail = ({ cake, productPrefix = "cake" }: Props) => {
                 {cake.price}
               </span>
             </div>
-              {cake.description ? <p className="text-[#3d1b20]">{cake.description}</p> : null}
+            {cake.description ? (
+              <p className="text-[#3d1b20]">{cake.description}</p>
+            ) : null}
             <ul className="space-y-1 text-sm">
               {cake.weight ? <li>{cake.weight}</li> : null}
               {(cake.highlights ?? []).map((highlight) => (
@@ -95,9 +97,6 @@ const CakeProductDetail = ({ cake, productPrefix = "cake" }: Props) => {
           <section className="space-y-6 rounded-3xl bg-white shadow-card">
             <div className="space-y-2">
               <h2 className="text-lg font-semibold">Количество</h2>
-              <p className="text-sm text-[#5f000b]/70">
-                Всяка торта се доставя с хладилна кутия и е готова за сервиране.
-              </p>
             </div>
             <div className="flex items-center gap-4">
               <button
@@ -124,12 +123,12 @@ const CakeProductDetail = ({ cake, productPrefix = "cake" }: Props) => {
             <button
               type="button"
               onClick={handleAddToCart}
-            className="cta w-full rounded-full bg-[#5f000b] px-6 py-4 text-sm font-semibold uppercase text-white transition hover:bg-[#561c19]"
-          >
-            Добави {quantity} в количката
-          </button>
-          <FavoriteButton productId={`${productPrefix}-${cake.slug}`} />
-          <div className="space-y-3 rounded-2xl bg-[#fff8fa] p-4 text-sm text-[#5f000b]/80">
+              className="cta w-full rounded-full bg-[#5f000b] px-6 py-4 text-sm font-semibold uppercase text-white transition hover:bg-[#561c19]"
+            >
+              Добави {quantity} в количката
+            </button>
+            <FavoriteButton productId={`${productPrefix}-${cake.slug}`} />
+            <div className="space-y-3 rounded-2xl bg-[#fff8fa] p-4 text-sm text-[#5f000b]/80">
               <div>
                 <p className="font-semibold text-[#5f000b]">Съхранение</p>
                 <p className="mt-1">{STORAGE_TEXT}</p>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type FaqItem = { question: string; answer: string[] };
 const FAQ_ITEMS: FaqItem[] = [
@@ -56,6 +56,27 @@ const FAQ_ITEMS: FaqItem[] = [
 
 export default function FAQClient() {
   const [openItem, setOpenItem] = useState<string | null>(FAQ_ITEMS[0].question);
+  const itemRefs = useRef<Record<string, HTMLElement | null>>({});
+  const isFirstRender = useRef(true);
+
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    if (!openItem) return;
+    if (typeof window === "undefined") return;
+    const node = itemRefs.current[openItem];
+    if (!node) return;
+
+    const rect = node.getBoundingClientRect();
+    const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+    const headerOffset = 96; // account for sticky header height
+    const isFullyVisible = rect.top >= headerOffset && rect.bottom <= viewportHeight;
+    if (!isFullyVisible) {
+      node.scrollIntoView({ behavior: "smooth", block: "start", inline: "nearest" });
+    }
+  }, [openItem]);
 
   return (
     <main className="flex-1">
@@ -76,7 +97,13 @@ export default function FAQClient() {
           {FAQ_ITEMS.map((item) => {
             const isOpen = openItem === item.question;
             return (
-              <article key={item.question} className="rounded-s bg-white/90 p-5 shadow-card">
+              <article
+                key={item.question}
+                ref={(node) => {
+                  itemRefs.current[item.question] = node;
+                }}
+                className="rounded-s bg-white/90 p-5 shadow-card scroll-mt-28"
+              >
                 <button
                   type="button"
                   onClick={() => setOpenItem((prev) => (prev === item.question ? null : item.question))}

@@ -12,10 +12,25 @@ const updateSchema = z.object({
   customerEmail: z.string().email().optional(),
   customerPhone: z.string().optional(),
   deliveryLabel: z.string().optional(),
-  totalAmount: z.coerce.number().positive().optional(),
-  status: z
-    .enum(["PENDING", "IN_PROGRESS", "COMPLETED", "PAID", "FAILED", "CANCELLED"])
-    .optional(),
+  totalAmount: z.preprocess(
+    (val) => {
+      if (val === null || val === undefined) return undefined;
+      if (typeof val === "string" && val.trim() === "") return undefined;
+      return val;
+    },
+    z.coerce.number().positive().optional(),
+  ),
+  status: z.enum(["PENDING", "IN_PROGRESS", "COMPLETED", "PAID", "FAILED", "CANCELLED", "REFUNDED"]).optional(),
+  refundAmount: z.preprocess(
+    (val) => {
+      if (val === null || val === undefined) return undefined;
+      if (typeof val === "string" && val.trim() === "") return undefined;
+      return val;
+    },
+    z.coerce.number().nonnegative().optional(),
+  ),
+  refundMethod: z.string().optional(),
+  refundAt: z.string().optional(),
 });
 
 export async function PATCH(
@@ -38,6 +53,9 @@ export async function PATCH(
     const updates = updateSchema.parse(body);
 
     const performedBy = session?.user?.operatorCode ?? session?.user?.email ?? "admin";
+    if (updates.status === "REFUNDED" && !updates.refundAt) {
+      updates.refundAt = new Date().toISOString();
+    }
     const updated = await updateOrderWithAudit(orderId, updates, performedBy);
     if (!updated) {
       return NextResponse.json({ error: "Поръчката не е намерена." }, { status: 404 });
@@ -67,6 +85,9 @@ export async function PATCH(
         totalAmount: Number(updated.order.totalAmount),
         status: updated.order.status,
         metadata: updated.order.metadata,
+        refundAmount: updated.order.refundAmount,
+        refundMethod: updated.order.refundMethod,
+        refundAt: updated.order.refundAt,
         createdAt: updated.order.createdAt,
         updatedAt: updated.order.updatedAt,
       },

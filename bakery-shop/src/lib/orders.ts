@@ -10,6 +10,7 @@ export const ORDER_STATUS = {
   PAID: "PAID",
   FAILED: "FAILED",
   CANCELLED: "CANCELLED",
+  REFUNDED: "REFUNDED",
 } as const;
 
 export type OrderStatus = (typeof ORDER_STATUS)[keyof typeof ORDER_STATUS];
@@ -61,6 +62,9 @@ export type AdminOrderUpdateInput = {
   totalAmount?: number;
   status?: OrderStatus;
   metadata?: Record<string, unknown> | null;
+  refundAmount?: number | null;
+  refundMethod?: string | null;
+  refundAt?: string | null;
 };
 
 export type OrderRecord = {
@@ -76,6 +80,9 @@ export type OrderRecord = {
   status: OrderStatus;
   paymentUrl: string | null;
   metadata: unknown;
+  refundAmount?: number | null;
+  refundMethod?: string | null;
+  refundAt?: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -96,6 +103,16 @@ const serializeOrder = (row: any): OrderRecord => ({
   status: row.status,
   paymentUrl: row.paymentUrl ?? row.paymenturl ?? null,
   metadata: row.metadata ?? null,
+  refundAmount: row.refundAmount ?? row.refundamount ?? null,
+  refundMethod: row.refundMethod ?? row.refundmethod ?? null,
+  refundAt:
+    row.refundAt instanceof Date
+      ? row.refundAt.toISOString()
+      : row.refundat instanceof Date
+        ? row.refundat.toISOString()
+        : row.refundAt || row.refundat
+          ? new Date(row.refundAt ?? row.refundat).toISOString()
+          : null,
   createdAt:
     row.createdAt instanceof Date
       ? row.createdAt.toISOString()
@@ -109,6 +126,17 @@ const serializeOrder = (row: any): OrderRecord => ({
         ? row.updatedat.toISOString()
         : new Date(row.updatedAt ?? row.updatedat).toISOString(),
 });
+
+export async function getOrderByReference(reference: string): Promise<OrderRecord | null> {
+  const client = await pgPool.connect();
+  try {
+    const res = await client.query(`SELECT * FROM "Order" WHERE reference = $1 LIMIT 1`, [reference]);
+    if (!res.rows.length) return null;
+    return serializeOrder(res.rows[0]);
+  } finally {
+    client.release();
+  }
+}
 
 const appendAuditLog = async (
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -391,6 +419,18 @@ export async function updateOrderWithAudit(
     if (updates.totalAmount !== undefined) {
       fields.push(`"totalAmount"=$${++idx}`);
       values.push(decimal(updates.totalAmount));
+    }
+    if (updates.refundAmount !== undefined) {
+      fields.push(`"refundAmount"=$${++idx}`);
+      values.push(updates.refundAmount);
+    }
+    if (updates.refundMethod !== undefined) {
+      fields.push(`"refundMethod"=$${++idx}`);
+      values.push(updates.refundMethod);
+    }
+    if (updates.refundAt !== undefined) {
+      fields.push(`"refundAt"=$${++idx}`);
+      values.push(updates.refundAt ? new Date(updates.refundAt) : null);
     }
     if (updates.status !== undefined) {
       fields.push(`status=$${++idx}`);

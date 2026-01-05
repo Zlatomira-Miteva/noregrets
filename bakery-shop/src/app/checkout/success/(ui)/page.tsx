@@ -1,14 +1,20 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
 import { useCart } from "@/context/CartContext";
+import { formatPrice } from "@/utils/price";
 
 export default function CheckoutSuccessPage() {
   const [statusUpdate, setStatusUpdate] = useState<"idle" | "updating" | "updated" | "error">("idle");
+  const [summary, setSummary] = useState<{
+    reference: string;
+    totalAmount: number;
+    items: Array<{ name: string; quantity: number; total: number }>;
+  } | null>(null);
   const { clearCart } = useCart();
 
   // Clear cart on success entry.
@@ -29,7 +35,19 @@ export default function CheckoutSuccessPage() {
     if (!reference) return;
     setStatusUpdate("updating");
     fetch(`/api/checkout/success?reference=${encodeURIComponent(reference)}`, { method: "POST" })
-      .then(() => setStatusUpdate("updated"))
+      .then(() => {
+        setStatusUpdate("updated");
+        return fetch(`/api/orders/summary?reference=${encodeURIComponent(reference)}`).then((res) => res.json());
+      })
+      .then((data) => {
+        if (data?.reference) {
+          setSummary({
+            reference: data.reference,
+            totalAmount: Number(data.totalAmount ?? 0),
+            items: Array.isArray(data.items) ? data.items : [],
+          });
+        }
+      })
       .catch((err) => {
         console.error("Failed to mark order as paid", err);
         setStatusUpdate("error");
@@ -42,8 +60,14 @@ export default function CheckoutSuccessPage() {
     if (!cached) return;
 
     let parsedOrder: {
-      customer?: { email?: string | null };
+      customer?: {
+        email?: string | null;
+        firstName?: string | null;
+        lastName?: string | null;
+        phone?: string | null;
+      };
       consents?: { marketing?: boolean };
+      deliveryLabel?: string | null;
     } | null = null;
     try {
       parsedOrder = JSON.parse(cached);
@@ -55,12 +79,20 @@ export default function CheckoutSuccessPage() {
       try {
         const wantsMarketing = Boolean(parsedOrder?.consents?.marketing);
         const email = parsedOrder?.customer?.email?.trim();
-        if (wantsMarketing && email) {
+        const alreadyCaptured = sessionStorage.getItem("newsletterCaptured") === "1";
+        if (wantsMarketing && email && !alreadyCaptured) {
           try {
             await fetch("/api/newsletter", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ email, honeypot: "" }),
+              body: JSON.stringify({
+                email,
+                firstName: parsedOrder?.customer?.firstName ?? "",
+                lastName: parsedOrder?.customer?.lastName ?? "",
+                phone: parsedOrder?.customer?.phone ?? "",
+                address: parsedOrder?.deliveryLabel ?? "",
+                honeypot: "",
+              }),
             });
           } catch (newsletterError) {
             console.error("Failed to add marketing consent email", newsletterError);
@@ -80,6 +112,7 @@ export default function CheckoutSuccessPage() {
         console.error("Order logging failed", error);
       } finally {
         sessionStorage.removeItem("pendingOrder");
+        sessionStorage.removeItem("newsletterCaptured");
       }
     };
 
@@ -130,6 +163,8 @@ export default function CheckoutSuccessPage() {
       }
   }, [statusUpdate]);
 
+  const totalFormatted = useMemo(() => (summary ? formatPrice(summary.totalAmount) : null), [summary]);
+
   return (
     <div className="relative z-[9999] flex min-h-screen flex-col bg-[#fff6f1] pointer-events-auto">
       <div className="pointer-events-auto">
@@ -142,6 +177,22 @@ export default function CheckoutSuccessPage() {
           <p className="text-lg text-[#5f000b]/80">
             Получихме вашата поръчка и започваме да я подготвяме. Ще ви изпратим потвърждение по имейл с всички детайли.
           </p>
+          {summary ? (
+            <div className="space-y-2 rounded-2xl bg-[#fff6f1] p-4 text-left text-sm text-[#5f000b]">
+              <p className="font-semibold">Номер на поръчка: {summary.reference}</p>
+              {totalFormatted ? <p>Обща сума: {totalFormatted}</p> : null}
+              {summary.items?.length ? (
+                <ul className="mt-2 space-y-1">
+                  {summary.items.map((item, idx) => (
+                    <li key={`${item.name}-${idx}`} className="flex justify-between text-[#5f000b]/80">
+                      <span>{item.name} × {item.quantity}</span>
+                      <span>{formatPrice(item.total ?? 0)}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+            </div>
+          ) : null}
           <div className="flex justify-center">
             <Link
               href="/home"

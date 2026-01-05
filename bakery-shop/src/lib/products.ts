@@ -1,4 +1,5 @@
 import { pgPool } from "@/lib/pg";
+import { ensureProductSchema } from "@/lib/product-schema";
 
 export type ProductRecord = {
   slug: string;
@@ -6,8 +7,12 @@ export type ProductRecord = {
   description: string;
   shortDescription?: string;
   weight: string;
+  weightSmall?: string;
+  weightLarge?: string;
   leadTime: string;
   price: number;
+  priceSmall?: number | null;
+  priceLarge?: number | null;
   heroImage: string;
   galleryImages: string[];
 };
@@ -31,6 +36,7 @@ const normalizeImagePath = (value?: string | null) => {
 export const getProductBySlug = async (slug: string): Promise<ProductRecord | null> => {
   const client = await pgPool.connect();
   try {
+    await ensureProductSchema(client);
     const productRes = await client.query(
       `SELECT id,
               slug,
@@ -40,7 +46,11 @@ export const getProductBySlug = async (slug: string): Promise<ProductRecord | nu
               weight,
               "leadTime" AS "leadTime",
               "heroImage" AS "heroImage",
-              price
+              price,
+              "priceSmall" AS "priceSmall",
+              "priceLarge" AS "priceLarge",
+              "weightSmall" AS "weightSmall",
+              "weightLarge" AS "weightLarge"
        FROM "Product"
        WHERE slug = $1
        LIMIT 1`,
@@ -54,9 +64,13 @@ export const getProductBySlug = async (slug: string): Promise<ProductRecord | nu
           shortDescription?: string | null;
           description?: string | null;
           weight?: string | null;
+          weightSmall?: string | null;
+          weightLarge?: string | null;
           leadTime?: string | null;
           heroImage?: string | null;
           price: number;
+          priceSmall?: number | null;
+          priceLarge?: number | null;
         }
       | undefined;
     if (!product) return null;
@@ -75,8 +89,12 @@ export const getProductBySlug = async (slug: string): Promise<ProductRecord | nu
       description: product.description ?? product.shortDescription ?? "",
       shortDescription: product.shortDescription ?? undefined,
       weight: product.weight ?? "",
+      weightSmall: product.weightSmall ?? undefined,
+      weightLarge: product.weightLarge ?? undefined,
       leadTime: product.leadTime ?? "",
       price: Number(product.price),
+      priceSmall: product.priceSmall != null ? Number(product.priceSmall) : null,
+      priceLarge: product.priceLarge != null ? Number(product.priceLarge) : null,
       heroImage: hero,
       galleryImages: gallery.length ? gallery : [hero],
     };
@@ -86,15 +104,20 @@ export const getProductBySlug = async (slug: string): Promise<ProductRecord | nu
 };
 
 export const getProductsByCategorySlug = async (categorySlug: string): Promise<ProductRecord[]> => {
+  await ensureProductSchema();
   const res = await pgPool.query(
     `SELECT p.slug,
             p.name,
             p.description,
             p."shortDescription" AS "shortDescription",
             p.weight,
+            p."weightSmall",
+            p."weightLarge",
             p."leadTime" AS "leadTime",
             p."heroImage" AS "heroImage",
             p.price,
+            p."priceSmall",
+            p."priceLarge",
             p."createdAt"
      FROM "Product" p
      JOIN "ProductCategory" c ON p."categoryId" = c.id
@@ -111,8 +134,12 @@ export const getProductsByCategorySlug = async (categorySlug: string): Promise<P
       description: (product.description as string | null) ?? (product.shortDescription as string | null) ?? "",
       shortDescription: (product.shortDescription as string | null) ?? undefined,
       weight: (product.weight as string | null) ?? "",
+      weightSmall: (product.weightSmall as string | null) ?? undefined,
+      weightLarge: (product.weightLarge as string | null) ?? undefined,
       leadTime: (product.leadTime as string | null) ?? "",
       price: Number(product.price),
+      priceSmall: product.priceSmall != null ? Number(product.priceSmall) : null,
+      priceLarge: product.priceLarge != null ? Number(product.priceLarge) : null,
       heroImage: hero,
       galleryImages: hero ? [hero] : [],
     };

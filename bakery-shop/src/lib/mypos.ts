@@ -5,6 +5,7 @@ const SID = process.env.MY_POS_SID ?? "";
 const WALLET = process.env.MY_POS_WALLET_NUMBER ?? "";
 const RAW_PRIVATE_KEY = (process.env.MY_POS_PRIVATE_KEY ?? "").trim();
 const KEY_INDEX = process.env.MY_POS_KEY_INDEX ?? "1";
+const CURRENCY = (process.env.MY_POS_CURRENCY ?? "EUR").toUpperCase();
 const FALLBACK_BASE_URL = (process.env.NEXT_PUBLIC_APP_URL ?? "https://noregrets.bg").replace(/\/+$/, "");
 
 const normalizePem = (pem: string) => pem.replace(/\r/g, "").replace(/\\n/g, "\n").trim();
@@ -108,16 +109,24 @@ export function createMyposCheckout(p: CheckoutPayload) {
   entries.push(["SID", SID]);
   entries.push(["walletnumber", WALLET]);              // lowercase като в Test Data
   entries.push(["Amount", two(p.amount)]);             // "39.00"
-  entries.push(["Currency", "BGN"]);
+  entries.push(["Currency", CURRENCY]);
   entries.push(["OrderID", p.reference]);
-  const urlOk = appendReference(envUrl(process.env.MY_POS_SUCCESS_URL, "/api/checkout/success"), p.reference);
-  const urlCancel = appendReference(envUrl(process.env.MY_POS_FAILURE_URL, "/api/checkout/failure"), p.reference);
-  entries.push(["URL_OK", "https://blue-meadow-9f61.mira-miteva92.workers.dev/mypos/success"]);
-  entries.push(["URL_Cancel", "https://blue-meadow-9f61.mira-miteva92.workers.dev/mypos/failure"]);
+  // Default to worker endpoints; allow override via env if you move off the worker.
+  const WORKER_BASE = "https://blue-meadow-9f61.mira-miteva92.workers.dev/mypos";
+  const urlOk = appendReference(
+    process.env.MY_POS_SUCCESS_URL?.trim() || `${WORKER_BASE}/success`,
+    p.reference,
+  );
+  const urlCancel = appendReference(
+    process.env.MY_POS_FAILURE_URL?.trim() || `${WORKER_BASE}/failure`,
+    p.reference,
+  );
+  entries.push(["URL_OK", urlOk]);
+  entries.push(["URL_Cancel", urlCancel]);
 
   // >>> ФИКС: абсолютен HTTPS за Notify
   const notify = appendReference(
-    envUrl(process.env.MY_POS_NOTIFY_URL, "/api/payments/mypos/result"),
+    process.env.MY_POS_NOTIFY_URL?.trim() || `${WORKER_BASE}/notify`,
     p.reference,
   );
   if (!/^https:\/\//i.test(notify)) {
@@ -154,7 +163,7 @@ export function createMyposCheckout(p: CheckoutPayload) {
         entries.push([`Quantity_${i}`, String(it.qty)]);
         // >>> ФИКС: 2 десетични за Price_*
         entries.push([`Price_${i}`, two(Number(it.price))]);
-        entries.push([`Currency_${i}`, it.currency]);
+        entries.push([`Currency_${i}`, CURRENCY]);
         entries.push([`Amount_${i}`, two(it.qty * Number(it.price))]);
       });
   }

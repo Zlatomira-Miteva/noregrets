@@ -33,7 +33,17 @@ function getGoogleCredentials() {
   };
 }
 
-export async function appendNewsletterEmail(email: string) {
+type NewsletterRow = {
+  email: string;
+  firstName?: string;
+  lastName?: string;
+  phone?: string;
+  address?: string;
+  city?: string;
+  zip?: string;
+};
+
+export async function appendNewsletterEmail(data: NewsletterRow) {
   const { clientEmail, privateKey, spreadsheetId, sheetTab } = getGoogleCredentials();
 
   const auth = new google.auth.GoogleAuth({
@@ -50,10 +60,19 @@ export async function appendNewsletterEmail(email: string) {
     const escapedTab = `'${tabName.replace(/'/g, "''")}'`;
     return sheets.spreadsheets.values.append({
       spreadsheetId,
-      range: `${escapedTab}!A:B`,
+      range: `${escapedTab}!A:H`,
       valueInputOption: "RAW",
       requestBody: {
-        values: [[new Date().toISOString(), email]],
+        values: [[
+          new Date().toISOString(),
+          data.email,
+          data.firstName ?? "",
+          data.lastName ?? "",
+          data.phone ?? "",
+          data.address ?? "",
+          data.city ?? "",
+          data.zip ?? "",
+        ]],
       },
     });
   };

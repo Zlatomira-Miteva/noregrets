@@ -5,7 +5,7 @@ import { useMemo, useState, useEffect } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import { useCart } from "@/context/CartContext";
-import { formatPrice, parsePrice } from "@/utils/price";
+import { formatPrice } from "@/utils/price";
 import FavoriteButton from "@/components/FavoriteButton";
 
 type TiramisuProduct = {
@@ -13,8 +13,14 @@ type TiramisuProduct = {
   name: string;
   price: number;
   priceLabel?: string;
+  priceSmall?: number | null;
+  priceLarge?: number | null;
+  weight?: string | null;
   leadTime?: string;
   description?: string;
+  shortDescription?: string;
+  weightSmall?: string | null;
+  weightLarge?: string | null;
   heroImage: string;
   galleryImages?: string[];
 };
@@ -47,7 +53,7 @@ export default function TiramisuDetailClient({ products, initialSlug }: Props) {
 
   const selectedProduct = useMemo(
     () => products.find((p) => p.slug === selectedSlug) ?? products[0],
-    [products, selectedSlug],
+    [products, selectedSlug]
   );
 
   const gallery = useMemo(
@@ -57,17 +63,18 @@ export default function TiramisuDetailClient({ products, initialSlug }: Props) {
         src: product.heroImage,
         alt: product.name,
       })),
-    [products],
+    [products]
   );
-
-  if (!selectedProduct) return null;
 
   const handleSelect = (slug: string) => {
     setSelectedSlug(slug);
-    const basePath = pathname.split("/").slice(0, -1).join("/") || "/products/tiramisu";
+    const basePath =
+      pathname.split("/").slice(0, -1).join("/") || "/products/tiramisu";
     const params = new URLSearchParams(searchParams?.toString());
     params.set("size", selectedSize);
-    router.replace(`${basePath}/${slug}?${params.toString()}`, { scroll: false });
+    router.replace(`${basePath}/${slug}?${params.toString()}`, {
+      scroll: false,
+    });
   };
 
   // Keep size in the URL so it persists across flavor changes/navigations.
@@ -80,18 +87,47 @@ export default function TiramisuDetailClient({ products, initialSlug }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedSize]);
 
-  const priceLabel = selectedProduct.priceLabel ?? formatPrice(selectedProduct.price);
-  const priceValue = parsePrice(priceLabel);
+  if (!selectedProduct) return null;
+
+  const allergenNote =
+    "Всички торти съдържат глутен, млечни продукти и яйца. Някои варианти включват ядки или следи от тях.";
+  const descriptionText = selectedProduct.description?.trim();
+  const shortText = selectedProduct.shortDescription?.trim();
+  const normalizedShort = shortText?.toLowerCase() ?? "";
+  const normalizedLong = descriptionText?.toLowerCase() ?? "";
+  const hasDistinctDescription =
+    normalizedLong && normalizedLong !== normalizedShort;
+  const combined = `${shortText ?? ""} ${descriptionText ?? ""}`.toLowerCase();
+  const showAllergenNote = !combined.includes(allergenNote.toLowerCase());
+
+  const sizePrices: Record<string, number> = {
+    single: selectedProduct.priceSmall ?? selectedProduct.price ?? 0,
+    double: selectedProduct.priceLarge ?? selectedProduct.price ?? 0,
+  };
+
+  const sizeWeights: Record<string, string | undefined> = {
+    single: selectedProduct.weightSmall ?? selectedProduct.weight ?? undefined,
+    double: selectedProduct.weightLarge ?? selectedProduct.weight ?? undefined,
+  };
+
+  const sizeOptions = SIZE_OPTIONS.map((opt) => ({
+    ...opt,
+    weight: sizeWeights[opt.id] ?? opt.weight,
+  }));
+
+  const activePrice = sizePrices[selectedSize] ?? selectedProduct.price ?? 0;
+  const priceLabel = formatPrice(activePrice);
 
   const increase = () => setQuantity((prev) => prev + 1);
   const decrease = () => setQuantity((prev) => Math.max(1, prev - 1));
 
   const handleAddToCart = () => {
-    const sizeLabel = SIZE_OPTIONS.find((s) => s.id === selectedSize)?.label ?? "";
+    const sizeLabel =
+      SIZE_OPTIONS.find((s) => s.id === selectedSize)?.label ?? "";
     addItem({
       productId: `tiramisu-${selectedProduct.slug.replace(/^tiramisu-/, "")}`,
       name: selectedProduct.name,
-      price: priceValue,
+      price: activePrice,
       quantity,
       options: [sizeLabel].filter(Boolean),
       image: selectedProduct.heroImage,
@@ -123,11 +159,19 @@ export default function TiramisuDetailClient({ products, initialSlug }: Props) {
                   type="button"
                   onClick={() => handleSelect(item.slug)}
                   className={`relative aspect-square overflow-hidden rounded-xl border transition ${
-                    isActive ? "border-[#5f000b] ring-2 ring-[#5f000b]" : "border-white/50 hover:border-[#f1b8c4]"
+                    isActive
+                      ? "border-[#5f000b] ring-2 ring-[#5f000b]"
+                      : "border-white/50 hover:border-[#f1b8c4]"
                   }`}
                   aria-label={item.alt}
                 >
-                  <Image src={item.src} alt={item.alt} fill className="object-cover" sizes="150px" />
+                  <Image
+                    src={item.src}
+                    alt={item.alt}
+                    fill
+                    className="object-cover"
+                    sizes="150px"
+                  />
                 </button>
               );
             })}
@@ -136,28 +180,45 @@ export default function TiramisuDetailClient({ products, initialSlug }: Props) {
 
         <div className="space-y-8">
           <div className="space-y-3">
-            <p className="text-sm uppercase text-[#5f000b]/70">{selectedProduct.leadTime}</p>
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <h1 className="text-3xl font-semibold leading-tight sm:text-4xl">{selectedProduct.name}</h1>
-              <span className="text-2xl font-semibold sm:pt-1">{priceLabel}</span>
-            </div>
-            {selectedProduct.description ? <p className="text-[#3d1b20]">{selectedProduct.description}</p> : null}
-            <p className="uppercase text-sm text-[#5f000b]/70">
-              Всички торти съдържат глутен, млечни продукти и яйца. Някои варианти включват ядки или следи от тях.
+            <p className="text-sm uppercase text-[#5f000b]/70">
+              {selectedProduct.leadTime}
             </p>
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <h1 className="text-3xl font-semibold leading-tight sm:text-4xl">
+                {selectedProduct.name}
+              </h1>
+              <span className="text-2xl font-semibold sm:pt-1">
+                {priceLabel}
+              </span>
+            </div>
+            {shortText ? (
+              <p className="text-base text-[#3d1b20]">{shortText}</p>
+            ) : null}
+            {hasDistinctDescription ? (
+              <p className="text-[#3d1b20]">{descriptionText}</p>
+            ) : null}
+            {showAllergenNote ? (
+              <p className="uppercase text-sm text-[#5f000b]/70">
+                {allergenNote}
+              </p>
+            ) : null}
           </div>
 
           <div className="rounded-3xl bg-white/90 p-6 shadow-card">
             <p className="text-sm uppercase text-[#5f000b]/60">Избери размер</p>
             <div className="mt-4 flex flex-wrap gap-3">
-              {SIZE_OPTIONS.map((size) => {
+              {sizeOptions.map((size) => {
                 const isActive = size.id === selectedSize;
                 return (
                   <button
                     key={size.id}
                     type="button"
                     onClick={() => setSelectedSize(size.id)}
-                    className={`${flavorButtonClass} ${isActive ? "bg-[#5f000b] text-white" : "bg-white text-[#5f000b]"}`}
+                    className={`${flavorButtonClass} ${
+                      isActive
+                        ? "bg-[#5f000b] text-white"
+                        : "bg-white text-[#5f000b]"
+                    }`}
                   >
                     {size.label} {size.weight ? `(${size.weight})` : ""}
                   </button>
@@ -176,7 +237,11 @@ export default function TiramisuDetailClient({ products, initialSlug }: Props) {
                     key={product.slug}
                     type="button"
                     onClick={() => handleSelect(product.slug)}
-                    className={`${flavorButtonClass} ${isActive ? "bg-[#5f000b] text-white" : "bg-white text-[#5f000b]"}`}
+                    className={`${flavorButtonClass} ${
+                      isActive
+                        ? "bg-[#5f000b] text-white"
+                        : "bg-white text-[#5f000b]"
+                    }`}
                   >
                     {product.name}
                   </button>
@@ -188,7 +253,6 @@ export default function TiramisuDetailClient({ products, initialSlug }: Props) {
           <section className="space-y-6 rounded-3xl bg-white shadow-card">
             <div className="space-y-2">
               <h2 className="text-lg font-semibold">Количество</h2>
-              <p className="text-sm text-[#5f000b]/70">Всяка торта се доставя с хладилна кутия и е готова за сервиране.</p>
             </div>
             <div className="flex items-center gap-4">
               <button
@@ -225,17 +289,24 @@ export default function TiramisuDetailClient({ products, initialSlug }: Props) {
             <div className="space-y-3 rounded-2xl bg-[#fff8fa] p-4 text-sm text-[#5f000b]/80">
               <div>
                 <p className="font-semibold text-[#5f000b]">Съхранение</p>
-                <p className="mt-1">Съхранявайте тортата в хладилник до 48 часа.</p>
+                <p className="mt-1">
+                  Съхранявайте тирамису в хладилник до 5 дни.
+                </p>
               </div>
               <div>
                 <p className="font-semibold text-[#5f000b]">Доставка</p>
                 <p className="mt-1">
-                  Изпращаме охладени торти от понеделник до четвъртък. Поръчки след 16:30 ч. се обработват на следващия работен ден.
+                  Всяко тирамису се доставя с хладилна кутия и е готово за
+                  сервиране. Изпращаме от понеделник до четвъртък. Поръчки след
+                  15:00 ч. се обработват на следващия работен ден.
                 </p>
               </div>
               <div>
                 <p className="font-semibold text-[#5f000b]">Алергени</p>
-                <p className="mt-1">Всички торти съдържат глутен, млечни продукти и яйца. Някои варианти включват ядки или следи от тях.</p>
+                <p className="mt-1">
+                  Всички тирамисута съдържат глутен, млечни продукти и яйца. Някои
+                  варианти включват ядки или следи от тях.
+                </p>
               </div>
             </div>
           </section>

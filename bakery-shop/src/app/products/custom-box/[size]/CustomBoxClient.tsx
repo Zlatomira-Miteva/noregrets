@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import CookieShowcase from "@/components/CookieShowcase";
 import FavoriteButton from "@/components/FavoriteButton";
@@ -10,6 +10,7 @@ import SiteHeader from "@/components/SiteHeader";
 import { useCart } from "@/context/CartContext";
 import { formatPrice, parsePrice } from "@/utils/price";
 import type { CookieOptionRecord, ProductRecord } from "@/lib/products";
+import type { FavoritePayload } from "@/lib/favorites";
 
 const absImage = (value?: string) => {
   if (!value) return "";
@@ -162,6 +163,34 @@ export default function CustomBoxClient({
   const basePrice = parsePrice(config.price);
   const resolvedPrice = isMochiBox ? initialProduct?.price ?? basePrice : 0;
   const [selection, setSelection] = useState<Record<string, number>>({});
+
+  // Prefill selection from favorites (saved in sessionStorage before navigation).
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const raw = window.sessionStorage.getItem("favoriteBoxSelection");
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      if (parsed?.type === "custom-box" && parsed?.size === normalizedSize && Array.isArray(parsed.items)) {
+        const next: Record<string, number> = {};
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        parsed.items.forEach((it: any) => {
+          if (it?.id && it?.quantity) {
+            next[it.id] = Number(it.quantity) || 0;
+          }
+        });
+        setSelection(next);
+      }
+    } catch {
+      /* ignore */
+    } finally {
+      try {
+        window.sessionStorage.removeItem("favoriteBoxSelection");
+      } catch {
+        /* ignore */
+      }
+    }
+  }, [normalizedSize]);
   const computedBoxPrice = useMemo(
     () =>
       options.reduce(
@@ -250,9 +279,21 @@ export default function CustomBoxClient({
       options: summary,
       image: galleryImages[activeIndex] ?? galleryImages[0] ?? "",
     });
-
-    setSelection(Object.fromEntries(options.map((cookie) => [cookie.id, 0])));
   };
+
+  const favoritePayload: FavoritePayload = useMemo(
+    () => ({
+      type: "custom-box",
+      size: normalizedSize,
+      items: options
+        .map((cookie) => {
+          const count = selection[cookie.id] ?? 0;
+          return count > 0 ? { id: cookie.id, name: cookie.name, quantity: count } : null;
+        })
+        .filter(Boolean) as Array<{ id: string; name: string; quantity: number }>,
+    }),
+    [normalizedSize, options, selection],
+  );
 
   if (!hasConfig) {
     return (
@@ -500,6 +541,7 @@ export default function CustomBoxClient({
                 <div className="flex flex-col items-center gap-2">
                   <FavoriteButton
                     productId={`custom-box-${normalizedSize}`}
+                    payload={favoritePayload}
                     disabled={!canAddToCart || !options.length}
                     className={!canAddToCart || !options.length ? "opacity-60" : ""}
                   />

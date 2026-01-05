@@ -9,6 +9,7 @@ import { pgPool } from "@/lib/pg";
 import { ensureCustomerSchema } from "@/lib/customer-schema";
 
 export const runtime = "nodejs";
+const PAYMENT_CURRENCY = (process.env.MY_POS_CURRENCY ?? "EUR").toUpperCase();
 
 const schema = z.object({
   reference: z.string().min(1),
@@ -199,6 +200,33 @@ export async function POST(req: Request) {
     const totalAmount = Math.max(0, subtotal - discountAmount);
     const roundedTotal = Number(totalAmount.toFixed(2));
 
+    const spreadDiscount = (items: typeof normalizedItems, targetTotal: number) => {
+      const baseSum = items.reduce((sum, it) => sum + Number(it.price) * Number(it.quantity), 0);
+      if (!baseSum || targetTotal <= 0) return items;
+      const factor = targetTotal / baseSum;
+      let remaining = targetTotal;
+      return items.map((it, idx) => {
+        const baseLine = Number(it.price) * Number(it.quantity);
+        const isLast = idx === items.length - 1;
+        const lineTotal = isLast ? Number(remaining.toFixed(2)) : Number((baseLine * factor).toFixed(2));
+        const unit = it.quantity ? Number((lineTotal / Number(it.quantity)).toFixed(2)) : 0;
+        remaining = Number((remaining - lineTotal).toFixed(2));
+        return { ...it, price: unit };
+      });
+    };
+
+    const discountedItems = spreadDiscount(normalizedItems, roundedTotal);
+    const itemsWithPaid = discountedItems.map((it, idx) => {
+      const original = normalizedItems[idx];
+      const lineTotal = Number((Number(it.price) * Number(it.quantity)).toFixed(2));
+      return {
+        ...it,
+        pricePaid: it.price, // финална единична цена след отстъпката
+        lineTotal,
+        originalPrice: original?.price,
+      };
+    });
+
     const safePayload = {
       ...body,
       amount: roundedTotal,
@@ -206,16 +234,16 @@ export async function POST(req: Request) {
       subtotal: Number(subtotal.toFixed(2)),
       discountAmount: Number(discountAmount.toFixed(2)),
       coupon: couponInfo,
-      items: normalizedItems,
+      items: itemsWithPaid,
       cart: body.cart
         ? {
             ...body.cart,
-            items: normalizedItems.map((it) => ({
+            items: itemsWithPaid.map((it) => ({
               productId: it.productId,
               name: it.name,
               qty: it.quantity,
-              price: it.price,
-              currency: "BGN",
+              price: it.pricePaid,
+              currency: PAYMENT_CURRENCY,
               options: it.options,
             })),
           }

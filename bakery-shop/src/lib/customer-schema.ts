@@ -1,6 +1,8 @@
 import type { Pool, PoolClient } from "pg";
 import { pgPool } from "@/lib/pg";
 
+const ALLOW_DDL = process.env.ALLOW_SCHEMA_DDL === "1";
+
 const safeExec = async (client: Pool | PoolClient, sql: string) => {
   try {
     await client.query(sql);
@@ -15,6 +17,7 @@ const safeExec = async (client: Pool | PoolClient, sql: string) => {
 
 // Ensures customer-related schema exists (idempotent, best-effort).
 export async function ensureCustomerSchema(client: Pool | PoolClient = pgPool) {
+  if (!ALLOW_DDL) return;
   await safeExec(
     client,
     `
@@ -66,9 +69,19 @@ export async function ensureCustomerSchema(client: Pool | PoolClient = pgPool) {
       id text PRIMARY KEY,
       "userId" text NOT NULL,
       "productId" text NOT NULL,
+      payload jsonb,
+      "variantKey" text,
       "createdAt" timestamptz NOT NULL DEFAULT now(),
       UNIQUE("userId","productId")
     );
   `,
+  );
+  await safeExec(client, `ALTER TABLE "UserFavorite" ADD COLUMN IF NOT EXISTS payload jsonb`);
+  await safeExec(client, `ALTER TABLE "UserFavorite" ADD COLUMN IF NOT EXISTS "variantKey" text`);
+  await safeExec(client, `ALTER TABLE "UserFavorite" DROP CONSTRAINT IF EXISTS "UserFavorite_userId_productId_key"`);
+  await safeExec(
+    client,
+    `CREATE UNIQUE INDEX IF NOT EXISTS "UserFavorite_user_product_variant_idx"
+       ON "UserFavorite" ("userId","productId","variantKey")`,
   );
 }

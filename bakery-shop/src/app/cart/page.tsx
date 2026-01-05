@@ -185,7 +185,9 @@ const CartPage = () => {
           const data = await res.json();
           const price = Number(data.product?.price ?? data.price);
           const name = data.product?.name ?? data.name;
-          updateItemPrice(productId, Number.isFinite(price) ? price : undefined, name);
+          if (Number.isFinite(price)) {
+            updateItemPrice(productId, price, name);
+          }
         } catch (err) {
           if (controller.signal.aborted) return;
           console.error("Failed to refresh price", err);
@@ -262,12 +264,15 @@ const CartPage = () => {
     targetTotal: number
   ): typeof items => {
     if (!source.length || targetTotal <= 0) return source;
-    const sum = source.reduce((acc, item) => acc + item.price * item.quantity, 0);
+    const sum = source.reduce(
+      (acc, item) => acc + (item.price ?? 0) * item.quantity,
+      0
+    );
     if (sum <= 0) return source;
     if (Math.abs(sum - targetTotal) < 0.01) {
       return source.map((item) => ({
         ...item,
-        price: Number(item.price.toFixed(2)),
+        price: Number((item.price ?? 0).toFixed(2)),
       }));
     }
 
@@ -275,7 +280,7 @@ const CartPage = () => {
     let remaining = targetTotal;
 
     return source.map((item, idx) => {
-      const baseTotal = item.price * item.quantity;
+      const baseTotal = (item.price ?? 0) * item.quantity;
       const isLast = idx === source.length - 1;
       const lineTotal = isLast
         ? Number(remaining.toFixed(2))
@@ -461,9 +466,15 @@ const CartPage = () => {
     const orderReference = `NR-${Date.now()}`;
     const roundedTotal = Number(finalTotal.toFixed(2));
     const normalizedItems = normalizeItemsForTotal(items, roundedTotal);
+    const totalQuantity = normalizedItems.reduce(
+      (sum, item) => sum + Number(item.quantity || 0),
+      0
+    );
     const orderPayload = {
       reference: orderReference,
       amount: roundedTotal,
+      totalAmount: roundedTotal,
+      totalQuantity,
       description: `Онлайн поръчка ${orderReference}`,
       customer: customerInfo,
       deliveryLabel,
@@ -505,6 +516,28 @@ const CartPage = () => {
 
     try {
       await saveProfileIfNeeded();
+      if (marketingConsent && orderPayload.customer.email) {
+        try {
+          const newsletterPayload = {
+            email: orderPayload.customer.email,
+            firstName: orderPayload.customer.firstName ?? "",
+            lastName: orderPayload.customer.lastName ?? "",
+            phone: orderPayload.customer.phone ?? "",
+            address: orderPayload.deliveryLabel,
+            city: addressInfo.city || "",
+            zip: addressInfo.number || "",
+            honeypot: "",
+          };
+          sessionStorage.setItem("newsletterCaptured", "1");
+          await fetch("/api/newsletter", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(newsletterPayload),
+          });
+        } catch (newsletterErr) {
+          console.error("Newsletter capture failed", newsletterErr);
+        }
+      }
       sessionStorage.setItem("pendingOrder", JSON.stringify(orderPayload));
 
       const response = await fetch("/api/checkout", {

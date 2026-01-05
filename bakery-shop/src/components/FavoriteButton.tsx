@@ -1,18 +1,21 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { computeVariantKey, type FavoritePayload } from "@/lib/favorites";
 
 type Props = {
   productId: string;
+  payload?: FavoritePayload;
   className?: string;
   disabled?: boolean;
 };
 
-export default function FavoriteButton({ productId, className, disabled }: Props) {
+export default function FavoriteButton({ productId, payload, className, disabled }: Props) {
   const router = useRouter();
   const [isFav, setIsFav] = useState<boolean>(false);
   const [loading, setLoading] = useState(false);
+  const variantKey = useMemo(() => computeVariantKey(payload ?? null), [payload]);
 
   useEffect(() => {
     let mounted = true;
@@ -22,7 +25,14 @@ export default function FavoriteButton({ productId, className, disabled }: Props
         if (!res.ok) return;
         const data = await res.json();
         if (!mounted) return;
-        setIsFav(Boolean((data.favorites ?? []).find((f: { productId: string }) => f.productId === productId)));
+        setIsFav(
+          Boolean(
+            (data.favorites ?? []).find(
+              (f: { productId: string; variantKey?: string }) =>
+                f.productId === productId && (variantKey ? f.variantKey === variantKey : true),
+            ),
+          ),
+        );
       } catch {
         /* ignore */
       }
@@ -41,7 +51,7 @@ export default function FavoriteButton({ productId, className, disabled }: Props
       const res = await fetch("/api/account/favorites", {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ productId }),
+        body: JSON.stringify({ productId, payload, variantKey }),
       });
       if (res.status === 401) {
         router.push(`/account/login?callbackUrl=${encodeURIComponent(window.location.pathname)}`);

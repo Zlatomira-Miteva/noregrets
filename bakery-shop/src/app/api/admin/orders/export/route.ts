@@ -34,6 +34,14 @@ const toDateOnly = (value: unknown) => {
   return d.toISOString().slice(0, 10);
 };
 
+const toDateTime = (value: unknown) => {
+  const d = value instanceof Date ? value : new Date(value as string | number | Date);
+  if (Number.isNaN(d.getTime())) return "";
+  const iso = d.toISOString(); // always UTC to avoid TZ surprises
+  // "2024-01-02T15:04:05.000Z" -> "2024-01-02 15:04:05"
+  return `${iso.slice(0, 10)} ${iso.slice(11, 19)}`;
+};
+
 const getEnvOrFail = (key: string) => {
   const v = process.env[key];
   if (!v) {
@@ -87,7 +95,7 @@ export async function GET(request: Request) {
 
     const ordersRes = await pgPool.query(
       `SELECT * FROM "Order"
-       WHERE status='PAID' AND "createdAt" BETWEEN $1 AND $2
+       WHERE status IN ('PAID','REFUNDED') AND "createdAt" BETWEEN $1 AND $2
        ORDER BY "createdAt" ASC`,
       [startDate, endDate],
     );
@@ -129,44 +137,67 @@ export async function GET(request: Request) {
       "R_TOTAL",
     ];
 
-    const vatRate = Number(process.env.NAP_DEFAULT_VAT_RATE ?? 20);
-    const paymDefault = process.env.NAP_PAYM_DEFAULT ?? "2"; // 2 - виртуален ПОС
+    const vatRate = 20; //Number(process.env.NAP_DEFAULT_VAT_RATE ?? 20);
+    const paymDefault = 4; // process.env.NAP_PAYM_DEFAULT ?? "4"; // 2 - виртуален ПОС
     const posNumber = process.env.NAP_POS_N ?? "";
     const procId = process.env.NAP_PROC_ID ?? "";
+    const refundPaymDefault = process.env.NAP_REFUND_PAYM_DEFAULT ?? paymDefault;
 
     const rows: Array<string[]> = [];
 
     for (const order of ordersRes.rows) {
       const orderRef = order.reference ?? order.Reference ?? order.ref ?? "";
+      const docNumber = orderRef || order.id || order.orderid || "";
       const createdAt = order.createdAt ?? order.createdat;
       const items = Array.isArray(order.items) ? order.items : [];
       const totalAmount = Number(order.totalAmount ?? order.totalamount ?? 0);
+      const isRefunded = order.status === "REFUNDED";
+      const refundAmount = Number(order.refundAmount ?? order.refundamount ?? 0);
+      const refundDate = order.refundAt ?? order.refundat ?? null;
+      const refundMethod = order.refundMethod ?? order.refundmethod ?? refundPaymDefault;
 
+      // Използваме цената от order.items, като първо търсим pricePaid/lineTotal, а ако не пасва на totalAmount — скалираме.
       const parsedItems: ItemRow[] =
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        items.map((it: any) => ({
-          artName: it.name ?? "",
-          quantity: Number(it.quantity ?? it.qty ?? 1),
-          priceWithVat: Number(it.price ?? 0),
-          vatRate,
-        })) ?? [];
+        items.map((it: any) => {
+          const quantity = Number(it.quantity ?? it.qty ?? 1);
+          const totalWithVat = Number(it.lineTotal ?? it.total ?? it.totalPrice ?? 0);
+          const unitFromTotal = quantity ? totalWithVat / quantity : Number(it.price ?? 0);
+          const priceWithVat = Number(it.pricePaid ?? it.unitPrice ?? it.price ?? unitFromTotal ?? 0);
+          return {
+            artName: it.name ?? "",
+            quantity,
+            priceWithVat,
+            vatRate,
+          };
+        }) ?? [];
 
-      const totalVat =
-        parsedItems.reduce((acc, it) => {
-          const net = it.priceWithVat / (1 + it.vatRate / 100);
-          const vat = it.priceWithVat - net;
-          return acc + vat * it.quantity;
-        }, 0) || 0;
+      // Ако сумата на редовете се разминава с платеното, скалирай.
+      const grossSum = parsedItems.reduce((acc, it) => acc + it.priceWithVat * it.quantity, 0);
+      let adjustedItems = parsedItems;
+      if (grossSum > 0 && Math.abs(grossSum - totalAmount) > 0.01) {
+        const factor = totalAmount / grossSum;
+        let remaining = totalAmount;
+        adjustedItems = parsedItems.map((it, idx) => {
+          const baseLine = it.priceWithVat * it.quantity;
+          const isLast = idx === parsedItems.length - 1;
+          const lineTotal = isLast ? Number(remaining.toFixed(2)) : Number((baseLine * factor).toFixed(2));
+          const unit = it.quantity ? Number((lineTotal / it.quantity).toFixed(2)) : it.priceWithVat;
+          remaining = Number((remaining - lineTotal).toFixed(2));
+          return { ...it, priceWithVat: unit };
+        });
+      }
+
       const totalNet =
-        parsedItems.reduce((acc, it) => {
+        adjustedItems.reduce((acc, it) => {
           const net = it.priceWithVat / (1 + it.vatRate / 100);
           return acc + net * it.quantity;
         }, 0) || 0;
 
-      const docDate = toDateOnly(createdAt);
+      const docDate = toDateTime(createdAt);
       const creationDate = toDateOnly(new Date());
 
-      if (!parsedItems.length) {
+      if (!adjustedItems.length) {
         rows.push([
           eik,
           eShopNumber,
@@ -176,8 +207,8 @@ export async function GET(request: Request) {
           monOut,
           godOut,
           orderRef,
-          docDate,
-          orderRef,
+          toDateOnly(createdAt),
+          docNumber,
           docDate,
           "",
           "0",
@@ -187,23 +218,23 @@ export async function GET(request: Request) {
           "0.00",
           totalNet.toFixed(2),
           "0.00",
-          totalVat.toFixed(2),
+          totalAmount.toFixed(2),
           totalAmount.toFixed(2),
           paymDefault,
-          posNumber,
-          orderRef,
+          "",
+          "",
           procId,
-          "0",
-          "",
-          "0.00",
-          "",
-          "",
-          "0.00",
+          isRefunded ? "1" : "0",
+          isRefunded ? orderRef : "",
+          isRefunded ? refundAmount.toFixed(2) : "0.00",
+          isRefunded && refundDate ? toDateOnly(refundDate) : "",
+          isRefunded ? refundMethod : "",
+          isRefunded ? refundAmount.toFixed(2) : "0.00",
         ]);
         continue;
       }
 
-      parsedItems.forEach((it, idx) => {
+      adjustedItems.forEach((it, idx) => {
         const net = it.priceWithVat / (1 + it.vatRate / 100);
         const vat = it.priceWithVat - net;
         rows.push([
@@ -215,29 +246,29 @@ export async function GET(request: Request) {
           monOut,
           godOut,
           orderRef,
-          docDate,
-          orderRef,
+          toDateOnly(createdAt),
+          docNumber,
           docDate,
           it.artName,
           it.quantity.toString(),
           it.priceWithVat.toFixed(2),
           it.vatRate.toFixed(0),
-          (vat * it.quantity).toFixed(2),
+          it.priceWithVat.toFixed(2),
           (it.priceWithVat * it.quantity).toFixed(2),
           idx === 0 ? totalNet.toFixed(2) : "",
           idx === 0 ? "0.00" : "",
-          idx === 0 ? totalVat.toFixed(2) : "",
+          idx === 0 ? totalAmount.toFixed(2) : "",
           idx === 0 ? totalAmount.toFixed(2) : "",
           idx === 0 ? paymDefault : "",
-          idx === 0 ? posNumber : "",
-          idx === 0 ? orderRef : "",
+          "",
+          "",
           idx === 0 ? procId : "",
-          idx === 0 ? "0" : "",
+          idx === 0 && isRefunded ? "1" : "0",
           "",
           "",
-          "",
-          "",
-          "",
+          idx === 0 && isRefunded && refundDate ? toDateOnly(refundDate) : "",
+          idx === 0 && isRefunded ? refundMethod : "",
+          idx === 0 && isRefunded ? refundAmount.toFixed(2) : "0.00",
         ]);
       });
     }

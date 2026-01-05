@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import Script from "next/script";
 import { Montserrat_Alternates } from "next/font/google";
+import { Suspense } from "react";
 import "./globals.css";
 import AuthProvider from "@/components/AuthProvider";
+import AnalyticsTracker from "@/components/AnalyticsTracker";
 import CanonicalLink from "@/components/CanonicalLink";
 import CartToast from "@/components/CartToast";
 import CookieConsentToast from "@/components/CookieConsentToast";
@@ -66,13 +68,16 @@ export default function RootLayout({
                 window.dataLayer = window.dataLayer || [];
                 function gtag(){dataLayer.push(arguments);}
                 gtag('js', new Date());
-                gtag('config', '${process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID}');
+                gtag('config', '${process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID}', { send_page_view: false });
               `}
             </Script>
           </>
         ) : null}
         <AuthProvider>
           <CartProvider>
+            <Suspense fallback={null}>
+              <AnalyticsTracker />
+            </Suspense>
             <CanonicalLink />
             <CartToast />
             <CookieConsentToast />

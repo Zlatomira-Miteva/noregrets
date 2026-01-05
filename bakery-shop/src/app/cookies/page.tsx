@@ -144,9 +144,11 @@ export default async function CookiesPage() {
                       )}
                     </div>
                   </Link>
-                  <div className="px-6 pb-5">
-                    <FavoriteButton productId={product.id} className="w-full justify-center" />
-                  </div>
+                  {product.id.includes("best-sellers") || product.id.includes("mini") ? (
+                    <div className="px-6 pb-5">
+                      <FavoriteButton productId={product.id} className="w-full justify-center" />
+                    </div>
+                  ) : null}
                 </article>
               ))}
             </div>

@@ -25,6 +25,7 @@ const STATUS_LABELS: Record<OrderStatus, string> = {
   PAID: "Платена",
   FAILED: "Неуспешна",
   CANCELLED: "Отказана",
+  REFUNDED: "Върната",
 };
 
 const {
