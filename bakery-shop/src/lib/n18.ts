@@ -45,7 +45,7 @@ export async function ensureN18Schema(client: PgQueryable = pgPool) {
       customer_phone TEXT NOT NULL,
       delivery_address TEXT NOT NULL,
       total_amount NUMERIC(12,2) NOT NULL,
-      currency CHAR(3) NOT NULL DEFAULT 'BGN',
+      currency CHAR(3) NOT NULL DEFAULT 'EUR',
       payment_method payment_method_enum NOT NULL DEFAULT 'card',
       payment_status payment_status_enum NOT NULL DEFAULT 'pending',
       created_at TIMESTAMPTZ NOT NULL DEFAULT now()
@@ -54,6 +54,7 @@ export async function ensureN18Schema(client: PgQueryable = pgPool) {
 
   await client.query(`
     CREATE TABLE IF NOT EXISTS order_items (
+      id UUID NOT NULL,
       order_id UUID REFERENCES orders(id) ON DELETE CASCADE,
       product_name TEXT NOT NULL,
       tax_group TEXT NOT NULL,
@@ -62,6 +63,18 @@ export async function ensureN18Schema(client: PgQueryable = pgPool) {
       total_price NUMERIC(12,2) NOT NULL,
       PRIMARY KEY (order_id, product_name, tax_group)
     );
+  `);
+  await client.query(`
+    DO $$
+    BEGIN
+      IF NOT EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_name='order_items' AND column_name='id'
+      ) THEN
+        ALTER TABLE order_items ADD COLUMN id UUID NOT NULL;
+      END IF;
+    END$$;
   `);
 
   await client.query(`
@@ -144,7 +157,7 @@ export async function upsertOrderSnapshot(order: SnapshotOrder) {
   try {
     await ensureN18Schema(client);
     await client.query("BEGIN");
-    const currency = order.currency ?? "BGN";
+    const currency = order.currency ?? "EUR";
     const method = order.paymentMethod ?? "card";
     const status = order.paymentStatus ?? "pending";
     const createdAt = order.createdAt ?? new Date();
@@ -191,15 +204,32 @@ export async function upsertOrderSnapshot(order: SnapshotOrder) {
       );
     }
 
-    await client.query(`DELETE FROM order_items WHERE order_id = $1`, [orderId]);
-    for (const item of order.items) {
-      const tax = item.taxGroup ?? "20%";
-      const qty = Number(item.quantity);
-      const price = Number(item.price);
+    const itemTuples = order.items.map((item) => ({
+      name: item.name,
+      tax: item.taxGroup ?? "0%",
+      qty: Number(item.quantity),
+      price: Number(item.price),
+    }));
+
+    // Soft-clear old rows by setting quantity/price to 0 for rows not in current set (avoids DELETE trigger).
+    if (itemTuples.length) {
+      const names = itemTuples.map((it) => it.name);
       await client.query(
-        `INSERT INTO order_items (order_id, product_name, tax_group, quantity, unit_price, total_price)
-         VALUES ($1,$2,$3,$4,$5,$6)`,
-        [orderId, item.name, tax, qty, price, Number((qty * price).toFixed(2))],
+        `UPDATE order_items
+         SET quantity=0, total_price=0, unit_price=0
+         WHERE order_id = $1 AND product_name <> ALL($2::text[])`,
+        [orderId, names],
+      );
+    }
+
+    for (const item of itemTuples) {
+      const total = Number((item.qty * item.price).toFixed(2));
+      await client.query(
+        `INSERT INTO order_items (id, order_id, product_name, tax_group, quantity, unit_price, total_price)
+         VALUES ($1,$2,$3,$4,$5,$6,$7)
+         ON CONFLICT (order_id, product_name, tax_group)
+         DO UPDATE SET quantity=EXCLUDED.quantity, unit_price=EXCLUDED.unit_price, total_price=EXCLUDED.total_price`,
+        [randomUUID(), orderId, item.name, item.tax, item.qty, item.price, total],
       );
     }
 
@@ -207,7 +237,8 @@ export async function upsertOrderSnapshot(order: SnapshotOrder) {
     return orderId;
   } catch (err) {
     await client.query("ROLLBACK").catch(() => {});
-    throw err;
+    console.error("[orders.save] mirror to orders/order_items failed", err);
+    return null;
   } finally {
     client.release();
   }

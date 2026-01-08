@@ -12,7 +12,7 @@ const schema = z.object({
   customer_phone: z.string().min(3),
   delivery_address: z.string().min(1),
   total_amount: z.coerce.number().positive(),
-  currency: z.string().length(3).default("BGN"),
+  currency: z.string().length(3).default("EUR"),
   payment_method: z.enum(["card", "cod"]).default("card"),
   payment_status: z.enum(["pending", "authorized", "paid", "failed", "refunded"]).default("pending"),
   items: z

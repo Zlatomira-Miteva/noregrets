@@ -11,9 +11,20 @@ import { ensureCustomerSchema } from "@/lib/customer-schema";
 export const runtime = "nodejs";
 const PAYMENT_CURRENCY = (process.env.MY_POS_CURRENCY ?? "EUR").toUpperCase();
 
+// Money helpers (EUR <-> cents)
+const eurToCents = (value: number | string) => {
+  const n = Number(value);
+  if (!Number.isFinite(n)) throw new Error("Invalid money value");
+  return Math.round(n * 100);
+};
+const centsToEurString = (cents: number) => {
+  if (!Number.isFinite(cents)) throw new Error("Invalid cents value");
+  return (cents / 100).toFixed(2);
+};
+
 const schema = z.object({
   reference: z.string().min(1),
-  amount: z.coerce.number().positive(),
+  amount: z.coerce.number().positive(), // client provided, ignored for totals
   description: z.string().optional(),
   deliveryLabel: z.string().min(1),
   couponCode: z.string().trim().toUpperCase().optional(),
@@ -21,7 +32,7 @@ const schema = z.object({
     .array(
       z.object({
         name: z.string(),
-        price: z.coerce.number().optional(),
+        price: z.coerce.number().optional(), // client provided, ignored
         productId: z.string().optional(),
         quantity: z.coerce.number().positive(),
         options: z.array(z.string()).optional(),
@@ -29,7 +40,7 @@ const schema = z.object({
     )
     .min(1),
   totalQuantity: z.coerce.number().int().positive(),
-  totalAmount: z.coerce.number().positive(),
+  totalAmount: z.coerce.number().positive(), // client provided, ignored for totals
   createdAt: z.string().optional(),
   customer: z.object({
     firstName: z.string().optional(),
@@ -61,7 +72,7 @@ const schema = z.object({
       ),
     })
     .optional(),
-  });
+});
 
 const normalizeSlug = (value?: string | null) => {
   if (!value) return null;
@@ -100,18 +111,21 @@ async function fetchProduct(slugOrId: string) {
   }
 }
 
-async function validateCoupon(code: string, total: number) {
+async function validateCoupon(code: string, subtotalCents: number) {
   const res = await pgPool.query(`SELECT * FROM "Coupon" WHERE code = $1 LIMIT 1`, [code]);
   const coupon = res.rows[0];
-  if (!coupon) {
-    throw new Error("Кодът не е валиден.");
-  }
+  if (!coupon) throw new Error("Кодът не е валиден.");
 
-  const discountType = coupon.discountType ?? coupon.discounttype;
+  // ✅ FIX: normalize discountType
+  const discountTypeRaw = coupon.discountType ?? coupon.discounttype ?? "";
+  const discountType = String(discountTypeRaw).trim().toUpperCase();
+
   const discountValue = Number(coupon.discountValue ?? coupon.discountvalue ?? 0);
   const minimumOrderAmount = Number(coupon.minimumOrderAmount ?? coupon.minimumorderamount ?? 0);
   const rawMaximum = coupon.maximumDiscountAmount ?? coupon.maximumdiscountamount;
-  const maximumDiscountAmount = rawMaximum === null || rawMaximum === undefined ? null : Number(rawMaximum);
+  const maximumDiscountAmount =
+    rawMaximum === null || rawMaximum === undefined ? null : Number(rawMaximum);
+
   const validFrom = coupon.validFrom ?? coupon.validfrom ?? null;
   const validUntil = coupon.validUntil ?? coupon.validuntil ?? null;
   const isActive = coupon.isActive ?? coupon.isactive ?? true;
@@ -122,17 +136,26 @@ async function validateCoupon(code: string, total: number) {
   if (validFrom && now < new Date(validFrom)) throw new Error("Кодът още не е активен.");
   if (validUntil && now > new Date(validUntil)) throw new Error("Кодът е изтекъл.");
   if (!isActive) throw new Error("Кодът е деактивиран.");
-  if (total < minimumOrderAmount) throw new Error("Сумата е под минималната за този код.");
+
+  const minimumOrderAmountCents = eurToCents(minimumOrderAmount);
+  if (subtotalCents < minimumOrderAmountCents) throw new Error("Сумата е под минималната за този код.");
   if (maxRedemptions && timesRedeemed >= maxRedemptions) throw new Error("Кодът е изчерпан.");
 
-  let discountAmount = 0;
+  let discountAmountCents = 0;
+
   if (discountType === "PERCENT") {
-    discountAmount = (discountValue / 100) * total;
-    const max = maximumDiscountAmount ?? null;
-    if (max !== null && discountAmount > max) discountAmount = max;
+    discountAmountCents = Math.round((subtotalCents * discountValue) / 100);
+    if (maximumDiscountAmount !== null) {
+      const maxCents = eurToCents(maximumDiscountAmount);
+      discountAmountCents = Math.min(discountAmountCents, maxCents);
+    }
+  } else if (discountType === "FIXED") {
+    discountAmountCents = eurToCents(discountValue);
   } else {
-    discountAmount = discountValue;
+    throw new Error("Невалиден тип на отстъпка (discountType).");
   }
+
+  discountAmountCents = Math.min(discountAmountCents, subtotalCents);
 
   return {
     code: coupon.code,
@@ -140,8 +163,69 @@ async function validateCoupon(code: string, total: number) {
     discountValue,
     maximumDiscountAmount: maximumDiscountAmount ?? null,
     minimumOrderAmount,
-    discountAmount,
+    discountAmountCents,
   };
+}
+
+/**
+ * Allocate discount (in cents) across lines proportionally.
+ * Ensures Σ lineDiscountCents == discountCents and Σ lineTotalCents == totalCents.
+ */
+function allocateDiscountAcrossLines(params: {
+  lines: Array<{
+    idx: number;
+    productId: string;
+    name: string;
+    qty: number;
+    unitPriceCents: number;
+    lineSubtotalCents: number;
+    options?: string[];
+  }>;
+  discountCents: number;
+}) {
+  const { lines, discountCents } = params;
+  const subtotalSum = lines.reduce((s, l) => s + l.lineSubtotalCents, 0);
+
+  if (subtotalSum <= 0 || discountCents <= 0) {
+    return lines.map((l) => ({
+      ...l,
+      lineDiscountCents: 0,
+      lineTotalCents: l.lineSubtotalCents,
+    }));
+  }
+
+  const work = lines.map((l) => {
+    const raw = (discountCents * l.lineSubtotalCents) / subtotalSum;
+    const floored = Math.floor(raw);
+    return {
+      ...l,
+      lineDiscountCents: floored,
+      remainder: raw - floored,
+    };
+  });
+
+  const allocated = work.reduce((s, l) => s + l.lineDiscountCents, 0);
+  let remaining = discountCents - allocated;
+
+  work.sort((a, b) => b.remainder - a.remainder);
+  for (let i = 0; i < work.length && remaining > 0; i++) {
+    work[i].lineDiscountCents += 1;
+    remaining -= 1;
+  }
+
+  work.sort((a, b) => a.idx - b.idx);
+
+  const out = work.map((l) => ({
+    ...l,
+    lineTotalCents: l.lineSubtotalCents - l.lineDiscountCents,
+  }));
+
+  const sumDiscount = out.reduce((s, l) => s + l.lineDiscountCents, 0);
+  if (sumDiscount !== discountCents) {
+    throw new Error(`Discount allocation mismatch: expected ${discountCents}, got ${sumDiscount}`);
+  }
+
+  return out;
 }
 
 export async function POST(req: Request) {
@@ -150,38 +234,44 @@ export async function POST(req: Request) {
     const session = await getServerSession(authOptions);
     await ensureCustomerSchema();
 
+    // Normalize items: ALWAYS take price from DB
     const normalizedItems = await Promise.all(
       body.items.map(async (item) => {
         const candidateId = item.productId ?? item.name;
         const productRow = candidateId ? await fetchProduct(candidateId) : null;
-        if (!productRow) {
-          throw new Error(`Продуктът не е намерен: ${item.name}`);
-        }
-        const unitPrice = Number(productRow.price);
+        if (!productRow) throw new Error(`Продуктът не е намерен: ${item.name}`);
+
+        const unitPriceCents = eurToCents(productRow.price);
         const quantity = Number(item.quantity);
+
         return {
-          name: productRow.name ?? item.name,
-          price: unitPrice,
+          productId: String(productRow.slug ?? productRow.id),
+          name: String(productRow.name ?? item.name),
           quantity,
+          unitPriceCents,
           options: item.options,
-          productId: productRow.slug ?? productRow.id,
         };
       }),
     );
 
-    const subtotal = normalizedItems.reduce(
-      (sum, it) => sum + Number(it.price) * Number(it.quantity),
+    const subtotalCents = normalizedItems.reduce(
+      (sum, it) => sum + it.unitPriceCents * it.quantity,
       0,
     );
-    if (!Number.isFinite(subtotal) || subtotal <= 0) {
+    if (!Number.isFinite(subtotalCents) || subtotalCents <= 0) {
       throw new Error("Невалидна сума на поръчката.");
     }
-    const computedQuantity = normalizedItems.reduce(
-      (sum, it) => sum + Number(it.quantity),
-      0,
-    );
 
-    let discountAmount = 0;
+    const computedQuantity = normalizedItems.reduce((sum, it) => sum + it.quantity, 0);
+    if (computedQuantity !== body.totalQuantity) {
+      console.warn("[checkout] quantity mismatch", {
+        computedQuantity,
+        clientTotalQuantity: body.totalQuantity,
+      });
+    }
+
+    // Coupon
+    let discountAmountCents = 0;
     let couponInfo:
       | {
           code: string;
@@ -189,81 +279,151 @@ export async function POST(req: Request) {
           discountValue: number;
           maximumDiscountAmount: number | null;
           minimumOrderAmount: number;
-          discountAmount: number;
+          discountAmountCents: number;
         }
       | undefined;
     if (body.couponCode) {
-      couponInfo = await validateCoupon(body.couponCode, subtotal);
-      discountAmount = couponInfo.discountAmount;
+      couponInfo = await validateCoupon(body.couponCode, subtotalCents);
+      discountAmountCents = couponInfo.discountAmountCents;
+      console.info("[checkout.coupon]", {
+        code: couponInfo.code,
+        subtotalCents,
+        discountAmountCents,
+        totalCents: subtotalCents - discountAmountCents,
+      });
+    }
+    const hasCoupon = !!couponInfo;
+
+    const totalCents = Math.max(0, subtotalCents - discountAmountCents);
+    const amountStr = centsToEurString(totalCents);
+
+    // Allocate discount across lines (for audit)
+    const lines = normalizedItems.map((it, idx) => ({
+      idx,
+      productId: it.productId,
+      name: it.name,
+      qty: it.quantity,
+      unitPriceCents: it.unitPriceCents,
+      lineSubtotalCents: it.unitPriceCents * it.quantity,
+      options: it.options,
+    }));
+
+    const allocatedLines = allocateDiscountAcrossLines({
+      lines,
+      discountCents: discountAmountCents,
+    });
+
+    const sumLineTotals = allocatedLines.reduce((s, l) => s + l.lineTotalCents, 0);
+    if (sumLineTotals !== totalCents) {
+      throw new Error(`Line totals mismatch: expected ${totalCents}, got ${sumLineTotals}`);
     }
 
-    const totalAmount = Math.max(0, subtotal - discountAmount);
-    const roundedTotal = Number(totalAmount.toFixed(2));
-
-    const spreadDiscount = (items: typeof normalizedItems, targetTotal: number) => {
-      const baseSum = items.reduce((sum, it) => sum + Number(it.price) * Number(it.quantity), 0);
-      if (!baseSum || targetTotal <= 0) return items;
-      const factor = targetTotal / baseSum;
-      let remaining = targetTotal;
-      return items.map((it, idx) => {
-        const baseLine = Number(it.price) * Number(it.quantity);
-        const isLast = idx === items.length - 1;
-        const lineTotal = isLast ? Number(remaining.toFixed(2)) : Number((baseLine * factor).toFixed(2));
-        const unit = it.quantity ? Number((lineTotal / Number(it.quantity)).toFixed(2)) : 0;
-        remaining = Number((remaining - lineTotal).toFixed(2));
-        return { ...it, price: unit };
-      });
-    };
-
-    const discountedItems = spreadDiscount(normalizedItems, roundedTotal);
-    const itemsWithPaid = discountedItems.map((it, idx) => {
-      const original = normalizedItems[idx];
-      const lineTotal = Number((Number(it.price) * Number(it.quantity)).toFixed(2));
+    const itemsWithPaid = allocatedLines.map((l) => {
+      const effectiveUnitPaidCents = Math.round(l.lineTotalCents / (l.qty || 1)); // display only
       return {
-        ...it,
-        pricePaid: it.price, // финална единична цена след отстъпката
-        lineTotal,
-        originalPrice: original?.price,
+        productId: l.productId,
+        name: l.name,
+        quantity: l.qty,
+        options: l.options,
+        originalUnitPrice: centsToEurString(l.unitPriceCents),
+        unitPriceCents: l.unitPriceCents,
+        pricePaid: centsToEurString(effectiveUnitPaidCents), // display only
+        unitPriceCentsPaid: effectiveUnitPaidCents, // display only
+        lineSubtotal: centsToEurString(l.lineSubtotalCents),
+        lineDiscount: centsToEurString(l.lineDiscountCents),
+        lineTotal: centsToEurString(l.lineTotalCents),
+        lineTotalCents: l.lineTotalCents,
       };
     });
 
     const safePayload = {
       ...body,
-      amount: roundedTotal,
-      totalAmount: roundedTotal,
-      subtotal: Number(subtotal.toFixed(2)),
-      discountAmount: Number(discountAmount.toFixed(2)),
-      coupon: couponInfo,
-      items: itemsWithPaid,
-      cart: body.cart
-        ? {
-            ...body.cart,
-            items: itemsWithPaid.map((it) => ({
-              productId: it.productId,
-              name: it.name,
-              qty: it.quantity,
-              price: it.pricePaid,
-              currency: PAYMENT_CURRENCY,
-              options: it.options,
-            })),
-          }
+      amount: amountStr,
+      totalAmount: amountStr,
+      subtotal: centsToEurString(subtotalCents),
+      discountAmount: centsToEurString(discountAmountCents),
+      coupon: couponInfo
+        ? { ...couponInfo, discountAmount: centsToEurString(couponInfo.discountAmountCents) }
         : undefined,
+      items: itemsWithPaid.map((it) => ({
+        productId: it.productId,
+        name: it.name,
+        price: it.pricePaid, // display only
+        quantity: it.quantity,
+        options: it.options,
+        lineTotal: it.lineTotal,
+        lineSubtotal: it.lineSubtotal,
+        lineDiscount: it.lineDiscount,
+        originalPrice: it.originalUnitPrice,
+      })),
+      cart: undefined
+        // !hasCoupon && body.cart
+        //   ? {
+        //       ...body.cart,
+        //       items: itemsWithPaid.map((it) => ({
+        //         productId: it.productId,
+        //         name: it.name,
+        //         qty: it.quantity,
+        //         price: Number(it.pricePaid),
+        //         currency: PAYMENT_CURRENCY,
+        //         options: it.options,
+        //       })),
+        //     }
+        //   : undefined,
+    };
+
+    const dbPayload = {
+      ...safePayload,
+      amount: totalCents / 100,
+      totalAmount: totalCents / 100,
+      subtotal: subtotalCents / 100,
+      discountAmount: discountAmountCents / 100,
+      coupon: couponInfo ? { ...couponInfo, discountAmount: discountAmountCents / 100 } : undefined,
+      items: itemsWithPaid.map((it) => ({
+        productId: it.productId,
+        name: it.name,
+        price: Number(it.pricePaid),
+        quantity: it.quantity,
+        options: it.options,
+        lineTotal: Number(it.lineTotal),
+        lineSubtotal: Number(it.lineSubtotal),
+        lineDiscount: Number(it.lineDiscount),
+        originalPrice: Number(it.originalUnitPrice),
+      })),
     };
 
     await saveOrderWithAudit(
       {
-        ...safePayload,
+        ...dbPayload,
         userId: session?.user?.id ?? undefined,
       },
       body.customer.email,
     );
 
+    // Free order => no myPOS
+    if (totalCents === 0) {
+      return NextResponse.json({
+        ok: true,
+        paymentRequired: false,
+        reference: safePayload.reference,
+      });
+    }
+
+    // ✅ FIX: If coupon -> DO NOT send cart to myPOS (amount-only).
+    // Otherwise, you may send cart unless there are tiny prices.
+    const hasTinyPrice = itemsWithPaid.some((it) => Number(it.pricePaid) < 0.01);
+    const paymentCart = hasCoupon || hasTinyPrice ? undefined : safePayload.cart;
+
     const redirect = createMyposCheckout({
-      ...safePayload,
-      amount: safePayload.amount,
-      cart: safePayload.cart,
+      reference: safePayload.reference,
+      amount: amountStr, // "0.00" string
+      couponCode: couponInfo?.code,
+      description: safePayload.description,
+      customer: safePayload.customer,
+      cart: undefined,
     });
-    return NextResponse.json({ form: redirect });
+
+    return NextResponse.json({ form: redirect, amount: amountStr });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Checkout failed.";
     console.error("Checkout error:", message, error);

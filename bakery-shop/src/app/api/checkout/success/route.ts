@@ -1,9 +1,5 @@
 // src/app/api/checkout/success/route.ts
 
-import { ORDER_STATUS, updateOrderStatusWithAudit } from "@/lib/orders";
-import { sendOrderStatusChangeEmail, sendOrderEmail } from "@/lib/notify/email";
-import { formatPrice } from "@/utils/price";
-
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
@@ -102,49 +98,8 @@ const respond = (redirectPath: string) =>
     headers: { "Content-Type": "text/html; charset=utf-8" },
   });
 
-const updateStatusAndEmail = async (reference: string) => {
-  const result = await updateOrderStatusWithAudit(reference, ORDER_STATUS.PAID, "mypos-success", {
-    source: "success-url",
-  });
-
-  if (result && result.order.customerEmail && result.order.status === ORDER_STATUS.PAID) {
-    sendOrderStatusChangeEmail({
-      to: result.order.customerEmail,
-      reference: result.order.reference,
-      newStatus: result.order.status,
-      previousStatus: result.previousStatus,
-      totalAmount: Number(result.order.totalAmount),
-      deliveryLabel: result.order.deliveryLabel,
-      items: result.order.items,
-    }).catch((err) => console.error("[checkout.success.email]", err));
-  }
-
-  if (result?.changed && (result.order.status === ORDER_STATUS.FAILED || result.order.status === ORDER_STATUS.CANCELLED)) {
-    const subject = `myPOS плащане неуспешно: ${result.order.reference}`;
-    const lines = [
-      `Поръчка: ${result.order.reference}`,
-      `Статус: ${result.order.status}`,
-      `Клиент: ${result.order.customerName} (${result.order.customerEmail})`,
-      `Сума: ${formatPrice(result.order.totalAmount)}`,
-      result.order.deliveryLabel ? `Доставка: ${result.order.deliveryLabel}` : null,
-    ]
-      .filter(Boolean)
-      .join("\n");
-
-    sendOrderEmail({
-      to: process.env.ORDER_NOTIFICATION_RECIPIENT ?? "zlati.noregrets@gmail.com",
-      subject,
-      html: lines.replace(/\n/g, "<br>"),
-      text: lines,
-    }).catch((err) => console.error("[checkout.success.admin-email]", err));
-  }
-};
-
 const handle = async (request: Request) => {
   const reference = await extractReference(request);
-  if (reference) {
-    updateStatusAndEmail(reference).catch((err) => console.error("[checkout.success] update failed", err));
-  }
   const redirectPath = reference ? `/checkout/success?reference=${encodeURIComponent(reference)}` : "/checkout/success";
   return respond(redirectPath);
 };

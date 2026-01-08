@@ -2,12 +2,41 @@ import { ORDER_STATUS, deleteOrderByReference, updateOrderStatusWithAudit } from
 import { createSalesDocumentByReference, recordPaymentByReference } from "@/lib/n18";
 import { sendOrderStatusChangeEmail, sendOrderEmail } from "@/lib/notify/email";
 import { formatPrice } from "@/utils/price";
+import { pgPool } from "@/lib/pg";
 
 const okResponse = () =>
   new Response("OK", {
     status: 200,
     headers: { "Content-Type": "text/plain; charset=utf-8" },
   });
+
+const persistTransactionId = async (reference: string, transactionId: string | undefined | null) => {
+  if (!transactionId) return;
+  const client = await pgPool.connect();
+  try {
+    // Try to set both metadata and column; fall back to metadata-only if column is missing.
+    try {
+      await client.query(
+        `UPDATE "Order"
+         SET metadata = jsonb_set(COALESCE(metadata, '{}'::jsonb), '{paymentTransactionId}', to_jsonb($2::text), true),
+             "paymentTransactionId" = $2
+         WHERE reference = $1`,
+        [reference, transactionId],
+      );
+    } catch {
+      await client.query(
+        `UPDATE "Order"
+         SET metadata = jsonb_set(COALESCE(metadata, '{}'::jsonb), '{paymentTransactionId}', to_jsonb($2::text), true)
+         WHERE reference = $1`,
+        [reference, transactionId],
+      );
+    }
+  } catch (err) {
+    console.error("[mypos.result.persistTransactionId]", err);
+  } finally {
+    client.release();
+  }
+};
 
 export async function POST(request: Request) {
   try {
@@ -87,6 +116,8 @@ export async function POST(request: Request) {
         status: "paid",
         paidAt: new Date(),
       }).catch((err) => console.error("[mypos.result.payment-mirror]", err));
+
+      await persistTransactionId(reference, transactionId as string | undefined);
 
       // Generate sales document (чл.52о)
       await createSalesDocumentByReference({
