@@ -52,7 +52,7 @@ export async function POST(request: Request) {
         priceMap.get(it.slug) ??
         priceMap.get(it.productId) ??
         Number(it.price ?? 0),
-      currency: "BGN",
+      currency: "EUR",
       options: Array.isArray(it.options) ? it.options : [],
     })),
   });

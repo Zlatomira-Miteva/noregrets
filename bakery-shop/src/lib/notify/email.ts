@@ -29,9 +29,11 @@ const STATUS_LABELS: Record<OrderStatus, string> = {
 };
 
 const {
-  RESEND_API_KEY,
+  // RESEND_API_KEY,
   CONTACT_FROM = "No Regrets <info@noregrets.bg>",
 } = process.env;
+
+const RESEND_API_KEY = 're_Di72jB3y_DGhSsfHvVLvrmgUTzoqt8oPF';
 
 const BRAND_BG = "#ffefed";
 const BRAND_TEXT = "#2d1b1b";

@@ -5,15 +5,29 @@ import { buildBrandedEmail, sendOrderEmail } from "@/lib/notify/email";
 import { formatPrice } from "@/utils/price";
 
 const {
-  RESEND_API_KEY,
+  // RESEND_API_KEY,
   CONTACT_FROM = "No Regrets <info@noregrets.bg>",
   ORDER_NOTIFICATION_RECIPIENT = "zlati.noregrets@gmail.com",
 } = process.env;
+
+const RESEND_API_KEY = 're_Di72jB3y_DGhSsfHvVLvrmgUTzoqt8oPF';
 
 const orderSchema = z.object({
   reference: z.string().optional(),
   amount: z.number().optional(),
   description: z.string().optional(),
+  couponCode: z.string().optional(),
+  discountAmount: z.number().optional(),
+  coupon: z
+    .object({
+      code: z.string().optional(),
+      discountType: z.string().optional(),
+      discountValue: z.number().optional(),
+      maximumDiscountAmount: z.number().nullable().optional(),
+      minimumOrderAmount: z.number().optional(),
+      discountAmount: z.number().optional(),
+    })
+    .optional(),
   customer: z
     .object({
       firstName: z.string().optional(),
@@ -70,6 +84,12 @@ export async function POST(request: Request) {
     const data = parsed.data;
     const customerName = `${data.customer?.firstName ?? ""} ${data.customer?.lastName ?? ""}`.trim();
 
+    const statusUpper = data.status?.toUpperCase();
+    if (statusUpper && statusUpper !== "PAID") {
+      // Не изпращаме имейли, ако поръчката не е платена.
+      return NextResponse.json({ ok: true, skipped: true });
+    }
+
     const normalizeItems = (targetTotal?: number) => {
       const items = data.cart?.items ?? data.items ?? [];
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -117,12 +137,18 @@ export async function POST(request: Request) {
       })
       .join("\n");
 
+    const couponCode = data.coupon?.code ?? data.couponCode;
+    const couponDiscount =
+      data.coupon?.discountAmount ?? data.discountAmount ?? null;
+
     const adminLines = [
       `Поръчка: ${data.reference ?? "(без номер)"}`,
       data.createdAt ? `Дата: ${new Date(data.createdAt).toLocaleString("bg-BG")}` : null,
       data.deliveryLabel ? `Доставка: ${data.deliveryLabel}` : null,
       data.totalAmount ? `Общо: ${formatPrice(data.totalAmount)}` : null,
       data.totalQuantity ? `Брой артикули: ${data.totalQuantity}` : null,
+      couponCode ? `Промо код: ${couponCode}` : null,
+      couponDiscount != null ? `Отстъпка: -${formatPrice(couponDiscount)}` : null,
       "",
       "Клиент:",
       customerName || "(не е попълнено)",
@@ -175,6 +201,8 @@ export async function POST(request: Request) {
         orderLines: [
           data.totalAmount ? `Общо: ${formatPrice(data.totalAmount)}` : "",
           data.totalQuantity ? `Брой артикули: ${data.totalQuantity}` : "",
+          couponCode ? `Промо код: ${couponCode}` : "",
+          couponDiscount != null ? `Отстъпка: -${formatPrice(couponDiscount)}` : "",
         ].filter(Boolean),
         itemsLines: itemsText ? itemsText.split("\n").filter(Boolean) : [],
         deliveryLines: data.deliveryLabel ? [data.deliveryLabel] : [],

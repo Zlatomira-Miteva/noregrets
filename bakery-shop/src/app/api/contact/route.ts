@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 
 const {
-  RESEND_API_KEY,
+  // RESEND_API_KEY,
   CONTACT_RECIPIENT = "info@noregrets.bg",
   CONTACT_FROM = "No Regrets <info@noregrets.bg>",
 } = process.env;
 
+const RESEND_API_KEY = 're_Di72jB3y_DGhSsfHvVLvrmgUTzoqt8oPF';
 export async function POST(request: Request) {
   try {
     const payload = await request.json();

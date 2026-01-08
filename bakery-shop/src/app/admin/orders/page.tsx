@@ -22,6 +22,7 @@ type AdminOrder = {
   refundAt?: string | null;
   createdAt: string;
   updatedAt: string;
+  metadata?: unknown;
 };
 
 type OrderDraft = {
@@ -129,6 +130,10 @@ export default function AdminOrdersPage() {
       orders.map((order) => ({
         ...order,
         itemsParsed: parseItems(order.items),
+        coupon:
+          typeof order.metadata === "object" && order.metadata && "coupon" in (order.metadata as Record<string, unknown>)
+            ? (order.metadata as Record<string, unknown>).coupon
+            : null,
       })),
     [orders],
   );
@@ -333,9 +338,36 @@ export default function AdminOrdersPage() {
                     }
                   }}
                   className="rounded-full border border-[#5f000b] px-4 py-2 text-xs font-semibold uppercase hover:bg-white/40"
-                >
-                  Експортирай CSV (платени)
-                </button>
+                  >
+                    Експортирай CSV (платени)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        const params = new URLSearchParams();
+                        if (startDate) params.set("start", startDate);
+                        if (endDate) params.set("end", endDate);
+                        params.set("format", "xml");
+                        const res = await fetch(`/api/admin/orders/export?${params.toString()}`, {
+                          credentials: "include",
+                        });
+                        if (!res.ok) throw new Error("Грешка при експорта");
+                        const blob = await res.blob();
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement("a");
+                        a.href = url;
+                        a.download = "orders-n18.xml";
+                        a.click();
+                        window.URL.revokeObjectURL(url);
+                      } catch (err) {
+                        setError(err instanceof Error ? err.message : "Грешка при експорта.");
+                      }
+                    }}
+                    className="rounded-full border border-[#5f000b] px-4 py-2 text-xs font-semibold uppercase hover:bg-white/40"
+                  >
+                    Експортирай XML (НАП)
+                  </button>
               </div>
               <button
                 type="button"
@@ -362,6 +394,26 @@ export default function AdminOrdersPage() {
           ) : (
             <div className="space-y-6">
               {ordersWithItems.map((order) => {
+                const couponData =
+                  order.coupon && typeof order.coupon === "object"
+                    ? (order.coupon as Record<string, unknown>)
+                    : null;
+                const metadataObj =
+                  typeof order.metadata === "object" && order.metadata
+                    ? (order.metadata as Record<string, unknown>)
+                    : undefined;
+                const couponCode: string | null =
+                  (couponData?.code as string | undefined) ??
+                  (couponData?.couponCode as string | undefined) ??
+                  (metadataObj?.couponCode as string | undefined) ??
+                  null;
+                const couponDiscountRaw =
+                  (couponData?.discountAmount as number | undefined) ??
+                  (metadataObj?.discountAmount as number | undefined) ??
+                  null;
+                const couponDiscount: number | null =
+                  typeof couponDiscountRaw === "number" ? couponDiscountRaw : null;
+
                 const draft = drafts[order.id];
                 return (
                   <div key={order.id} className="rounded-2xl border border-[#f5d5d6] bg-white p-4 shadow-sm">
@@ -464,6 +516,14 @@ export default function AdminOrdersPage() {
                             className="mt-1 w-full rounded-2xl border border-[#dcb1b1] bg-white px-3 py-2 text-sm focus:border-[#5f000b] focus:outline-none"
                           />
                         </label>
+                        {couponCode ? (
+                          <div className="rounded-2xl border border-dashed border-[#dcb1b1] bg-[#fff7f7] px-3 py-2 text-xs uppercase text-[#5f000b]">
+                            <p className="font-semibold">Промо код: {couponCode}</p>
+                            <p className="text-[#5f000b]/80">
+                              Отстъпка: {couponDiscount != null ? `-${formatPrice(couponDiscount)}` : "—"}
+                            </p>
+                          </div>
+                        ) : null}
                         <label className="text-xs uppercase">
                           Статус
                           <select

@@ -13,6 +13,7 @@ export default function AccountProfilePage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<{ email?: string; phone?: string }>({});
   const [form, setForm] = useState({
     firstName: "",
     lastName: "",
@@ -35,6 +36,30 @@ export default function AccountProfilePage() {
   const [citiesError, setCitiesError] = useState<string | null>(null);
   const [officesError, setOfficesError] = useState<string | null>(null);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
+  const [touches, setTouches] = useState<{ email?: boolean; phone?: boolean }>({});
+
+  const validatePhoneValue = (value: string) => {
+    const trimmed = value.trim();
+    if (!trimmed) {
+      return "Въведете телефон.";
+    }
+    if (!/^0\d{9}$/.test(trimmed)) {
+      return "Телефонът трябва да започва с 0 и да съдържа 10 цифри.";
+    }
+    return "";
+  };
+
+  const validateEmailValue = (value: string) => {
+    const trimmed = value.trim();
+    if (!trimmed) {
+      return "Въведете имейл.";
+    }
+    const pattern = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
+    if (!pattern.test(trimmed)) {
+      return "Въведете валиден имейл.";
+    }
+    return "";
+  };
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -90,6 +115,14 @@ export default function AccountProfilePage() {
     load();
   }, [session]);
 
+  // Live-validate phone/email as се променят.
+  useEffect(() => {
+    setFieldErrors({
+      phone: touches.phone ? validatePhoneValue(form.phone) : undefined,
+      email: touches.email ? validateEmailValue(form.email) : undefined,
+    });
+  }, [form.phone, form.email, touches]);
+
   const cityOptions = useMemo(
     () =>
       cities.map((city) => ({
@@ -143,6 +176,15 @@ export default function AccountProfilePage() {
     e.preventDefault();
     setError(null);
     setSaveMessage(null);
+    const nextFieldErrors: { email?: string; phone?: string } = {
+      email: validateEmailValue(form.email),
+      phone: validatePhoneValue(form.phone),
+    };
+    setFieldErrors(nextFieldErrors);
+    if (nextFieldErrors.email || nextFieldErrors.phone) {
+      return;
+    }
+
     setLoading(true);
     try {
       const payload =
@@ -201,22 +243,30 @@ export default function AccountProfilePage() {
             </label>
             <label className="space-y-1">
               <span className="text-xs text-[#5f000b]/70">Телефон</span>
-              <input
-                type="tel"
-                value={form.phone}
-                onChange={(e) => setForm((prev) => ({ ...prev, phone: e.target.value }))}
-                className="w-full rounded-2xl border border-[#e4c8c8] px-4 py-3 text-sm focus:border-[#5f000b] focus:outline-none"
-              />
-            </label>
-            <label className="space-y-1">
-              <span className="text-xs text-[#5f000b]/70">Имейл</span>
-              <input
-                type="email"
-                value={form.email}
-                onChange={(e) => setForm((prev) => ({ ...prev, email: e.target.value }))}
-                className="w-full rounded-2xl border border-[#e4c8c8] px-4 py-3 text-sm focus:border-[#5f000b] focus:outline-none"
-              />
-            </label>
+          <input
+            type="tel"
+            value={form.phone}
+            onChange={(e) => setForm((prev) => ({ ...prev, phone: e.target.value }))}
+            onBlur={() => setTouches((prev) => ({ ...prev, phone: true }))}
+            className={`w-full rounded-2xl border px-4 py-3 text-sm focus:border-[#5f000b] focus:outline-none ${
+              fieldErrors.phone ? "border-[#b42318]" : "border-[#e4c8c8]"
+            }`}
+          />
+          {fieldErrors.phone ? <p className="text-xs text-[#b42318]">{fieldErrors.phone}</p> : null}
+        </label>
+        <label className="space-y-1">
+          <span className="text-xs text-[#5f000b]/70">Имейл</span>
+          <input
+            type="email"
+            value={form.email}
+            onChange={(e) => setForm((prev) => ({ ...prev, email: e.target.value }))}
+            onBlur={() => setTouches((prev) => ({ ...prev, email: true }))}
+            className={`w-full rounded-2xl border px-4 py-3 text-sm focus:border-[#5f000b] focus:outline-none ${
+              fieldErrors.email ? "border-[#b42318]" : "border-[#e4c8c8]"
+            }`}
+          />
+          {fieldErrors.email ? <p className="text-xs text-[#b42318]">{fieldErrors.email}</p> : null}
+        </label>
             <label className="space-y-1 sm:col-span-2">
               <span className="text-xs text-[#5f000b]/70">Бележки</span>
               <textarea

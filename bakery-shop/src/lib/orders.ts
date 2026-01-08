@@ -35,6 +35,17 @@ export type OrderPayload = {
   amount: number;
   description?: string;
   deliveryLabel: string;
+  couponCode?: string;
+  discountAmount?: number;
+  subtotal?: number;
+  coupon?: {
+    code: string;
+    discountType: string;
+    discountValue: number;
+    maximumDiscountAmount: number | null;
+    minimumOrderAmount: number;
+    discountAmount: number;
+  };
   items: OrderItem[];
   userId?: string | null;
   totalQuantity?: number;
@@ -80,6 +91,9 @@ export type OrderRecord = {
   status: OrderStatus;
   paymentUrl: string | null;
   metadata: unknown;
+  discountAmount?: number | null;
+  subtotal?: number | null;
+  paymentTransactionId?: string | null;
   refundAmount?: number | null;
   refundMethod?: string | null;
   refundAt?: string | null;
@@ -125,6 +139,20 @@ const serializeOrder = (row: any): OrderRecord => ({
       : row.updatedat instanceof Date
         ? row.updatedat.toISOString()
         : new Date(row.updatedAt ?? row.updatedat).toISOString(),
+  discountAmount:
+    row.discountAmount ?? row.discountamount ?? (row.metadata && typeof row.metadata === "object"
+      ? (row.metadata as Record<string, unknown>).discountAmount ?? null
+      : null),
+  subtotal:
+    row.subtotal ?? (row.metadata && typeof row.metadata === "object"
+      ? (row.metadata as Record<string, unknown>).subtotal ?? null
+      : null),
+  paymentTransactionId:
+    row.paymentTransactionId ??
+    row.paymenttransactionid ??
+    (row.metadata && typeof row.metadata === "object"
+      ? (row.metadata as Record<string, unknown>).paymentTransactionId ?? null
+      : null),
 });
 
 export async function getOrderByReference(reference: string): Promise<OrderRecord | null> {
@@ -157,8 +185,24 @@ const buildMetadata = (payload: OrderPayload) => {
   const metadata = {
     description: payload.description,
     totalQuantity: payload.totalQuantity,
+    subtotal: payload.subtotal,
+    discountAmount: payload.discountAmount,
     consents: payload.consents,
     cart: payload.cart,
+    coupon: payload.couponCode || payload.coupon
+      ? {
+          code: payload.coupon?.code ?? payload.couponCode ?? null,
+          discountType: payload.coupon?.discountType ?? null,
+          discountValue: payload.coupon?.discountValue ?? null,
+          maximumDiscountAmount: payload.coupon?.maximumDiscountAmount ?? null,
+          minimumOrderAmount: payload.coupon?.minimumOrderAmount ?? null,
+          discountAmount:
+            payload.discountAmount ??
+            payload.coupon?.discountAmount ??
+            null,
+          subtotal: payload.subtotal ?? null,
+        }
+      : null,
     customerLocation: {
       country: payload.customer.country,
       city: payload.customer.city,
@@ -197,47 +241,102 @@ export async function saveOrderWithAudit(payload: OrderPayload, performedBy?: st
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let orderRow: any;
     if (existing) {
-      const updateRes = await client.query(
-        `UPDATE "Order"
-         SET "customerName"=$1,"customerEmail"=$2,"customerPhone"=$3,"deliveryLabel"=$4,"items"=$5,"totalAmount"=$6,"status"=$7,"metadata"=$8,"userId"=COALESCE($9,"userId"),"updatedAt"=NOW()
-         WHERE id=$10
-         RETURNING *`,
-        [
-          customerName,
-          payload.customer.email,
-          payload.customer.phone,
-          payload.deliveryLabel,
-          JSON.stringify(payload.items),
-          decimal(amount),
-          nextStatus,
-          metadata,
-          payload.userId ?? null,
-          existing.id,
-        ],
-      );
-      orderRow = updateRes.rows[0];
+      try {
+        const updateRes = await client.query(
+          `UPDATE "Order"
+           SET "customerName"=$1,"customerEmail"=$2,"customerPhone"=$3,"deliveryLabel"=$4,"items"=$5,"totalAmount"=$6,"status"=$7,"metadata"=$8,"discountAmount"=$9,"subtotal"=$10,"userId"=COALESCE($11,"userId"),"updatedAt"=NOW()
+           WHERE id=$12
+           RETURNING *`,
+          [
+            customerName,
+            payload.customer.email,
+            payload.customer.phone,
+            payload.deliveryLabel,
+            JSON.stringify(payload.items),
+            decimal(amount),
+            nextStatus,
+            metadata,
+            payload.discountAmount != null ? decimal(payload.discountAmount) : null,
+            payload.subtotal != null ? decimal(payload.subtotal) : null,
+            payload.userId ?? null,
+            existing.id,
+          ],
+        );
+        orderRow = updateRes.rows[0];
+      } catch (err) {
+        // Fallback for deployments without the new columns: restart transaction and retry.
+        await client.query("ROLLBACK");
+        await client.query("BEGIN");
+        const updateRes = await client.query(
+          `UPDATE "Order"
+           SET "customerName"=$1,"customerEmail"=$2,"customerPhone"=$3,"deliveryLabel"=$4,"items"=$5,"totalAmount"=$6,"status"=$7,"metadata"=$8,"userId"=COALESCE($9,"userId"),"updatedAt"=NOW()
+           WHERE id=$10
+           RETURNING *`,
+          [
+            customerName,
+            payload.customer.email,
+            payload.customer.phone,
+            payload.deliveryLabel,
+            JSON.stringify(payload.items),
+            decimal(amount),
+            nextStatus,
+            metadata,
+            payload.userId ?? null,
+            existing.id,
+          ],
+        );
+        orderRow = updateRes.rows[0];
+      }
     } else {
       const newOrderId = randomUUID();
-      const insertRes = await client.query(
-        `INSERT INTO "Order"
-         (id, reference, "customerName", "customerEmail", "customerPhone", "deliveryLabel", items, "totalAmount", status, metadata, "userId", "updatedAt")
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11, NOW())
-         RETURNING *`,
-        [
-          newOrderId,
-          payload.reference,
-          customerName,
-          payload.customer.email,
-          payload.customer.phone,
-          payload.deliveryLabel,
-          JSON.stringify(payload.items),
-          decimal(amount),
-          nextStatus,
-          metadata,
-          payload.userId ?? null,
-        ],
-      );
-      orderRow = insertRes.rows[0];
+      try {
+        const insertRes = await client.query(
+          `INSERT INTO "Order"
+           (id, reference, "customerName", "customerEmail", "customerPhone", "deliveryLabel", items, "totalAmount", status, metadata, "discountAmount", "subtotal", "userId", "updatedAt")
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13, NOW())
+           RETURNING *`,
+          [
+            newOrderId,
+            payload.reference,
+            customerName,
+            payload.customer.email,
+            payload.customer.phone,
+            payload.deliveryLabel,
+            JSON.stringify(payload.items),
+            decimal(amount),
+            nextStatus,
+            metadata,
+            payload.discountAmount != null ? decimal(payload.discountAmount) : null,
+            payload.subtotal != null ? decimal(payload.subtotal) : null,
+            payload.userId ?? null,
+          ],
+        );
+        orderRow = insertRes.rows[0];
+      } catch (err) {
+        // Fallback for deployments without the new columns: restart transaction and retry.
+        await client.query("ROLLBACK");
+        await client.query("BEGIN");
+        const insertRes = await client.query(
+          `INSERT INTO "Order"
+           (id, reference, "customerName", "customerEmail", "customerPhone", "deliveryLabel", items, "totalAmount", status, metadata, "userId", "updatedAt")
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11, NOW())
+           RETURNING *`,
+          [
+            newOrderId,
+            payload.reference,
+            customerName,
+            payload.customer.email,
+            payload.customer.phone,
+            payload.deliveryLabel,
+            JSON.stringify(payload.items),
+            decimal(amount),
+            nextStatus,
+            metadata,
+            payload.userId ?? null,
+          ],
+        );
+        orderRow = insertRes.rows[0];
+      }
     }
 
     const order = serializeOrder(orderRow);
@@ -262,7 +361,7 @@ export async function saveOrderWithAudit(payload: OrderPayload, performedBy?: st
         customerPhone: order.customerPhone,
         deliveryAddress: order.deliveryLabel,
         totalAmount: order.totalAmount,
-        currency: payload.cart?.items?.[0]?.currency ?? "BGN",
+        currency: payload.cart?.items?.[0]?.currency ?? "EUR",
         paymentMethod: "card",
         paymentStatus: "pending",
         items: payload.items.map((it) => ({

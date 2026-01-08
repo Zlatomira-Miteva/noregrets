@@ -84,4 +84,7 @@ export async function ensureCustomerSchema(client: Pool | PoolClient = pgPool) {
     `CREATE UNIQUE INDEX IF NOT EXISTS "UserFavorite_user_product_variant_idx"
        ON "UserFavorite" ("userId","productId","variantKey")`,
   );
+  await safeExec(client, `ALTER TABLE IF EXISTS "Order" ADD COLUMN IF NOT EXISTS "discountAmount" numeric(10,2)`);
+  await safeExec(client, `ALTER TABLE IF EXISTS "Order" ADD COLUMN IF NOT EXISTS "subtotal" numeric(10,2)`);
+  await safeExec(client, `ALTER TABLE IF EXISTS "Order" ADD COLUMN IF NOT EXISTS "paymentTransactionId" text`);
 }

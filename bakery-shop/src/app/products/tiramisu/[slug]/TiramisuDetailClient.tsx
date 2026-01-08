@@ -220,7 +220,7 @@ export default function TiramisuDetailClient({ products, initialSlug }: Props) {
                         : "bg-white text-[#5f000b]"
                     }`}
                   >
-                    {size.label} {size.weight ? `(${size.weight})` : ""}
+                    {size.label} {size.weight ? `(${size.weight}) г` : ""}
                   </button>
                 );
               })}

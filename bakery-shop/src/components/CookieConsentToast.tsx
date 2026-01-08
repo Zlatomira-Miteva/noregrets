@@ -5,6 +5,8 @@ import { useCallback, useEffect, useState } from "react";
 
 const STORAGE_KEY = "cookie-consent";
 const ANALYTICS_SCRIPT_URL = "https://t.contentsquare.net/uxa/e9a4e8239ea47.js";
+const HOTJAR_ID = process.env.NEXT_PUBLIC_HOTJAR_ID;
+const HOTJAR_SV = process.env.NEXT_PUBLIC_HOTJAR_SV;
 
 const loadAnalyticsOnce = () => {
   if (typeof window === "undefined") return;
@@ -14,6 +16,29 @@ const loadAnalyticsOnce = () => {
   script.async = true;
   document.body.appendChild(script);
   (window as unknown as { __csLoaded?: boolean }).__csLoaded = true;
+};
+
+const loadHotjarOnce = () => {
+  if (typeof window === "undefined") return;
+  if (!HOTJAR_ID || !HOTJAR_SV) return;
+  // Avoid re-injecting
+  if ((window as unknown as { __hjLoaded?: boolean }).__hjLoaded) return;
+  // Hotjar snippet
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (function (h: any, o: any, t: any, j: any, a?: any, r?: any) {
+    h.hj =
+      h.hj ||
+      function (...args: unknown[]) {
+        (h.hj.q = h.hj.q || []).push(args);
+      };
+    h._hjSettings = { hjid: Number(HOTJAR_ID), hjsv: Number(HOTJAR_SV) };
+    a = o.getElementsByTagName("head")[0];
+    r = o.createElement("script");
+    r.async = 1;
+    r.src = t + h._hjSettings.hjid + j + h._hjSettings.hjsv;
+    a.appendChild(r);
+  })(window, document, "https://static.hotjar.com/c/hotjar-", ".js?sv=");
+  (window as unknown as { __hjLoaded?: boolean }).__hjLoaded = true;
 };
 
 export default function CookieConsentToast() {
@@ -26,6 +51,7 @@ export default function CookieConsentToast() {
     const stored = window.localStorage.getItem(STORAGE_KEY);
     if (stored === "accepted") {
       loadAnalyticsOnce();
+      loadHotjarOnce();
       setVisible(false);
     } else {
       setVisible(true);
@@ -37,6 +63,7 @@ export default function CookieConsentToast() {
       window.localStorage.setItem(STORAGE_KEY, "accepted");
     }
     loadAnalyticsOnce();
+    loadHotjarOnce();
     setVisible(false);
   }, []);
 

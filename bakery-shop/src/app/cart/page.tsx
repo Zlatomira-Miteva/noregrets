@@ -86,6 +86,8 @@ const CartPage = () => {
   const [orderStatus, setOrderStatus] = useState<string | null>(null);
   const [orderError, setOrderError] = useState<string | null>(null);
   const [isPreparingOrder, setIsPreparingOrder] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [pendingOrderPayload, setPendingOrderPayload] = useState<ReturnType<typeof buildOrderPayload> | null>(null);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [marketingConsent, setMarketingConsent] = useState(false);
   const [profileLoaded, setProfileLoaded] = useState(false);
@@ -177,6 +179,7 @@ const CartPage = () => {
     const uniqueIds = Array.from(new Set(items.map((item) => item.productId)));
     (async () => {
       for (const productId of uniqueIds) {
+        if (productId.startsWith("custom-box")) continue; // custom box price is composed from selections, keep client value
         try {
           const res = await fetch(`/api/products/${encodeURIComponent(productId)}`, {
             signal: controller.signal,
@@ -185,9 +188,8 @@ const CartPage = () => {
           const data = await res.json();
           const price = Number(data.product?.price ?? data.price);
           const name = data.product?.name ?? data.name;
-          if (Number.isFinite(price)) {
-            updateItemPrice(productId, price, name);
-          }
+          if (!Number.isFinite(price) || price <= 0) continue;
+          updateItemPrice(productId, price, name);
         } catch (err) {
           if (controller.signal.aborted) return;
           console.error("Failed to refresh price", err);
@@ -450,13 +452,11 @@ const CartPage = () => {
       return null;
     }
 
-    const econtCity = cities.find(
-      (entry) => entry.referenceId === selectedCityId
-    );
+    const econtCity = cities.find((entry) => entry.referenceId === selectedCityId);
     const office = offices.find((entry) => entry.id === selectedOffice);
     const deliveryLabel =
       shippingMethod === "office" && officeCarrier === "econt"
-        ? `Офис Econt – ${econtCity?.name ?? ""}${office ? `, ${office.name}` : ""}`
+        ? `Офис Econt – ${econtCity?.name ?? ""}${office?.name ? `, ${office.name}` : ""}`
         : shippingMethod === "pickup"
         ? `Вземане от магазин – ${pickupDate} ${PICKUP_TIME_WINDOW}`
         : `Адрес: ${addressInfo.city}, ${addressInfo.street} ${addressInfo.number}${
@@ -498,7 +498,7 @@ const CartPage = () => {
           name: item.name,
           qty: item.quantity,
           price: item.price,
-          currency: "BGN",
+          currency: "EUR",
           options: item.options,
         })),
       },
@@ -512,6 +512,11 @@ const CartPage = () => {
     const orderPayload = buildOrderPayload();
     if (!orderPayload) return;
 
+    setPendingOrderPayload(orderPayload);
+    setConfirmOpen(true);
+  };
+
+  const performCheckout = async (orderPayload: NonNullable<ReturnType<typeof buildOrderPayload>>) => {
     setIsPreparingOrder(true);
 
     try {
@@ -584,6 +589,7 @@ const CartPage = () => {
     } finally {
       setIsPreparingOrder(false);
     }
+    setConfirmOpen(false);
   };
 
   useEffect(() => {
@@ -1289,6 +1295,41 @@ const CartPage = () => {
           )}
         </div>
       </main>
+      {confirmOpen && pendingOrderPayload ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+          <div className="w-full max-w-lg rounded-3xl bg-white p-6 shadow-2xl">
+            <h3 className="text-xl font-semibold text-[#5f000b]">Потвърди данните</h3>
+            <div className="mt-4 space-y-2 text-sm text-[#5f000b]/85">
+              <p><span className="font-semibold">Име:</span> {pendingOrderPayload.customer.firstName} {pendingOrderPayload.customer.lastName}</p>
+              <p><span className="font-semibold">Телефон:</span> {pendingOrderPayload.customer.phone}</p>
+              <p><span className="font-semibold">Имейл:</span> {pendingOrderPayload.customer.email}</p>
+              <p><span className="font-semibold">Доставка/вземане:</span> {pendingOrderPayload.deliveryLabel}</p>
+              <p className="font-semibold text-[#5f000b]">Общо: {formatPrice(pendingOrderPayload.totalAmount)}</p>
+            </div>
+            <div className="mt-6 flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setConfirmOpen(false);
+                  setPendingOrderPayload(null);
+                }}
+                className="rounded-full border border-[#f4b9c2] px-5 py-3 text-sm font-semibold uppercase transition hover:bg-white disabled:opacity-60"
+                disabled={isPreparingOrder}
+              >
+                Отказ
+              </button>
+              <button
+                type="button"
+                onClick={() => pendingOrderPayload && performCheckout(pendingOrderPayload)}
+                className="cta rounded-full bg-[#5f000b] px-5 py-3 text-sm font-semibold uppercase text-white transition hover:bg-[#561c19] disabled:opacity-60"
+                disabled={isPreparingOrder}
+              >
+                {isPreparingOrder ? "Моля, изчакайте…" : "Потвърди и плати"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
       <SiteFooter />
     </div>
   );

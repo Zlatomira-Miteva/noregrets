@@ -93,9 +93,9 @@ const CookieShowcase = () => {
   };
 
   return (
-    <section className="py-16">
-      <div className="flex w-full flex-col gap-10 px-[clamp(1rem,4vw,4rem)]">
-        <div className="space-y-2 text-left">
+    <section className="py-12 sm:py-12">
+      <div className="flex w-full flex-col gap-6 md:gap-10 px-[clamp(1rem,4vw,4rem)]">
+        <div className="space-y-1 sm:space-y-2 text-left">
           <p className="font-semibold uppercase">Разгледайте нашите кукита</p>
           <h2 className="text-3xl sm:text-4xl">Всяка седмица печем нещо специално</h2>
         </div>
@@ -117,7 +117,7 @@ const CookieShowcase = () => {
                   width: slideWidth ? `${slideWidth}px` : "100%",
                 }}
               >
-                <div className="flex items-center justify-center px-10 py-12 sm:px-14 sm:py-12">
+                <div className="flex items-center justify-center px-7 py-10 sm:px-14 sm:py-12">
                   <div className="relative h-84 w-84 sm:h-88 sm:w-88">
                     <div className="pointer-events-none absolute left-1/2 top-1/2 h-[140%] w-[140%] -translate-x-1/2 -translate-y-1/2">
                       <Image
@@ -138,7 +138,7 @@ const CookieShowcase = () => {
                     />
                   </div>
                 </div>
-                <div className="flex flex-1 flex-col gap-6 px-6 py-8">
+                <div className="flex flex-1 flex-col gap-4 sm:gap-6 px-6 py-6 sm:py-8">
                   <div>
                     <h3 className="mt-2 text-2xl">{cookie.name}</h3>
                     <p className="mt-4">{cookie.description}</p>
