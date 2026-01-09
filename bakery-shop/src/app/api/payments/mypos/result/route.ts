@@ -124,12 +124,12 @@ export async function POST(request: Request) {
         .filter(Boolean)
         .join("\n");
 
-      sendOrderEmail({
-        to: process.env.ORDER_NOTIFICATION_RECIPIENT ?? "zlati.noregrets@gmail.com",
-        subject,
-        html: lines.replace(/\n/g, "<br>"),
-        text: lines,
-      }).catch((err) => console.error("[mypos.result.admin-email]", err));
+      // sendOrderEmail({
+      //   to: process.env.ORDER_NOTIFICATION_RECIPIENT ?? "zlati.noregrets@gmail.com",
+      //   subject,
+      //   html: lines.replace(/\n/g, "<br>"),
+      //   text: lines,
+      // }).catch((err) => console.error("[mypos.result.admin-email]", err));
     }
 
     return okResponse();

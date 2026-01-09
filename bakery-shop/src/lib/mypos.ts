@@ -29,7 +29,7 @@ const appendReference = (urlStr: string, reference: string) => {
 
 export type CheckoutPayload = {
   reference: string;
-  amount: number;
+  amount: string | number; // canonical "0.00" preferred
   description?: string;
   customer?: {
     firstName?: string;
@@ -47,10 +47,12 @@ export type CheckoutPayload = {
 // Ensure cart item totals match the overall amount to avoid gateway validation errors.
 const normalizeCart = (
   cart: CheckoutPayload["cart"],
-  amount: number,
+  amount: string,
 ): CheckoutPayload["cart"] | undefined => {
+  // If coupon present, caller should skip cart entirely
   if (!cart?.items?.length) return cart;
   const target = Number(amount ?? 0);
+  if (!cart?.items?.length) return cart;
   if (!Number.isFinite(target) || target <= 0) return cart;
 
   const sum = cart.items.reduce((acc, item) => acc + Number(item.price) * Number(item.qty), 0);
@@ -98,6 +100,7 @@ export function createMyposCheckout(p: CheckoutPayload) {
   if (!RAW_PRIVATE_KEY) throw new Error("Missing MY_POS_PRIVATE_KEY");
 
   const PRIVATE_KEY = normalizePem(RAW_PRIVATE_KEY);
+  const amountStr = two(Number(p.amount)); // ensure 2 decimals
 
   // 1) СГЛОБИ ПОЛЕТАТА В ТОЧНИЯ РЕД, В КОЙТО ИСКАШ ДА ГИ ПРАЩАШ
   const entries: Array<[string, string]> = [];
@@ -108,7 +111,7 @@ export function createMyposCheckout(p: CheckoutPayload) {
   entries.push(["IPCLanguage", "BG"]); // ако искаш EN, смени и тук
   entries.push(["SID", SID]);
   entries.push(["walletnumber", WALLET]);              // lowercase като в Test Data
-  entries.push(["Amount", two(p.amount)]);             // "39.00"
+  entries.push(["Amount", amountStr]);                 // "39.00"
   entries.push(["Currency", CURRENCY]);
   entries.push(["OrderID", p.reference]);
   // Default to worker endpoints; allow override via env if you move off the worker.
@@ -132,12 +135,13 @@ export function createMyposCheckout(p: CheckoutPayload) {
   if (!/^https:\/\//i.test(notify)) {
     throw new Error("MY_POS_NOTIFY_URL must be absolute HTTPS (e.g. https://your-domain/api/payments/mypos/result)");
   }
-  entries.push(["URL_Notify", "https://blue-meadow-9f61.mira-miteva92.workers.dev/mypos/notify"]);
+  entries.push(["URL_Notify", notify]);
 
   entries.push(["CardTokenRequest", "0"]);
   entries.push(["KeyIndex", KEY_INDEX]);
-  // CHANGE IT FOR BETTER PAYMENT EXPERIENCE CHANGE TO 3
-  entries.push(["PaymentParametersRequired", "3"]);
+  // cart only if provided and matches amount
+  const cart = !p.cart?.items?.length ? undefined : normalizeCart(p.cart, amountStr);
+  entries.push(["PaymentParametersRequired", cart?.items?.length ? "3" : "1"]);
 
   // >>> ФИКС: Дръж Note ТАМ, където ще бъде и в POST.
   if (p.description?.trim()) entries.push(["Note", p.description.trim()]);
@@ -154,7 +158,6 @@ export function createMyposCheckout(p: CheckoutPayload) {
   if (c?.address) entries.push(["customeraddress", c.address]);
 
   // Количка (ако има)
-  const cart = normalizeCart(p.cart, p.amount);
   if (cart?.items?.length) {
       entries.push(["CartItems", String(cart.items.length)]);
       cart.items.forEach((it, idx) => {

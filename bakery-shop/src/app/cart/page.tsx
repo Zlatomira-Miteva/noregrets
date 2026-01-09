@@ -493,14 +493,7 @@ const CartPage = () => {
         marketing: marketingConsent,
       },
       cart: {
-        items: normalizedItems.map((item) => ({
-          productId: item.productId,
-          name: item.name,
-          qty: item.quantity,
-          price: item.price,
-          currency: "EUR",
-          options: item.options,
-        })),
+        items: [],
       },
     };
 

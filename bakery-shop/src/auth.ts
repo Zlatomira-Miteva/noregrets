@@ -34,31 +34,26 @@ export const authOptions: NextAuthOptions = {
         if (!isValid) return null;
 
         const role = (user.role as string) ?? "CUSTOMER";
+        // Изискваме операторски метаданни за админ/оператор/аудитор роли.
         const operatorRoles = new Set(["ADMIN", "OPERATOR", "AUDITOR"]);
         const meta = (user.meta as Record<string, unknown>) ?? {};
-        let operatorCode: string | undefined = (meta.operatorCode as string | undefined) ?? undefined;
+        const operatorCode: string | undefined = (meta.operatorCode as string | undefined) ?? undefined;
         const firstName: string | null =
           (meta.firstName as string | null) ?? (meta.firstname as string | null) ?? null;
         const lastName: string | null = (meta.lastName as string | null) ?? (meta.lastname as string | null) ?? null;
-        let activeFrom: Date | null =
+        const activeFrom: Date | null =
           meta.activefrom ? new Date(meta.activefrom as string) : meta.activeFrom ? new Date(meta.activeFrom as string) : null;
-        let activeTo: Date | null =
+        const activeTo: Date | null =
           meta.activeto ? new Date(meta.activeto as string) : meta.activeTo ? new Date(meta.activeTo as string) : null;
-        let active: boolean = meta.active !== false;
+        const active: boolean = meta.active !== false;
         const now = new Date();
         const withinWindow = (!activeFrom || activeFrom <= now) && (!activeTo || activeTo >= now);
 
-        // Enforce operator metadata for operator roles.
+        // Enforce operator metadata for operator roles (ADMIN/OPERATOR/AUDITOR).
         if (operatorRoles.has(role)) {
           if (!operatorCode || active === false || !withinWindow) {
             return null;
           }
-        } else {
-          // Non-operator roles: clear operator metadata.
-          operatorCode = undefined;
-          activeFrom = null;
-          activeTo = null;
-          active = true;
         }
 
         return {

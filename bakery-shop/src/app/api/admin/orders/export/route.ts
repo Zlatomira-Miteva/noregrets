@@ -106,7 +106,7 @@ export async function GET(request: Request) {
 
     const ordersRes = await pgPool.query(
       `SELECT * FROM "Order"
-       WHERE status IN ('PAID','REFUNDED') AND "createdAt" BETWEEN $1 AND $2
+       WHERE status::text IN ('PAID','REFUNDED') AND "createdAt" BETWEEN $1 AND $2
        ORDER BY "createdAt" ASC`,
       [startDate, endDate],
     );
@@ -197,13 +197,20 @@ export async function GET(request: Request) {
           refundTotal += refundAmount || 0;
         }
 
-        const parsedItems: ItemRow[] =
+        // Използваме платените редове и (ако има) metadata.subtotal/discount, за да възстановим оригиналната стойност.
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const metadataObj =
+          typeof order.metadata === "object" && order.metadata ? (order.metadata as Record<string, unknown>) : undefined;
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        // Платени редове
+        const paidItems: ItemRow[] =
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           items.map((it: any) => {
             const quantity = Number(it.quantity ?? it.qty ?? 1);
-            const totalWithVat = Number(it.lineTotal ?? it.total ?? it.totalPrice ?? 0);
-            const unitFromTotal = quantity ? totalWithVat / quantity : Number(it.price ?? 0);
-            const priceWithVat = Number(it.pricePaid ?? it.unitPrice ?? it.price ?? unitFromTotal ?? 0);
+            const priceWithVat = Number(
+              Number(it.price ?? it.pricePaid ?? it.unitPrice ?? it.lineTotal ?? 0).toFixed(2),
+            );
             return {
               artName: it.name ?? "",
               quantity,
@@ -211,15 +218,46 @@ export async function GET(request: Request) {
               vatRate,
             };
           }) ?? [];
+        const paidGross = paidItems.reduce((acc, it) => acc + it.priceWithVat * it.quantity, 0);
 
-        const grossSum = parsedItems.reduce((acc, it) => acc + it.priceWithVat * it.quantity, 0);
-        let adjustedItems = parsedItems;
-        if (grossSum > 0 && Math.abs(grossSum - totalAmount) > 0.01) {
-          const factor = totalAmount / grossSum;
-          let remaining = totalAmount;
-          adjustedItems = parsedItems.map((it, idx) => {
+        // Целеви оборот (оригинален): metadata.subtotal, total+discount, или оригиналните цени от редовете.
+        const metadataSubtotal =
+          typeof metadataObj?.subtotal === "number" ? Number((metadataObj.subtotal as number).toFixed(2)) : null;
+        const discountFromMetadata =
+          typeof metadataObj?.discountAmount === "number" ? Number((metadataObj.discountAmount as number).toFixed(2)) : null;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const originalFromItems =
+          items.reduce((acc: number, it: any) => {
+            const qty = Number(it.quantity ?? it.qty ?? 1);
+            const original = it.originalPrice ?? it.originalprice ?? null;
+            const priceCandidate =
+              original !== null && original !== undefined
+                ? Number(original)
+                : Number(it.price ?? it.pricePaid ?? it.unitPrice ?? it.lineTotal ?? 0);
+            if (Number.isFinite(priceCandidate)) {
+              return acc + priceCandidate * qty;
+            }
+            return acc;
+          }, 0) ?? 0;
+
+        const targetGrossCandidateFromDiscount =
+          discountFromMetadata !== null && discountFromMetadata !== undefined && discountFromMetadata > 0
+            ? Number((totalAmount + discountFromMetadata).toFixed(2))
+            : null;
+
+        const targetGross =
+          (metadataSubtotal && metadataSubtotal > 0 ? metadataSubtotal : null) ??
+          (targetGrossCandidateFromDiscount !== null ? targetGrossCandidateFromDiscount : null) ??
+          (originalFromItems > paidGross + 0.01 ? Number(originalFromItems.toFixed(2)) : null) ??
+          paidGross;
+
+        let displayItems = paidItems;
+        if (paidGross > 0 && targetGross > paidGross + 0.01) {
+          const factor = targetGross / paidGross;
+          let remaining = targetGross;
+          displayItems = paidItems.map((it, idx) => {
             const baseLine = it.priceWithVat * it.quantity;
-            const isLast = idx === parsedItems.length - 1;
+            const isLast = idx === paidItems.length - 1;
             const lineTotal = isLast ? Number(remaining.toFixed(2)) : Number((baseLine * factor).toFixed(2));
             const unit = it.quantity ? Number((lineTotal / it.quantity).toFixed(2)) : it.priceWithVat;
             remaining = Number((remaining - lineTotal).toFixed(2));
@@ -227,15 +265,14 @@ export async function GET(request: Request) {
           });
         }
 
+        const originalGross = targetGross;
         const totalNet =
-          adjustedItems.reduce((acc, it) => {
+          displayItems.reduce((acc, it) => {
             const net = it.priceWithVat / (1 + it.vatRate / 100);
             return acc + net * it.quantity;
           }, 0) || 0;
 
         const orderVat = totalAmount - totalNet;
-        const metadataObj =
-          typeof order.metadata === "object" && order.metadata ? (order.metadata as Record<string, unknown>) : undefined;
         const transactionId =
           paymentsMap.get(orderRef) ??
           (metadataObj?.paymentTransactionId as string | undefined) ??
@@ -244,33 +281,8 @@ export async function GET(request: Request) {
             ? ((metadataObj.payment as Record<string, unknown>).transactionId as string | undefined)
             : "") ??
           "";
-        const discountFromMetadata =
-          typeof metadataObj?.discountAmount === "number" ? (metadataObj.discountAmount as number) : 0;
-        const originalGrossFromItems =
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          items.reduce((acc: any, it: any) => {
-            const qty = Number(it.quantity ?? it.qty ?? 1);
-            const original =
-              it.originalPrice ??
-              it.originalprice ??
-              undefined;
-            const priceCandidate =
-              original !== undefined && original !== null
-                ? Number(original)
-                : Number(it.price ?? it.pricePaid ?? it.unitPrice ?? it.lineTotal ?? 0);
-            if (Number.isFinite(priceCandidate)) {
-              return acc + priceCandidate * qty;
-            }
-            return acc;
-          }, 0) || 0;
-        const originalGross =
-          originalGrossFromItems > 0
-            ? originalGrossFromItems
-            : (metadataObj?.subtotal as number | undefined) ?? totalAmount;
         const computedDiscount = Math.max(0, Number((originalGross - totalAmount).toFixed(2)));
-        const discountAmount = Number.isFinite(discountFromMetadata)
-          ? Number(discountFromMetadata.toFixed(2))
-          : computedDiscount;
+        const discountAmount = computedDiscount;
 
         xml.push("  <order>");
         xml.push("    <orderenum>");
@@ -279,9 +291,9 @@ export async function GET(request: Request) {
         xml.push(`      <doc_n>${xmlEscape(docNumber)}</doc_n>`);
         xml.push(`      <doc_date>${xmlEscape(toDateOnly(createdAt))}</doc_date>`);
         xml.push("");
-        if (adjustedItems.length) {
+        if (displayItems.length) {
           xml.push("      <art>");
-          adjustedItems.forEach((it) => {
+          displayItems.forEach((it) => {
             const net = it.priceWithVat / (1 + it.vatRate / 100);
             const vat = it.priceWithVat - net;
             xml.push("        <artenum>");
@@ -296,7 +308,7 @@ export async function GET(request: Request) {
           xml.push("      </art>");
         }
 
-        xml.push(`      <ord_total1>${formatNumber(totalNet)}</ord_total1>`);
+        xml.push(`      <ord_total1>${formatNumber(originalGross)}</ord_total1>`);
         xml.push(`      <ord_disc>${formatNumber(discountAmount)}</ord_disc>`);
         xml.push(`      <ord_vat>${formatNumber(orderVat)}</ord_vat>`);
         xml.push(`      <ord_total2>${formatNumber(totalAmount)}</ord_total2>`);
@@ -406,7 +418,7 @@ export async function GET(request: Request) {
         typeof metadataObj?.discountAmount === "number" ? (metadataObj.discountAmount as number) : 0;
 
       // Използваме цената от order.items, като първо търсим pricePaid/lineTotal, а ако не пасва на totalAmount — скалираме.
-      const parsedItems: ItemRow[] =
+      let parsedItems: ItemRow[] =
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         items.map((it: any) => {
           const quantity = Number(it.quantity ?? it.qty ?? 1);
@@ -421,13 +433,38 @@ export async function GET(request: Request) {
           };
         }) ?? [];
 
-      // Ако сумата на редовете се разминава с платеното, скалирай.
       const grossSum = parsedItems.reduce((acc, it) => acc + it.priceWithVat * it.quantity, 0);
-      let adjustedItems = parsedItems;
-      if (grossSum > 0 && Math.abs(grossSum - totalAmount) > 0.01) {
-        const factor = totalAmount / grossSum;
-        let remaining = totalAmount;
-        adjustedItems = parsedItems.map((it, idx) => {
+      const originalFromItems =
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        items.reduce((acc: number, it: any) => {
+          const qty = Number(it.quantity ?? it.qty ?? 1);
+          const original = it.originalPrice ?? it.originalprice ?? null;
+          const priceCandidate =
+            original !== null && original !== undefined
+              ? Number(original)
+              : Number(it.price ?? it.pricePaid ?? it.unitPrice ?? it.lineTotal ?? 0);
+          if (Number.isFinite(priceCandidate)) {
+            return acc + priceCandidate * qty;
+          }
+          return acc;
+        }, 0) ?? 0;
+
+      const targetGrossCandidateFromDiscount =
+        Number.isFinite(discountFromMetadata) && discountFromMetadata !== null && discountFromMetadata > 0
+          ? Number((totalAmount + discountFromMetadata).toFixed(2))
+          : null;
+
+      const targetGross =
+        targetGrossCandidateFromDiscount !== null
+          ? targetGrossCandidateFromDiscount
+          : originalFromItems > grossSum + 0.01
+            ? Number(originalFromItems.toFixed(2))
+            : grossSum;
+
+      if (grossSum > 0 && targetGross > grossSum + 0.01) {
+        const factor = targetGross / grossSum;
+        let remaining = targetGross;
+        parsedItems = parsedItems.map((it, idx) => {
           const baseLine = it.priceWithVat * it.quantity;
           const isLast = idx === parsedItems.length - 1;
           const lineTotal = isLast ? Number(remaining.toFixed(2)) : Number((baseLine * factor).toFixed(2));
@@ -437,11 +474,7 @@ export async function GET(request: Request) {
         });
       }
 
-      const totalNet =
-        adjustedItems.reduce((acc, it) => {
-          const net = it.priceWithVat / (1 + it.vatRate / 100);
-          return acc + net * it.quantity;
-        }, 0) || 0;
+      const totalNet = targetGross; // VAT rate is constant; with 0 VAT totalNet==gross
 
       const docDate = toDateTime(createdAt);
       const creationDate = toDateOnly(new Date());
@@ -453,31 +486,14 @@ export async function GET(request: Request) {
           ? ((metadataObj.payment as Record<string, unknown>).transactionId as string | undefined)
           : "") ??
         "";
-      const originalGrossFromItems =
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        items.reduce((acc: any, it: any) => {
-          const qty = Number(it.quantity ?? it.qty ?? 1);
-          const original = it.originalPrice ?? it.originalprice ?? undefined;
-          const priceCandidate =
-            original !== undefined && original !== null
-              ? Number(original)
-              : Number(it.price ?? it.pricePaid ?? it.unitPrice ?? it.lineTotal ?? 0);
-          if (Number.isFinite(priceCandidate)) {
-            return acc + priceCandidate * qty;
-          }
-          return acc;
-        }, 0) || 0;
-      const originalGross =
-        originalGrossFromItems > 0
-          ? originalGrossFromItems
-          : (metadataObj?.subtotal as number | undefined) ?? totalAmount;
+      const originalGross = targetGross;
       const computedDiscount = Math.max(0, Number((originalGross - totalAmount).toFixed(2)));
       const discountAmount =
         discountFromMetadata !== null && Number.isFinite(discountFromMetadata)
           ? Number(discountFromMetadata.toFixed(2))
           : computedDiscount;
 
-      if (!adjustedItems.length) {
+      if (!parsedItems.length) {
         rows.push([
           eik,
           eShopNumber,
@@ -514,7 +530,7 @@ export async function GET(request: Request) {
         continue;
       }
 
-      adjustedItems.forEach((it, idx) => {
+      parsedItems.forEach((it, idx) => {
         const net = it.priceWithVat / (1 + it.vatRate / 100);
         const vat = it.priceWithVat - net;
         rows.push([

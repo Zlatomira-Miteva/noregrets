@@ -161,33 +161,33 @@ export async function POST(request: Request) {
       .filter(Boolean)
       .join("\n");
 
-    const response = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${RESEND_API_KEY}`,
-      },
-      body: JSON.stringify({
-        from: CONTACT_FROM,
-        to: [ORDER_NOTIFICATION_RECIPIENT],
-        subject: `Нова онлайн поръчка ${data.reference ?? ""}`.trim(),
-        text: adminLines,
-        html: adminLines.replace(/\n/g, "<br />"),
-      }),
-    });
+    // const response = await fetch("https://api.resend.com/emails", {
+    //   method: "POST",
+    //   headers: {
+    //     "Content-Type": "application/json",
+    //     Authorization: `Bearer ${RESEND_API_KEY}`,
+    //   },
+    //   body: JSON.stringify({
+    //     from: CONTACT_FROM,
+    //     to: [ORDER_NOTIFICATION_RECIPIENT],
+    //     subject: `Нова онлайн поръчка ${data.reference ?? ""}`.trim(),
+    //     text: adminLines,
+    //     html: adminLines.replace(/\n/g, "<br />"),
+    //   }),
+    // });
 
-    if (!response.ok) {
-      const errorPayload = await response.json().catch(() => ({}));
-      console.error("[orders.notify] Resend error", {
-        status: response.status,
-        errorPayload,
-        reference: data.reference,
-      });
-      return NextResponse.json(
-        { error: "Failed to send notification email", status: response.status },
-        { status: 502 },
-      );
-    }
+    // if (!response.ok) {
+    //   const errorPayload = await response.json().catch(() => ({}));
+    //   console.error("[orders.notify] Resend error", {
+    //     status: response.status,
+    //     errorPayload,
+    //     reference: data.reference,
+    //   });
+    //   return NextResponse.json(
+    //     { error: "Failed to send notification email", status: response.status },
+    //     { status: 502 },
+    //   );
+    // }
 
     // Email към клиента само при успешно платени поръчки.
     if (data.customer?.email && data.status?.toUpperCase() === "PAID") {
