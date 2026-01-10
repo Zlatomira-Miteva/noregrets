@@ -6,14 +6,15 @@ const WALLET = process.env.MY_POS_WALLET_NUMBER ?? "";
 const RAW_PRIVATE_KEY = (process.env.MY_POS_PRIVATE_KEY ?? "").trim();
 const KEY_INDEX = process.env.MY_POS_KEY_INDEX ?? "1";
 const CURRENCY = (process.env.MY_POS_CURRENCY ?? "EUR").toUpperCase();
-const FALLBACK_BASE_URL = (process.env.NEXT_PUBLIC_APP_URL ?? "https://noregrets.bg").replace(/\/+$/, "");
 
 const normalizePem = (pem: string) => pem.replace(/\r/g, "").replace(/\\n/g, "\n").trim();
 const two = (n: number) => n.toFixed(2).replace(",", ".");
-const envUrl = (value: string | undefined, fallbackPath: string) => {
-  const trimmed = value?.trim();
-  if (trimmed) return trimmed;
-  return `${FALLBACK_BASE_URL}${fallbackPath}`;
+const formatAmount = (amount: string | number) => {
+  const num = typeof amount === "string" ? Number(amount) : amount;
+  if (!Number.isFinite(num)) {
+    throw new Error("Invalid amount value for myPOS checkout");
+  }
+  return two(num);
 };
 const appendReference = (urlStr: string, reference: string) => {
   if (!reference) return urlStr;
@@ -29,7 +30,7 @@ const appendReference = (urlStr: string, reference: string) => {
 
 export type CheckoutPayload = {
   reference: string;
-  amount: string | number; // canonical "0.00" preferred
+  amount: string | number;
   description?: string;
   customer?: {
     firstName?: string;
@@ -47,12 +48,10 @@ export type CheckoutPayload = {
 // Ensure cart item totals match the overall amount to avoid gateway validation errors.
 const normalizeCart = (
   cart: CheckoutPayload["cart"],
-  amount: string,
+  amount: string | number,
 ): CheckoutPayload["cart"] | undefined => {
-  // If coupon present, caller should skip cart entirely
   if (!cart?.items?.length) return cart;
   const target = Number(amount ?? 0);
-  if (!cart?.items?.length) return cart;
   if (!Number.isFinite(target) || target <= 0) return cart;
 
   const sum = cart.items.reduce((acc, item) => acc + Number(item.price) * Number(item.qty), 0);
@@ -100,7 +99,7 @@ export function createMyposCheckout(p: CheckoutPayload) {
   if (!RAW_PRIVATE_KEY) throw new Error("Missing MY_POS_PRIVATE_KEY");
 
   const PRIVATE_KEY = normalizePem(RAW_PRIVATE_KEY);
-  const amountStr = two(Number(p.amount)); // ensure 2 decimals
+  const amountStr = formatAmount(p.amount);
 
   // 1) СГЛОБИ ПОЛЕТАТА В ТОЧНИЯ РЕД, В КОЙТО ИСКАШ ДА ГИ ПРАЩАШ
   const entries: Array<[string, string]> = [];
@@ -139,8 +138,9 @@ export function createMyposCheckout(p: CheckoutPayload) {
 
   entries.push(["CardTokenRequest", "0"]);
   entries.push(["KeyIndex", KEY_INDEX]);
-  // cart only if provided and matches amount
-  const cart = !p.cart?.items?.length ? undefined : normalizeCart(p.cart, amountStr);
+  // CHANGE IT FOR BETTER PAYMENT EXPERIENCE CHANGE TO 3
+  // 3 when cart is provided, otherwise 1 (amount-only).
+  const cart = normalizeCart(p.cart, amountStr);
   entries.push(["PaymentParametersRequired", cart?.items?.length ? "3" : "1"]);
 
   // >>> ФИКС: Дръж Note ТАМ, където ще бъде и в POST.

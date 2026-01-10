@@ -225,8 +225,8 @@ export async function GET(request: Request) {
           typeof metadataObj?.subtotal === "number" ? Number((metadataObj.subtotal as number).toFixed(2)) : null;
         const discountFromMetadata =
           typeof metadataObj?.discountAmount === "number" ? Number((metadataObj.discountAmount as number).toFixed(2)) : null;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const originalFromItems =
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           items.reduce((acc: number, it: any) => {
             const qty = Number(it.quantity ?? it.qty ?? 1);
             const original = it.originalPrice ?? it.originalprice ?? null;
@@ -239,6 +239,18 @@ export async function GET(request: Request) {
             }
             return acc;
           }, 0) ?? 0;
+        // Оригинали от metadata.originalItems (ако има)
+        const originalFromMetaItems = Array.isArray((metadataObj as Record<string, unknown> | undefined)?.originalItems)
+          ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            ((metadataObj as any).originalItems as any[]).reduce((acc: number, it: any) => {
+              const qty = Number(it.quantity ?? 1);
+              const priceCandidate = Number(it.originalPrice ?? it.price ?? 0);
+              if (Number.isFinite(priceCandidate)) {
+                return acc + priceCandidate * qty;
+              }
+              return acc;
+            }, 0)
+          : 0;
 
         const targetGrossCandidateFromDiscount =
           discountFromMetadata !== null && discountFromMetadata !== undefined && discountFromMetadata > 0
@@ -248,6 +260,7 @@ export async function GET(request: Request) {
         const targetGross =
           (metadataSubtotal && metadataSubtotal > 0 ? metadataSubtotal : null) ??
           (targetGrossCandidateFromDiscount !== null ? targetGrossCandidateFromDiscount : null) ??
+          (originalFromMetaItems > paidGross + 0.01 ? Number(originalFromMetaItems.toFixed(2)) : null) ??
           (originalFromItems > paidGross + 0.01 ? Number(originalFromItems.toFixed(2)) : null) ??
           paidGross;
 
@@ -449,6 +462,18 @@ export async function GET(request: Request) {
           return acc;
         }, 0) ?? 0;
 
+      const originalFromMetaItems = Array.isArray((metadataObj as Record<string, unknown> | undefined)?.originalItems)
+        ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          ((metadataObj as any).originalItems as any[]).reduce((acc: number, it: any) => {
+            const qty = Number(it.quantity ?? 1);
+            const priceCandidate = Number(it.originalPrice ?? it.price ?? 0);
+            if (Number.isFinite(priceCandidate)) {
+              return acc + priceCandidate * qty;
+            }
+            return acc;
+          }, 0)
+        : 0;
+
       const targetGrossCandidateFromDiscount =
         Number.isFinite(discountFromMetadata) && discountFromMetadata !== null && discountFromMetadata > 0
           ? Number((totalAmount + discountFromMetadata).toFixed(2))
@@ -457,9 +482,11 @@ export async function GET(request: Request) {
       const targetGross =
         targetGrossCandidateFromDiscount !== null
           ? targetGrossCandidateFromDiscount
-          : originalFromItems > grossSum + 0.01
-            ? Number(originalFromItems.toFixed(2))
-            : grossSum;
+          : originalFromMetaItems > grossSum + 0.01
+            ? Number(originalFromMetaItems.toFixed(2))
+            : originalFromItems > grossSum + 0.01
+              ? Number(originalFromItems.toFixed(2))
+              : grossSum;
 
       if (grossSum > 0 && targetGross > grossSum + 0.01) {
         const factor = targetGross / grossSum;

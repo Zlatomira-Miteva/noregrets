@@ -5,6 +5,13 @@ import { withAuth } from "next-auth/middleware";
 const isActiveAdminToken = (token: any) => {
   if (!token) return false;
   if (token.role !== "ADMIN") return false;
+
+  // const bypass =
+  //   process.env.NODE_ENV !== "production" ||
+  //   process.env.ADMIN_DEV_BYPASS === "true" ||
+  //   process.env.ALLOW_LOCAL_ADMIN_NO_OPERATOR === "true";
+  // if (bypass) return true;
+
   if (token.active === false) return false;
   if (!token.operatorCode) return false;
   const now = Date.now();

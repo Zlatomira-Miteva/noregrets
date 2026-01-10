@@ -20,6 +20,10 @@ type OrderItem = {
   price: number;
   quantity: number;
   options?: string[];
+  pricePaid?: number;
+  originalPrice?: number;
+  lineTotal?: number;
+  productId?: string;
 };
 
 type CartItem = {
@@ -38,6 +42,13 @@ export type OrderPayload = {
   couponCode?: string;
   discountAmount?: number;
   subtotal?: number;
+  originalItems?: Array<{
+    name: string;
+    quantity: number;
+    originalPrice: number;
+    options?: string[];
+    productId?: string;
+  }>;
   coupon?: {
     code: string;
     discountType: string;
@@ -187,6 +198,7 @@ const buildMetadata = (payload: OrderPayload) => {
     totalQuantity: payload.totalQuantity,
     subtotal: payload.subtotal,
     discountAmount: payload.discountAmount,
+    originalItems: payload.originalItems ?? null,
     consents: payload.consents,
     cart: payload.cart,
     coupon: payload.couponCode || payload.coupon

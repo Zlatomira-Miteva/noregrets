@@ -236,66 +236,132 @@ const CartPage = () => {
     }
   };
 
-  const couponDiscountAmount = useMemo(() => {
-    if (!couponDetails) return 0;
-    if (totalPrice <= 0) return 0;
-    if (totalPrice < couponDetails.minimumOrderAmount) return 0;
+  // Пресмятаме тотала в стотинки, като разпределяме отстъпката по редовете (като на сървъра).
+  const subtotalCents = useMemo(() => {
+    return items.reduce((acc, item) => {
+      const unitCents = Math.round(Number(item.price ?? 0) * 100);
+      const qty = Number(item.quantity ?? 0);
+      return acc + unitCents * qty;
+    }, 0);
+  }, [items]);
 
-    let discount =
-      couponDetails.discountType === "PERCENT"
-        ? (totalPrice * couponDetails.discountValue) / 100
-        : couponDetails.discountValue;
-
-    if (
-      couponDetails.maximumDiscountAmount !== null &&
-      couponDetails.maximumDiscountAmount >= 0
-    ) {
-      discount = Math.min(discount, couponDetails.maximumDiscountAmount);
-    }
-
-    return Math.min(discount, totalPrice);
-  }, [couponDetails, totalPrice]);
-
-  const finalTotal = useMemo(
-    () => Math.max(0, totalPrice - couponDiscountAmount),
-    [couponDiscountAmount, totalPrice]
-  );
-
-  const normalizeItemsForTotal = (
-    source: typeof items,
-    targetTotal: number
-  ): typeof items => {
-    if (!source.length || targetTotal <= 0) return source;
-    const sum = source.reduce(
-      (acc, item) => acc + (item.price ?? 0) * item.quantity,
-      0
-    );
-    if (sum <= 0) return source;
-    if (Math.abs(sum - targetTotal) < 0.01) {
-      return source.map((item) => ({
-        ...item,
-        price: Number((item.price ?? 0).toFixed(2)),
-      }));
-    }
-
-    const factor = targetTotal / sum;
-    let remaining = targetTotal;
-
-    return source.map((item, idx) => {
-      const baseTotal = (item.price ?? 0) * item.quantity;
-      const isLast = idx === source.length - 1;
-      const lineTotal = isLast
-        ? Number(remaining.toFixed(2))
-        : Number((baseTotal * factor).toFixed(2));
-      const unitPrice = item.quantity
-        ? Number((lineTotal / item.quantity).toFixed(2))
-        : 0;
-      remaining = Number(
-        (remaining - unitPrice * item.quantity).toFixed(2)
-      );
-      return { ...item, price: unitPrice };
+  const allocation = useMemo(() => {
+    const rows = items.map((item) => {
+      const unitCents = Math.round(Number(item.price ?? 0) * 100);
+      const qty = Number(item.quantity ?? 0);
+      return { ...item, unitCents, qty };
     });
-  };
+
+    const toCents = (v: number) => Math.round(Number(v) * 100);
+
+    // Без купон или сума под минимума
+    if (!couponDetails || subtotalCents <= 0 || totalPrice < couponDetails.minimumOrderAmount) {
+      const totalCents = rows.reduce((acc, r) => acc + r.unitCents * r.qty, 0);
+      return {
+        rows: rows.map((r) => ({
+          ...r,
+          unitAfterCents: r.unitCents,
+          lineTotalCents: r.unitCents * r.qty,
+        })),
+        discountCents: 0,
+        totalCents,
+      };
+    }
+
+    const applyPercentPerItem = () => {
+      const pct = couponDetails.discountValue / 100;
+      const capped = couponDetails.maximumDiscountAmount;
+      let totalDiscount = 0;
+      const adjustedRows = rows.map((r) => {
+        const unitAfterCents = Math.max(0, Math.round(r.unitCents * (1 - pct)));
+        const lineTotalCents = unitAfterCents * r.qty;
+        const lineDiscount = Math.max(0, r.unitCents * r.qty - lineTotalCents);
+        totalDiscount += lineDiscount;
+        return { ...r, unitAfterCents, lineTotalCents, lineDiscount };
+      });
+
+      let discountCents = totalDiscount;
+      if (capped !== null && capped >= 0) {
+        const capCents = toCents(capped);
+        if (discountCents > capCents) {
+          discountCents = capCents;
+          return null; // сигнал да паднем към пропорционално разпределение с кап
+        }
+      }
+
+      const totalAfterCents = adjustedRows.reduce((acc, r) => acc + r.lineTotalCents, 0);
+      return { rows: adjustedRows, discountCents, totalCents: totalAfterCents };
+    };
+
+    const allocateProportional = (discountCents: number) => {
+      if (discountCents <= 0) {
+        const totalCents = rows.reduce((acc, r) => acc + r.unitCents * r.qty, 0);
+        return {
+          rows: rows.map((r) => ({
+            ...r,
+            unitAfterCents: r.unitCents,
+            lineTotalCents: r.unitCents * r.qty,
+          })),
+          discountCents: 0,
+          totalCents,
+        };
+      }
+
+      const shares = rows.map((r) => {
+        const line = r.unitCents * r.qty;
+        const raw = (discountCents * line) / subtotalCents;
+        return { line, raw };
+      });
+      const floorDiscounts = shares.map((s) => Math.floor(s.raw));
+      const allocated = floorDiscounts.reduce((a, b) => a + b, 0);
+      let remainder = discountCents - allocated;
+
+      const remainders = shares.map((s, idx) => ({ idx, frac: s.raw - floorDiscounts[idx] }));
+      remainders.sort((a, b) => b.frac - a.frac);
+      const extra = new Array(rows.length).fill(0);
+      for (const r of remainders) {
+        if (remainder <= 0) break;
+        extra[r.idx] += 1;
+        remainder -= 1;
+      }
+
+      const adjustedRows = rows.map((r, idx) => {
+        const lineDiscount = floorDiscounts[idx] + extra[idx];
+        const lineTotalCents = Math.max(0, r.unitCents * r.qty - lineDiscount);
+        const unitAfterCents = r.qty ? Math.round(lineTotalCents / r.qty) : lineTotalCents;
+        return { ...r, unitAfterCents, lineTotalCents };
+      });
+
+      const totalAfterCents = adjustedRows.reduce((acc, r) => acc + r.lineTotalCents, 0);
+      return {
+        rows: adjustedRows,
+        discountCents,
+        totalCents: totalAfterCents,
+      };
+    };
+
+    // Ако е процент – първо на редово ниво; ако ударим cap, падаме към пропорционално с кап-а.
+    if (couponDetails.discountType === "PERCENT") {
+      const percentResult = applyPercentPerItem();
+      if (percentResult) return percentResult;
+    }
+
+    // Фиксирана отстъпка или процент с cap -> пропорционално разпределение.
+    let discountCents =
+      couponDetails.discountType === "PERCENT"
+        ? Math.round((subtotalCents * couponDetails.discountValue) / 100)
+        : toCents(couponDetails.discountValue);
+
+    if (couponDetails.maximumDiscountAmount !== null && couponDetails.maximumDiscountAmount >= 0) {
+      discountCents = Math.min(discountCents, toCents(couponDetails.maximumDiscountAmount));
+    }
+    discountCents = Math.min(discountCents, subtotalCents);
+
+    return allocateProportional(discountCents);
+  }, [couponDetails, items, subtotalCents, totalPrice]);
+
+  const couponDiscountAmount = useMemo(() => allocation.discountCents / 100, [allocation.discountCents]);
+  const finalTotal = useMemo(() => allocation.totalCents / 100, [allocation.totalCents]);
 
   const minPickupDate = useMemo(() => {
     const date = new Date();
@@ -355,10 +421,15 @@ const CartPage = () => {
     setCouponStatus(null);
 
     try {
+      const cartTotalForCoupon = subtotalCents / 100;
+      const couponItems = items.map((item) => ({
+        price: Number((item.price ?? 0).toFixed(2)),
+        quantity: Number(item.quantity ?? 0),
+      }));
       const response = await fetch("/api/coupons/validate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code: normalized, cartTotal: totalPrice }),
+        body: JSON.stringify({ code: normalized, cartTotal: cartTotalForCoupon, items: couponItems }),
       });
 
       const payload: {
@@ -382,7 +453,7 @@ const CartPage = () => {
       setCouponStatus(
         typeof payload.discountAmount === "number"
           ? `Кодът е приложен! Отстъпката е ${formatPrice(
-              payload.discountAmount
+              Number(finalTotal.toFixed(2))
             )}.`
           : "Кодът е приложен успешно."
       );
@@ -465,7 +536,16 @@ const CartPage = () => {
 
     const orderReference = `NR-${Date.now()}`;
     const roundedTotal = Number(finalTotal.toFixed(2));
-    const normalizedItems = normalizeItemsForTotal(items, roundedTotal);
+    const normalizedItems = items.map((item, idx) => {
+      const price = Number((item.price ?? 0).toFixed(2));
+      // Ако имаме вече разпределена отстъпка, покажи я в payload, за да съвпада UI с бекенда.
+      const allocated = allocation.rows[idx];
+      const priceAfter = allocated ? Number((allocated.unitAfterCents / 100).toFixed(2)) : price;
+      return {
+        ...item,
+        price: priceAfter,
+      };
+    });
     const totalQuantity = normalizedItems.reduce(
       (sum, item) => sum + Number(item.quantity || 0),
       0
