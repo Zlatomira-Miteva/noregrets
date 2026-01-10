@@ -83,7 +83,7 @@ async function fetchProduct(slugOrId: string) {
   try {
     const slug = normalizeSlug(slugOrId);
     const res = await client.query(
-      `SELECT id, slug, name, price FROM "Product" WHERE slug = $1 OR id = $1 LIMIT 1`,
+      `SELECT id, slug, name, price, "priceSmall", "priceLarge" FROM "Product" WHERE slug = $1 OR id = $1 LIMIT 1`,
       [slugOrId],
     );
     if (res.rows[0]) return res.rows[0];
@@ -157,7 +157,22 @@ export async function POST(req: Request) {
         if (!productRow) {
           throw new Error(`Продуктът не е намерен: ${item.name}`);
         }
-        const unitPrice = Number(productRow.price);
+        const opts = Array.isArray(item.options) ? item.options.join(" ").toLowerCase() : "";
+        const wantsLarge = opts.includes("голям") || opts.includes("double") || opts.includes("large");
+        const wantsSmall = opts.includes("мал") || opts.includes("single") || opts.includes("small");
+        const priceLarge =
+          productRow.priceLarge ?? (productRow.pricelarge as number | undefined) ?? null;
+        const priceSmall =
+          productRow.priceSmall ?? (productRow.pricesmall as number | undefined) ?? null;
+
+        let unitPrice = Number(productRow.price);
+        if (wantsLarge && priceLarge != null) unitPrice = Number(priceLarge);
+        else if (wantsSmall && priceSmall != null) unitPrice = Number(priceSmall);
+        else if (priceSmall != null && priceLarge != null && !wantsSmall && !wantsLarge) {
+          // ако няма указание, ползвай малкия по подразбиране
+          unitPrice = Number(priceSmall);
+        }
+
         const quantity = Number(item.quantity);
         return {
           name: productRow.name ?? item.name,

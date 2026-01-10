@@ -179,7 +179,9 @@ const CartPage = () => {
     const uniqueIds = Array.from(new Set(items.map((item) => item.productId)));
     (async () => {
       for (const productId of uniqueIds) {
-        if (productId.startsWith("custom-box")) continue; // custom box price is composed from selections, keep client value
+        // custom box and tiramisu размери имат клиентска цена; не ги презареждаме
+        if (productId.startsWith("custom-box")) continue;
+        if (productId.startsWith("tiramisu-")) continue;
         try {
           const res = await fetch(`/api/products/${encodeURIComponent(productId)}`, {
             signal: controller.signal,
